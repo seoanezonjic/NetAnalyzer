@@ -1,5 +1,7 @@
+import sys 
 import re
 import networkx as nx
+
 # https://stackoverflow.com/questions/60392940/multi-layer-graph-in-networkx
 # http://mkivela.com/pymnet
 class NetAnalyzer:
@@ -7,6 +9,9 @@ class NetAnalyzer:
 	def __init__(self, layers):
 		self.graph = nx.Graph()
 		self.layers = []
+		self.association_values = {}
+		self.compute_autorelations = True
+		self.compute_pairs = 'conn'
 
 	def add_node(self, nodeID, layer):
 		self.graph.add_node(nodeID, layer=layer)
@@ -27,24 +32,84 @@ class NetAnalyzer:
 		if layer not in self.layers: self.layers.append(layer)
 		return layer
 
+	def get_nodes_by_attr(self, attrib, value):
+		return [nodeID for nodeID, attr in self.graph.nodes(data=True) if attr[attrib] == value]
+
 	def get_nodes_layer(self, layers):
 		nodes = []
 		for layer in layers:
-			nodes.extend([nodeID for nodeID, attr in self.graph.nodes(data=True) if attr['layer']== layer])
+			nodes.extend(self.get_nodes_by_attr('layer', layer))
 		return nodes
 
 	def get_edge_number(self):
 		return len(self.graph.edges())
 
-	def try_test(self):
-		return 2
+	def collect_nodes(self, layers = 'all'):
+		nodeIDsA = None
+		nodeIDsB = None
+		if self.compute_autorelations:
+			if layers == 'all':
+				nodeIDsA = self.graph.nodes
+			else:
+				nodeIDsA = self.get_nodes_layer(layers)
+		else:
+			if layers != 'all': # layers contains two layer IDs
+				nodeIDsA = self.get_nodes_layer(layers[0])
+				nodeIDsB = self.get_nodes_layer(layers[1])
+		return nodeIDsA, nodeIDsB
 
+	def connections(self, ids_connected_to_n1, ids_connected_to_n2):
+		res = False
+		if ids_connected_to_n1 != None and ids_connected_to_n2 != None and len(ids_connected_to_n1 & ids_connected_to_n2) > 0 : # check that at least exists one node that connect to n1 and n2
+			res = True
+		return res
+	
+	def get_all_pairs(self, pair_operation, layers = 'all'):
+		all_pairs = []
+		nodeIDsA, nodeIDsB = self.collect_nodes(layers = layers)
+		if self.compute_autorelations:
+			while len(nodeIDsA) > 0:
+				node1 = nodeIDsA.pop(0)
+				if self.compute_pairs == 'all':
+					for node2 in nodeIDsA:
+						res = pair_operation(node1, node2)
+						all_pairs.append(res)
+				elif self.compute_pairs == 'conn':
+					ids_connected_to_n1 = set(self.graph.neighbors(node1))
+					for node2 in nodeIDsA:
+						ids_connected_to_n2 = set(self.graph.neighbors(node2))
+						if self.connections(ids_connected_to_n1, ids_connected_to_n2):
+							res = pair_operation(node1, node2)
+							all_pairs.append(res)
+		else:
+			if self.compute_pairs == 'conn': #MAIN METHOD
+				for node1 in nodeIDsA:
+					ids_connected_to_n1 = set(self.graph.neighbors(node1))
+					for node2 in nodeIDsB:
+						ids_connected_to_n2 = set(self.graph.neighbors(node2))
+						if self.connections(ids_connected_to_n1, ids_connected_to_n2):
+							res = pair_operation(node1, node2)
+							all_pairs.append(res)
+			elif self.compute_pairs == 'all':
+				raise Exception('Not implemented')
 
+		return all_pairs
 
+	def get_associations(self, layers, base_layer, compute_association): # BASE METHOD
+		base_nodes = set(self.get_nodes_layer([base_layer]))
+		def _(node1, node2): 
+			associatedIDs_node1 = set(self.graph.neighbors(node1))
+			associatedIDs_node2 = set(self.graph.neighbors(node2))
+			intersectedIDs = (associatedIDs_node1 & associatedIDs_node2) & base_nodes
+			associationValue = compute_association(associatedIDs_node1, associatedIDs_node2, intersectedIDs, node1, node2)
+			return [node1, node2, associationValue]  
+		associations = self.get_all_pairs(_, layers = layers)
+		return associations
 
-# def get_counts_association(layers, base_layer)
-# 	relations = get_associations(layers, base_layer) do |associatedIDs_node1, associatedIDs_node2, intersectedIDs, node1, node2|
-# 		countValue = intersectedIDs.length	
-# 	end
-# 	#@association_values[:counts] = relations
-# 	return relations
+	#https://stackoverflow.com/questions/55063978/ruby-like-yield-in-python-3
+	def get_counts_association(self, layers, base_layer):
+		def _(associatedIDs_node1, associatedIDs_node2, intersectedIDs, node1, node2):
+			return len(intersectedIDs)
+		relations = self.get_associations(layers, base_layer, _)
+		self.association_values['counts'] = relations
+		return relations

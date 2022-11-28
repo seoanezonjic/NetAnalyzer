@@ -37,6 +37,6 @@ setup(
     packages=["NetAnalyzer"],
     include_package_data=True,
     scripts=['bin/NetAnalyzer'],
-    install_requires=["NetworkX"]
+    install_requires=["NetworkX", "numpy", "scipy", "statsmodels"]
 
 )

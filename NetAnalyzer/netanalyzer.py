@@ -1,6 +1,10 @@
 import sys 
 import re
 import networkx as nx
+import math
+import numpy
+import scipy.stats as stats
+import statsmodels
 
 # https://stackoverflow.com/questions/60392940/multi-layer-graph-in-networkx
 # http://mkivela.com/pymnet
@@ -107,9 +111,95 @@ class NetAnalyzer:
 		return associations
 
 	#https://stackoverflow.com/questions/55063978/ruby-like-yield-in-python-3
-	def get_counts_association(self, layers, base_layer):
+	def get_counts_associations(self, layers, base_layer):
 		def _(associatedIDs_node1, associatedIDs_node2, intersectedIDs, node1, node2):
 			return len(intersectedIDs)
 		relations = self.get_associations(layers, base_layer, _)
 		self.association_values['counts'] = relations
 		return relations
+
+	def get_jaccard_associations(self, layers, base_layer):
+		def _(associatedIDs_node1, associatedIDs_node2, intersectedIDs, node1, node2):
+			unionIDS = associatedIDs_node1 | associatedIDs_node2
+			return len(intersectedIDs)/len(unionIDS)		
+		relations = self.get_associations(layers, base_layer, _)
+		self.association_values['jaccard'] = relations
+		return relations
+
+	def get_simpson_associations(self, layers, base_layer):
+		def _(associatedIDs_node1, associatedIDs_node2, intersectedIDs, node1, node2):
+			minLength = min([len(associatedIDs_node1), len(associatedIDs_node2)])
+			return len(intersectedIDs)/minLength
+		relations = self.get_associations(layers, base_layer, _)
+		self.association_values['simpson'] = relations
+		return relations
+
+	def get_geometric_associations(self, layers, base_layer):
+		#wang 2016 method
+		def _(associatedIDs_node1, associatedIDs_node2, intersectedIDs, node1, node2):
+			intersectedIDs = len(intersectedIDs)**2
+			productLength = math.sqrt(len(associatedIDs_node1) * len(associatedIDs_node2))
+			return intersectedIDs/productLength
+		relations = self.get_associations(layers, base_layer, _)
+		self.association_values['geometric'] = relations
+		return relations
+
+	def get_cosine_associations(self, layers, base_layer):
+		def _(associatedIDs_node1, associatedIDs_node2, intersectedIDs, node1, node2):
+			productLength = math.sqrt(len(associatedIDs_node1) * len(associatedIDs_node2))
+			return len(intersectedIDs)/productLength
+		relations = self.get_associations(layers, base_layer, _)
+		self.association_values['cosine'] = relations
+		return relations
+
+	def get_pcc_associations(self, layers, base_layer):
+		#for Ny calcule use get_nodes_layer
+		base_layer_nodes = self.get_nodes_layer([base_layer])
+		ny = len(base_layer_nodes)
+		def _(associatedIDs_node1, associatedIDs_node2, intersectedIDs, node1, node2):
+			intersProd = len(intersectedIDs) * ny
+			nodesProd = len(associatedIDs_node1) * len(associatedIDs_node2)
+			nodesSubs = intersProd - nodesProd
+			nodesAInNetwork = ny - len(associatedIDs_node1)
+			nodesBInNetwork = ny - len(associatedIDs_node2)
+			return numpy.float64(nodesSubs) / math.sqrt(nodesProd * nodesAInNetwork * nodesBInNetwork) # TODO: numpy.float64 is used to handle division by 0. Fix the implementation/test to avoid this case
+		relations = self.get_associations(layers, base_layer, _)
+		self.association_values['pcc'] = relations
+		return relations
+
+	def get_hypergeometric_associations(self, layers, base_layer, pvalue_adj_method= None):
+		ny = len(self.get_nodes_layer([base_layer]))
+		def _(associatedIDs_node1, associatedIDs_node2, intersectedIDs, node1, node2):
+			fisher = 0
+			intersection_lengths = len(intersectedIDs)
+			if intersection_lengths > 0:
+				print(node1 + "\t" + node2 + "\t" + str(intersection_lengths), file=sys.stderr)
+				n1_items = len(associatedIDs_node1)
+				n2_items = len(associatedIDs_node2)
+				data = [
+					[ intersection_lengths, n1_items - intersection_lengths], 
+					[ n2_items - intersection_lengths, ny - (n1_items + n2_items - intersection_lengths)]
+				]
+				odd_ratio, p_value = stats.fisher_exact(data, alternative='less')
+			return p_value
+		relations = self.get_associations(layers, base_layer, _)
+
+		if pvalue_adj_method == 'bonferroni':
+			meth = 'hypergeometric_bf'
+			self.adjust_pval_association(relations, 'bonferroni')
+		elif pvalue_adj_method == 'benjamini_hochberg':
+			meth = 'hypergeometric_bh'
+			self.adjust_pval_association(relations, 'fdr_bh')
+		else:
+			meth = 'hypergeometric'
+		relations = [[assoc[0], assoc[1], -numpy.log10(assoc[2])] for assoc in relations]
+		self.association_values[meth] = relations
+		return relations
+
+	def adjust_pval_association(associations, method): # TODO TEST
+		pvals = numpy.array([val[2] for val in relations])
+		adj_pvals = statsmodels.stats.multitest.multipletests(pvals, method=method, is_sorted=False, returnsorted=False)
+		count = 0
+		for adj_pval in adj_pvals:
+			relations[count][2] = adj_pval
+			count +=1

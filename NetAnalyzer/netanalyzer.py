@@ -16,6 +16,8 @@ class NetAnalyzer:
 		self.association_values = {}
 		self.compute_autorelations = True
 		self.compute_pairs = 'conn'
+		self.adjacency_matrices = {}
+		self.kernels = {}
 
 	def add_node(self, nodeID, layer):
 		self.graph.add_node(nodeID, layer=layer)
@@ -173,7 +175,6 @@ class NetAnalyzer:
 			fisher = 0
 			intersection_lengths = len(intersectedIDs)
 			if intersection_lengths > 0:
-				print(node1 + "\t" + node2 + "\t" + str(intersection_lengths), file=sys.stderr)
 				n1_items = len(associatedIDs_node1)
 				n2_items = len(associatedIDs_node2)
 				data = [
@@ -203,3 +204,11 @@ class NetAnalyzer:
 		for adj_pval in adj_pvals:
 			relations[count][2] = adj_pval
 			count +=1
+
+	def get_kernel(layer2kernel, kernel, normalization=False):
+		matrix, node_names = self.adjacency_matrices[layer2kernel]
+		matrix_result = Adv_mat_calc.get_kernel(matrix, node_names, kernel, normalization=normalization)
+		self.kernels[layer2kernel] = matrix_result
+
+	def write_kernel(layer2kernel, output_file):
+		numpy.save(output_file, self.kernels[layer2kernel])

@@ -49,14 +49,14 @@ class Adv_mat_calc:
 			t = int(kernel.replace('md', ''))
 			#TODO: check implementation
 			col_sum = matrix.sum(axis=1)
-			p_mat = matrix.div_by_vector(col_sum) # TODO: analyse this function in ruby and implement/replace for python equivalent
+			p_mat = np.divide(matrix.T,col_sum).T
 			p_temp_mat = p_mat.copy()
 			zt_mat = p_mat.copy()
 			for i in range(0, t-1):
 				p_temp_mat = np.dot(p_temp_mat,p_mat)
 				zt_mat = zt_mat + p_temp_mat
 			zt_mat = zt_mat * (1.0/t)
-			matrix_result = np.dot(zt_mat, zt_mat.transpose)
+			matrix_result = np.dot(zt_mat, zt_mat.T)
 		else:
 			matrix_result = matrix
 			warn('Warning: The kernel method was not specified or not exists. The adjacency matrix will be given as result')
@@ -64,11 +64,11 @@ class Adv_mat_calc:
 		if normalization: matrix_result = Adv_mat_calc.cosine_normalization(matrix_result)  #TODO: check implementation with Numo::array
 		return matrix_result
 
-	def cosine_normalization(matrix): # TODO: check method
+	def cosine_normalization(matrix):
 		dims = np.shape(matrix)
 		normalized_matrix =  np.zeros(dims)
 		for i in range(0, dims[0] - 1):
 			for j in range(0, dims[1] - 1):
-				norm = matrix[i, j]/math.sqrt(matrix[i, i] * matrix[j,j])
+				norm = matrix[i, j]/np.sqrt(matrix[i, i] * matrix[j,j])
 				normalized_matrix[i, j] = norm
 		return normalized_matrix

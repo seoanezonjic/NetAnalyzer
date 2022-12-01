@@ -3,7 +3,7 @@ import os
 from NetAnalyzer import NetAnalyzer
 from NetAnalyzer import Net_parser
 ROOT_PATH=os.path.dirname(__file__)
-DATA_TEST_PATH = os.path.join(ROOT_PATH, 'data')
+DATA_TEST_PATH = os.path.join(ROOT_PATH, 'data/data_kernel')
 
 class KernelTestCase(unittest.TestCase):
 	def setUp(self):

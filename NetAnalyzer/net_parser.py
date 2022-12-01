@@ -1,4 +1,5 @@
 import sys
+import numpy
 from NetAnalyzer.netanalyzer import NetAnalyzer
 
 class Net_parser:
@@ -29,18 +30,20 @@ class Net_parser:
 		return net
 
 	def load_network_by_bin_matrix(input_file, node_file, layers):
-		net = NetAnalyzer([layer[0] for layer in layers])
+		tag_layers = tuple([layer[0] for layer in layers])
+		net = NetAnalyzer(tag_layers)
 		node_names = Net_parser.load_input_list(node_file)
-		#net.adjacency_matrices[layers.map{|l| l.first}] = [Numo::NArray.load(input_file, type='npy'), node_names, node_names]
+		net.adjacency_matrices[tag_layers] = [numpy.load(input_file), node_names, node_names]
 		return net
 
 	def load_network_by_plain_matrix(input_file, node_file, layers, splitChar="\t"):
-		net = NetAnalyzer([layer[0] for layer in layers])
+		tag_layers = tuple([layer[0] for layer in layers])
+		net = NetAnalyzer(tag_layers)
 		node_names = Net_parser.load_input_list(node_file)
-		#net.adjacency_matrices[layers.map{|l| l.first}] = [Numo::NArray.load(input_file, type='txt', splitChar=splitChar), node_names, node_names]
+		net.adjacency_matrices[tag_layers] = [numpy.loadtxt(input_file, delimiter=splitChar), node_names, node_names]
 		return net
 
-	def load_input_list(file):
+	def load_input_list(input_path):
 		file = open(input_path, "r")
 		input_data = file.readlines()
 		file.close()

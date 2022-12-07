@@ -167,6 +167,7 @@ class NetAnalyzer:
 			return numpy.float64(nodesSubs) / math.sqrt(nodesProd * nodesAInNetwork * nodesBInNetwork) # TODO: numpy.float64 is used to handle division by 0. Fix the implementation/test to avoid this case
 		relations = self.get_associations(layers, base_layer, _)
 		self.association_values['pcc'] = relations
+		#print(relations)
 		return relations
 
 	def get_csi_associations(self, layers, base_layer):
@@ -204,16 +205,15 @@ class NetAnalyzer:
 	def get_hypergeometric_associations(self, layers, base_layer, pvalue_adj_method= None):
 		ny = len(self.get_nodes_layer([base_layer]))
 		def _(associatedIDs_node1, associatedIDs_node2, intersectedIDs, node1, node2):
-			fisher = 0
 			intersection_lengths = len(intersectedIDs)
 			if intersection_lengths > 0:
 				n1_items = len(associatedIDs_node1)
 				n2_items = len(associatedIDs_node2)
-				data = [
-					[ intersection_lengths, n1_items - intersection_lengths], 
-					[ n2_items - intersection_lengths, ny - (n1_items + n2_items - intersection_lengths)]
-				]
-				odd_ratio, p_value = stats.fisher_exact(data, alternative='less')
+				M= ny
+				n = n1_items
+				N = n2_items
+				p_value = stats.hypergeom.sf(intersection_lengths-1, M, n, N)
+
 			return p_value
 		relations = self.get_associations(layers, base_layer, _)
 

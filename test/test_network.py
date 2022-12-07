@@ -1,5 +1,6 @@
 import unittest
 import os
+import math
 from NetAnalyzer import NetAnalyzer
 from NetAnalyzer import Net_parser
 ROOT_PATH=os.path.dirname(__file__)
@@ -90,7 +91,9 @@ class BaseNetTestCase(unittest.TestCase):
 			association_value = round(float(fields.pop()), 6)
 			expected_values.append([fields[0], fields[1], association_value])
 		f.close()
+		expected_values = [row for row in expected_values if not math.isnan(row[2])]
 		expected_values.sort()
+		test_association = [row for row in test_association if not math.isnan(row[2])]
 		test_association.sort()
 		self.assertEqual(expected_values, test_association)
 

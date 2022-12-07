@@ -169,6 +169,38 @@ class NetAnalyzer:
 		self.association_values['pcc'] = relations
 		return relations
 
+	def get_csi_associations(self, layers, base_layer):
+		pcc_relations = self.get_pcc_associations(layers, base_layer)
+		pcc_relations = [row for row in pcc_relations if not math.isnan(row[2])]
+		if len(layers) > 1:
+			self.clean_autorelations_on_association_values()
+
+		nx = len(self.get_nodes_layer(layers))
+		pcc_vals = {}
+		node_rels = {}
+
+		for node1, node2, assoc_index in pcc_relations:
+			self.add_nested_record(pcc_vals, node1, node2, numpy.abs(assoc_index))
+			self.add_nested_record(pcc_vals, node2, node1, numpy.abs(assoc_index))
+			self.add_record(node_rels, node1, node2)
+			self.add_record(node_rels, node2, node1)
+		
+		relations = []
+		for node1, node2, assoc_index in pcc_relations:
+			pccAB = assoc_index - 0.05
+			valid_nodes = 0
+
+			significant_nodes_from_node1 = set([node for node in node_rels[node1] if pcc_vals[node1][node] >= pccAB])
+			significant_nodes_from_node2 = set([node for node in node_rels[node2] if pcc_vals[node2][node] >= pccAB])
+			all_significant_nodes = significant_nodes_from_node2 | significant_nodes_from_node1
+			all_nodes = set(node_rels[node1]) | set(node_rels[node2])
+			
+			csiValue = 1 - (len(all_significant_nodes))/(len(all_nodes)) 		
+			relations.append([node1, node2, csiValue])
+		
+		self.association_values['csi'] = relations
+		return relations
+
 	def get_hypergeometric_associations(self, layers, base_layer, pvalue_adj_method= None):
 		ny = len(self.get_nodes_layer([base_layer]))
 		def _(associatedIDs_node1, associatedIDs_node2, intersectedIDs, node1, node2):
@@ -212,3 +244,20 @@ class NetAnalyzer:
 
 	def write_kernel(layer2kernel, output_file):
 		numpy.save(output_file, self.kernels[layer2kernel])
+
+	## AUXILIAR METHODS
+	#######################################################################################
+
+	def add_record(self, hash, node1, node2):
+	    query = hash.get(node1)
+	    if query is None:
+	        hash[node1] = [node2]
+	    else:
+	        query.append(node2)
+
+	def add_nested_record(self, hash, node1, node2, val):
+	    query_node1 = hash.get(node1)
+	    if query_node1 is None:
+	        hash[node1] = {node2: val}
+	    else:
+	        query_node1[node2] = val

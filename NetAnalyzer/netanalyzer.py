@@ -205,14 +205,12 @@ class NetAnalyzer:
 	def get_hypergeometric_associations(self, layers, base_layer, pvalue_adj_method= None):
 		ny = len(self.get_nodes_layer([base_layer]))
 		def _(associatedIDs_node1, associatedIDs_node2, intersectedIDs, node1, node2):
+			# Analogous formulation with stats.fisher_exact(data, alternative='greater')
 			intersection_lengths = len(intersectedIDs)
 			if intersection_lengths > 0:
 				n1_items = len(associatedIDs_node1)
 				n2_items = len(associatedIDs_node2)
-				M= ny
-				n = n1_items
-				N = n2_items
-				p_value = stats.hypergeom.sf(intersection_lengths-1, M, n, N)
+				p_value = stats.hypergeom.sf(intersection_lengths-1, ny, n1_items, n2_items)
 
 			return p_value
 		relations = self.get_associations(layers, base_layer, _)

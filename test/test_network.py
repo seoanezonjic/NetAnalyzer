@@ -1,6 +1,7 @@
 import unittest
 import os
 import math
+import numpy as np
 from NetAnalyzer import NetAnalyzer
 from NetAnalyzer import Net_parser
 ROOT_PATH=os.path.dirname(__file__)
@@ -8,9 +9,36 @@ DATA_TEST_PATH = os.path.join(ROOT_PATH, 'data')
 
 class BaseNetTestCase(unittest.TestCase):
 	def setUp(self):
+		tripartite_layers = [['main', 'M[0-9]+'], ['projection', 'P[0-9]+'], ['salient', 'S[0-9]+']]
+		self.tripartite_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'tripartite_network_for_validating.txt'), tripartite_layers)
+
 		bipartite_layers = [['main', 'M[0-9]+'], ['projection', 'P[0-9]+']]
 		self.network_obj = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'bipartite_network_for_validating.txt'), bipartite_layers)
+		self.network_obj.generate_adjacency_matrix(bipartite_layers[0][0], bipartite_layers[1][0])
+		
+		monopartite_layers = [['main', '\w'], ['main', '\w']]
+		self.monopartite_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'monopartite_network_for_validating.txt'), monopartite_layers)
+		self.monopartite_network.generate_adjacency_matrix(monopartite_layers[0][0], monopartite_layers[0][0])
 
+	def test_generate_adjacency_matrix_monopartite(self):
+		test_values = self.monopartite_network.adjacency_matrices
+		matrix_values = np.array([[0, 1, 1, 0, 0],[1, 0, 0, 0, 0], [1, 0, 0, 0, 1], [0, 0, 0, 0, 1], [0, 0, 1, 1, 0]],dtype='float')
+		expected_values = { ('main') : [matrix_values, ['A', 'C', 'E', 'B', 'D'], ['A', 'C', 'E', 'B', 'D']]} 
+		self.assertEqual(expected_values[('main')][0].tolist(), test_values[('main')][0].tolist())
+		self.assertEqual(expected_values[('main')][1], test_values[('main')][1])
+
+	def test_generate_adjacency_matrix_bipartite(self):
+		test_values = self.network_obj.adjacency_matrices
+		matrix_values = np.array([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+			[1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 
+			[1, 1, 1, 1, 1, 1, 1, 1, 0, 0], 
+			[1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+			[1, 1, 1, 1, 0, 0, 0, 0, 0, 0], 
+			[1, 1, 0, 0, 0, 0, 0, 0, 0, 0]])
+		expected_values = {('main', 'projection') : [matrix_values, ['M1', 'M2', 'M3', 'M4', 'M5', 'M6'], ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10']]} 
+		self.assertEqual(expected_values[('main', 'projection')][0].tolist(), test_values['main', 'projection'][0].tolist())
+		self.assertEqual(expected_values[('main', 'projection')][1], test_values[('main', 'projection')][1])	
+	
 	def test_get_counts_association(self):	
 		test_association = self.network_obj.get_counts_associations(['main'], 'projection')
 		test_association = [[a[0], a[1], a[2]] for a in test_association]
@@ -112,6 +140,21 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertEqual(expected_values, test_association)
 
 	def test_csi_associations(self):
+		test_association = self.network_obj.get_csi_associations(['main'], 'projection')
+		test_association = [[a[0], a[1], round(a[2], 6)] for a in test_association]
+		expected_values = []
+		f = open(os.path.join(DATA_TEST_PATH, 'csi_results.txt'), 'r')
+		for line in f:
+			fields = line.rstrip().split("\t")
+			association_value = round(float(fields.pop()), 6)
+			expected_values.append([fields[0], fields[1], association_value])
+		f.close()
+		expected_values.sort()
+		test_association.sort()
+		self.assertEqual(expected_values, test_association)
+
+	def test_transference_associations(self):
+		test_association = self.network_obj.get_association_by_transference_resources(['main','projection'], ['projection','salient'])
 		test_association = self.network_obj.get_csi_associations(['main'], 'projection')
 		test_association = [[a[0], a[1], round(a[2], 6)] for a in test_association]
 		expected_values = []

@@ -72,3 +72,41 @@ class Adv_mat_calc:
 				norm = matrix[i, j]/np.sqrt(matrix[i, i] * matrix[j,j])
 				normalized_matrix[i, j] = norm
 		return normalized_matrix
+
+	# Alaimo 2014, doi: 10.3389/fbioe.2014.00071
+	def tranference_resources(matrix1, matrix2, lambda_value1 = 0.5, lambda_value2 = 0.5):
+		m1rowNumber, m1colNumber = matrix1.shape
+		m2rowNumber, m2colNumber = matrix2.shape
+		matrix1Weight = self.graphWeights(m1colNumber, m1rowNumber, matrix1.T, lambda_value1)
+		matrix2Weight = self.graphWeights(m2colNumber, m2rowNumber, matrix2.T, lambda_value2)
+		matrixWeightProduct = np.dot(matrix1Weight, np.dot(matrix2, matrix2Weight))
+		finalMatrix = np.dot(matrix1, matrixWeightProduct)
+		return finalMatrix
+
+	def graphWeights(rowsNumber, colsNumber, inputMatrix, lambdaValue = 0.5):
+	 	ky = np.diag((1.0 / inputMatrix.sum(0))) #sum cols
+	 	weigth = np.dot(inputMatrix, ky).T
+	 	ky = None #free memory
+	 	weigth = np.dot(inputMatrix, weigth)
+
+	 	kx = inputMatrix.sum(1) #sum rows
+	 	
+	 	kx_lamb = kx ** lambdaValue
+	 	kx_lamb_mat = np.zeros((rowsNumber, rowsNumber))
+	 	for j in range(0,rowsNumber):
+	 		for i in range(0,rowsNumber):
+	 			kx_lamb_mat[j,i] = kx_lamb[i]
+	 	kx_lamb = None #free memory
+
+	 	kx_inv_lamb = kx ** (1 - lambdaValue)
+	 	kx_inv_lamb_mat = np.zeros((rowsNumber, rowsNumber))
+	 	for j in range(0,rowsNumber):
+	 		for i in range(0,rowsNumber):
+	 			kx_inv_lamb_mat[j,i] = kx_inv_lamb[i]
+	 	kx_inv_lamb = None #free memory
+
+	 	nx = 1.0/(kx_lamb_mat * kx_inv_lamb_mat) # inplace marks a matrix to be used by reference, not for value
+	 	kx_lamb_mat = None #free memory
+	 	kx_inv_lamb_mat = None #free memory
+	 	weigth = weigth * nx
+	 	return weigth

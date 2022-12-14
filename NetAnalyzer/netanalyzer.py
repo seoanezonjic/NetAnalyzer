@@ -38,6 +38,27 @@ class NetAnalyzer:
 		if layer not in self.layers: self.layers.append(layer)
 		return layer
 
+	def generate_adjacency_matrix(self, layerA, layerB):
+		layerAidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerA]
+		layerBidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerB]
+		matrix = numpy.zeros((len(layerAidNodes), len(layerBidNodes)))
+
+		for i, nodeA in enumerate(layerAidNodes):
+			for j, nodeB in enumerate(layerBidNodes):
+				if nodeA in self.graph.neighbors(nodeB):
+					matrix[i, j] = 1
+				else:
+					matrix[i, j] = 0
+
+		all_info_matrix = [matrix, layerAidNodes, layerBidNodes]
+
+		if layerA == layerB:
+			self.adjacency_matrices[(layerA)] = all_info_matrix
+		else:
+			self.adjacency_matrices[(layerA, layerB)] = all_info_matrix
+
+		return all_info_matrix
+
 	def get_nodes_by_attr(self, attrib, value):
 		return [nodeID for nodeID, attr in self.graph.nodes(data=True) if attr[attrib] == value]
 
@@ -100,6 +121,19 @@ class NetAnalyzer:
 				raise Exception('Not implemented')
 
 		return all_pairs
+
+	## association methods adjacency matrix based
+	#---------------------------------------------------------
+	def get_association_by_transference_resources(firstPairLayers, secondPairLayers, lambda_value1 = 0.5, lambda_value2 = 0.5):
+		relations = []
+		matrix1 = self.adjacency_matrices[firstPairLayers][0]
+		matrix2 = self.adjacency_matrices[secondPairLayers][0]
+		finalMatrix = Adv_mat_calc.tranference_resources(matrix1, matrix2, lambda_value1 = lambda_value1, lambda_value2 = lambda_value2)
+		rowIds = self.adjacency_matrices[firstPairLayers][1]
+		colIds =  self.adjacency_matrices[secondPairLayers][2]
+		relations = matrix2relations(finalMatrix, rowIds, colIds)
+		self.association_values[:transference] = relations
+		return relations
 
 	def get_associations(self, layers, base_layer, compute_association): # BASE METHOD
 		base_nodes = set(self.get_nodes_layer([base_layer]))

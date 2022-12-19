@@ -5,7 +5,7 @@ import math
 import numpy
 import scipy.stats as stats
 import statsmodels
-
+from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 # https://stackoverflow.com/questions/60392940/multi-layer-graph-in-networkx
 # http://mkivela.com/pymnet
 class NetAnalyzer:
@@ -124,15 +124,15 @@ class NetAnalyzer:
 
 	## association methods adjacency matrix based
 	#---------------------------------------------------------
-	def get_association_by_transference_resources(firstPairLayers, secondPairLayers, lambda_value1 = 0.5, lambda_value2 = 0.5):
+	def get_association_by_transference_resources(self, firstPairLayers, secondPairLayers, lambda_value1 = 0.5, lambda_value2 = 0.5):
 		relations = []
 		matrix1 = self.adjacency_matrices[firstPairLayers][0]
 		matrix2 = self.adjacency_matrices[secondPairLayers][0]
 		finalMatrix = Adv_mat_calc.tranference_resources(matrix1, matrix2, lambda_value1 = lambda_value1, lambda_value2 = lambda_value2)
 		rowIds = self.adjacency_matrices[firstPairLayers][1]
 		colIds =  self.adjacency_matrices[secondPairLayers][2]
-		relations = matrix2relations(finalMatrix, rowIds, colIds)
-		self.association_values[:transference] = relations
+		relations = self.matrix2relations(finalMatrix, rowIds, colIds)
+		self.association_values['transference'] = relations
 		return relations
 
 	def get_associations(self, layers, base_layer, compute_association): # BASE METHOD
@@ -201,7 +201,6 @@ class NetAnalyzer:
 			return numpy.float64(nodesSubs) / math.sqrt(nodesProd * nodesAInNetwork * nodesBInNetwork) # TODO: numpy.float64 is used to handle division by 0. Fix the implementation/test to avoid this case
 		relations = self.get_associations(layers, base_layer, _)
 		self.association_values['pcc'] = relations
-		#print(relations)
 		return relations
 
 	def get_csi_associations(self, layers, base_layer):
@@ -286,6 +285,14 @@ class NetAnalyzer:
 	        hash[node1] = [node2]
 	    else:
 	        query.append(node2)
+
+	def matrix2relations(self,finalMatrix, rowIds, colIds):
+		relations = []
+		for rowPos, rowId in enumerate(rowIds):
+			for colPos, colId in enumerate(colIds):
+				associationValue = finalMatrix[rowPos, colPos]
+				if associationValue >= 0: relations.append([rowId, colId, associationValue])
+		return relations
 
 	def add_nested_record(self, hash, node1, node2, val):
 	    query_node1 = hash.get(node1)

@@ -75,10 +75,11 @@ class Adv_mat_calc:
 
 	# Alaimo 2014, doi: 10.3389/fbioe.2014.00071
 	def tranference_resources(matrix1, matrix2, lambda_value1 = 0.5, lambda_value2 = 0.5):
+		# TODO (Fede,19/12/22) An extension to n layers would be possible with an iterative process.
 		m1rowNumber, m1colNumber = matrix1.shape
 		m2rowNumber, m2colNumber = matrix2.shape
-		matrix1Weight = self.graphWeights(m1colNumber, m1rowNumber, matrix1.T, lambda_value1)
-		matrix2Weight = self.graphWeights(m2colNumber, m2rowNumber, matrix2.T, lambda_value2)
+		matrix1Weight = Adv_mat_calc.graphWeights(m1colNumber, m1rowNumber, matrix1.T, lambda_value1)
+		matrix2Weight = Adv_mat_calc.graphWeights(m2colNumber, m2rowNumber, matrix2.T, lambda_value2)
 		matrixWeightProduct = np.dot(matrix1Weight, np.dot(matrix2, matrix2Weight))
 		finalMatrix = np.dot(matrix1, matrixWeightProduct)
 		return finalMatrix
@@ -86,6 +87,7 @@ class Adv_mat_calc:
 	def graphWeights(rowsNumber, colsNumber, inputMatrix, lambdaValue = 0.5):
 	 	ky = np.diag((1.0 / inputMatrix.sum(0))) #sum cols
 	 	weigth = np.dot(inputMatrix, ky).T
+	 	weigth[np.isnan(weigth)] = 0 # if there is no neighbors, there is no weight
 	 	ky = None #free memory
 	 	weigth = np.dot(inputMatrix, weigth)
 
@@ -106,6 +108,7 @@ class Adv_mat_calc:
 	 	kx_inv_lamb = None #free memory
 
 	 	nx = 1.0/(kx_lamb_mat * kx_inv_lamb_mat) # inplace marks a matrix to be used by reference, not for value
+	 	nx[nx == np.inf] = 0 # if there is no neighbors, there is no weight
 	 	kx_lamb_mat = None #free memory
 	 	kx_inv_lamb_mat = None #free memory
 	 	weigth = weigth * nx

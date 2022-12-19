@@ -11,7 +11,9 @@ class BaseNetTestCase(unittest.TestCase):
 	def setUp(self):
 		tripartite_layers = [['main', 'M[0-9]+'], ['projection', 'P[0-9]+'], ['salient', 'S[0-9]+']]
 		self.tripartite_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'tripartite_network_for_validating.txt'), tripartite_layers)
-
+		self.tripartite_network.generate_adjacency_matrix(tripartite_layers[0][0], tripartite_layers[1][0])
+		self.tripartite_network.generate_adjacency_matrix(tripartite_layers[1][0], tripartite_layers[2][0])
+		
 		bipartite_layers = [['main', 'M[0-9]+'], ['projection', 'P[0-9]+']]
 		self.network_obj = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'bipartite_network_for_validating.txt'), bipartite_layers)
 		self.network_obj.generate_adjacency_matrix(bipartite_layers[0][0], bipartite_layers[1][0])
@@ -154,11 +156,10 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertEqual(expected_values, test_association)
 
 	def test_transference_associations(self):
-		test_association = self.network_obj.get_association_by_transference_resources(['main','projection'], ['projection','salient'])
-		test_association = self.network_obj.get_csi_associations(['main'], 'projection')
+		test_association = self.tripartite_network.get_association_by_transference_resources(('main','projection'), ('projection','salient'))
 		test_association = [[a[0], a[1], round(a[2], 6)] for a in test_association]
 		expected_values = []
-		f = open(os.path.join(DATA_TEST_PATH, 'csi_results.txt'), 'r')
+		f = open(os.path.join(DATA_TEST_PATH, 'transference_results.txt'), 'r')
 		for line in f:
 			fields = line.rstrip().split("\t")
 			association_value = round(float(fields.pop()), 6)

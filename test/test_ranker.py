@@ -24,7 +24,6 @@ class BaseNetTestCase(unittest.TestCase):
 		test_ranked_genes = []
 		for seed_name, rank_list in ranked_genes.items():
 			for ranked_gene in rank_list:
-				ranked_gene = []
 				test_ranked_genes.append([str(el) for el in ranked_gene] + [seed_name])
 		return test_ranked_genes
 
@@ -67,12 +66,12 @@ class BaseNetTestCase(unittest.TestCase):
 
 	def test_get_seed_indexes(self):
 		validate_seed_indexes={"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}
-		self.assertEqual(validate_seed_indexes, self.ranker.get_seed_indexes)
+		self.assertEqual(validate_seed_indexes, self.ranker.get_seed_indexes())
 
 	def test_leave_one_out(self):
 		self.ranker.do_ranking(leave_one_out = True)
 		test_ranked_genes = self.ranked_genes2array(self.ranker.ranking)
-		self.asserEqual(self.load_results('leave_one_out_by_seedgene_results'), test_ranked_genes)
+		self.assertEqual(self.load_results('leave_one_out_by_seedgene_results'), test_ranked_genes)
 
 	def test_rank_by_seed(self):
 		self.ranker.do_ranking()

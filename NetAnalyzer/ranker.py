@@ -52,7 +52,7 @@ class Ranker:
          rank_list = self.get_individual_rank(seed, self.reference_nodes[seed_name][0])
       else:
          rank_list = self.rank_by_seed(seed_indexes, seed)  # Production mode
-      rank_list.append([seed_name, rank_list])
+      ranked_lists.append([seed_name, rank_list])
 
     for seed_name, rank_list in ranked_lists:  # Transfer resuls to hash
       self.ranking[seed_name] = rank_list
@@ -64,7 +64,7 @@ class Ranker:
 
     for seed_name, seeds in self.seeds.items():
       group_number = len(seeds) - 1
-      one_out_seeds = list(combinations(seeds, group_number))
+      one_out_seeds = [list(combination) for combination in combinations(seeds, group_number)]
 
       for indx, one_out_seed in enumerate(one_out_seeds):
         seed_name_one_out = str(seed_name) + "_iteration_" + str(indx)
@@ -81,8 +81,7 @@ class Ranker:
 
   def rank_by_seed(self, seed_indexes, seeds):
     ordered_gene_score = []
-    genes_pos = [seed_indexes.get(s)
-                                  for s in seeds if seed_indexes.get(s) is not None]
+    genes_pos = [seed_indexes.get(s) for s in seeds if seed_indexes.get(s) is not None]
     number_of_seed_genes = len(genes_pos)
     number_of_all_nodes = len(self.nodes)
 
@@ -95,6 +94,7 @@ class Ranker:
 
       last_val = None
       n_elements = ordered_indexes.shape[0]
+
       for pos in range(n_elements):
         order_index = ordered_indexes[pos]
         val = gen_list[order_index]
@@ -109,7 +109,7 @@ class Ranker:
         last_val = val
 
       ordered_gene_score.reverse()  # from largest to smallest
-      ordered_gene_score = add_absolute_rank_column(ordered_gene_score)
+      ordered_gene_score = self.add_absolute_rank_column(ordered_gene_score)
 
     return ordered_gene_score
 
@@ -128,7 +128,7 @@ class Ranker:
     n_rows = len(ranking)
     for row_pos in range(n_rows):
       if row_pos == 0:
-        new_row = ranking[row_pos].append(absolute_rank)
+        new_row = ranking[row_pos] + [absolute_rank]
         ranking_with_new_column.append(new_row)
       else:
         prev_val = ranking[row_pos-1][2]
@@ -136,7 +136,7 @@ class Ranker:
         if val > prev_val:
           absolute_rank += 1
 
-        new_row = ranking[row_pos].append(absolute_rank)
+        new_row = ranking[row_pos] + [absolute_rank]
         ranking_with_new_column.append(new_row)
     return ranking_with_new_column
 
@@ -149,15 +149,13 @@ class Ranker:
 
     ordered_gene_score = []
     if genes_pos and node_of_interest_pos is not None:
-
       subsets_gen_values = self.matrix[genes_pos, :]
       integrated_gen_values = subsets_gen_values.sum(0)
-      integrated_gen_values = (1/genes_pos.length) * integrated_gen_values
+      integrated_gen_values = (1/len(genes_pos)) * integrated_gen_values
 
       ref_value = integrated_gen_values[node_of_interest_pos]
 
       members_below_test = 0
-
       for gen_value in integrated_gen_values:
         if gen_value >= ref_value:
           members_below_test += 1
@@ -174,7 +172,7 @@ class Ranker:
 
   def get_individual_absolute_rank(self, values_list, ref_value):
     ref_pos = None
-    values_list = list(set(sorted(values_list)[::-1]))
+    values_list = sorted(list(set(values_list)), reverse=True)
 
     for pos, value in enumerate(values_list):
       if value == ref_value:
@@ -188,7 +186,7 @@ class Ranker:
 
     for seed_name, ranking in self.ranking.items():
       if self.reference_nodes.get(seed_name) is None or not ranking:
-        next
+        continue 
 
       ranking = self.array2hash(ranking, 0, range(0, len(ranking[0])))
       references=self.reference_nodes[seed_name]
@@ -197,9 +195,8 @@ class Ranker:
       for reference in references:
         rank=ranking.get(reference)
         if rank is not None:
-          filtered_ranked_genes[seed_name].append([reference] + rank)
+          filtered_ranked_genes[seed_name].append(rank)
 
-      print(filtered_ranked_genes)
       filtered_ranked_genes[seed_name]=sorted(filtered_ranked_genes[seed_name], key=lambda rank: -rank[1])
 
     return filtered_ranked_genes
@@ -220,16 +217,17 @@ class Ranker:
   def get_nodes_indexes(self, nodes):
     node_indxs=[]
     for node in nodes:
-      index_node=nodes.find_index(node)
-      node_indxs.append(index_node)
+      if node in self.nodes:
+        index_node= self.nodes.index(node)
+        node_indxs.append(index_node)
 
     return node_indxs
 
   def get_seed_indexes(self):
     indexes={}
     for node in sum(self.seeds.values(), []):
-      if indexes.get(node) is not None:
-        if node in nodes:
+      if indexes.get(node) is None:
+        if node in self.nodes:
           indx=self.nodes.index(node)
         else:
           indx=None

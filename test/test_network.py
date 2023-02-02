@@ -22,6 +22,10 @@ class BaseNetTestCase(unittest.TestCase):
 		self.monopartite_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'monopartite_network_for_validating.txt'), monopartite_layers)
 		self.monopartite_network.generate_adjacency_matrix(monopartite_layers[0][0], monopartite_layers[0][0])
 
+	def test_clone(self):
+		network_clone = self.network_obj.clone()
+		self.assertEqual(self.network_obj, network_clone)
+
 	def test_generate_adjacency_matrix_monopartite(self):
 		test_values = self.monopartite_network.adjacency_matrices
 		matrix_values = np.array([[0, 1, 1, 0, 0],[1, 0, 0, 0, 0], [1, 0, 0, 0, 1], [0, 0, 0, 0, 1], [0, 0, 1, 1, 0]],dtype='float')
@@ -41,6 +45,30 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertEqual(expected_values[('main', 'projection')][0].tolist(), test_values['main', 'projection'][0].tolist())
 		self.assertEqual(expected_values[('main', 'projection')][1], test_values[('main', 'projection')][1])	
 	
+	def test_delete_nodes_d_mono(self):
+		network_clone = self.monopartite_network.clone()
+		network_clone.delete_nodes(['E'])
+		self.assertEqual(4, len(network_clone.get_nodes_layer(['main'])))
+		self.assertEqual(2, network_clone.get_edge_number())
+
+	def test_delete_nodes_d_bi(self):
+		network_clone = self.monopartite_network.clone()
+		network_clone.delete_nodes(['M1', 'M2'])
+		self.assertEqual(5, len(network_clone.get_nodes_layer(['main'])))
+		self.assertEqual(4, network_clone.get_edge_number())
+
+	def test_delete_nodes_r_mono(self):
+		network_clone = self.monopartite_network.clone()
+		network_clone.delete_nodes(['E'])
+		self.assertEqual(4, len(network_clone.get_nodes_layer(['main'])))
+		self.assertEqual(2, network_clone.get_edge_number())
+
+	def test_delete_nodes_r_bi(self):
+		network_clone = self.monopartite_network.clone()
+		network_clone.delete_nodes(['M1', 'M2'])
+		self.assertEqual(5, len(network_clone.get_nodes_layer(['main'])))
+		self.assertEqual(4, network_clone.get_edge_number())
+
 	def test_get_counts_association(self):	
 		test_association = self.network_obj.get_counts_associations(['main'], 'projection')
 		test_association = [[a[0], a[1], a[2]] for a in test_association]

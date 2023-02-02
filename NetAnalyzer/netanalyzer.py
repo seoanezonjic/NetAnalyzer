@@ -1,5 +1,6 @@
 import sys 
 import re
+import copy
 import networkx as nx
 import math
 import numpy
@@ -12,12 +13,34 @@ class NetAnalyzer:
 
 	def __init__(self, layers):
 		self.graph = nx.Graph()
-		self.layers = []
+		self.layers = layers
 		self.association_values = {}
 		self.compute_autorelations = True
 		self.compute_pairs = 'conn'
 		self.adjacency_matrices = {}
 		self.kernels = {}
+
+	def __eq__(self, other): # https://igeorgiev.eu/python/tdd/python-unittest-assert-custom-objects-are-equal/
+		return nx.utils.misc.graphs_equal(self.graph, other.graph) and \
+			self.layers == other.layers and \
+			self.association_values == other.association_values and \
+			self.compute_autorelations == other.compute_autorelations and \
+			self.compute_pairs == other.compute_pairs and \
+			self.adjacency_matrices == other.adjacency_matrices and \
+			self.kernels == other.kernels
+
+	def clone(self):
+		network_clone = NetAnalyzer(copy.copy(self.layers))
+		network_clone.graph = copy.deepcopy(self.graph)
+		network_clone.association_values = self.association_values.copy()
+		network_clone.set_compute_pairs(self.compute_pairs, self.compute_autorelations)
+		network_clone.adjacency_matrices = self.adjacency_matrices.copy()
+		network_clone.kernels = self.kernels.copy()
+		return network_clone
+
+	def set_compute_pairs(self, use_pairs, get_autorelations):
+		self.compute_pairs = use_pairs
+		self.compute_autorelations = get_autorelations
 
 	def add_node(self, nodeID, layer):
 		self.graph.add_node(nodeID, layer=layer)
@@ -58,6 +81,12 @@ class NetAnalyzer:
 			self.adjacency_matrices[(layerA, layerB)] = all_info_matrix
 
 		return all_info_matrix
+
+	def delete_nodes(self, node_list, mode='d'):
+		if mode == 'd':
+			self.graph.remove_nodes_from(node_list)
+		elif mode == 'r': # reverse selection
+			self.graph.remove_nodes_from(list(n for n in G.nodes if n not in node_list ))
 
 	def get_nodes_by_attr(self, attrib, value):
 		return [nodeID for nodeID, attr in self.graph.nodes(data=True) if attr[attrib] == value]
@@ -260,7 +289,7 @@ class NetAnalyzer:
 		self.association_values[meth] = relations
 		return relations
 
-	def adjust_pval_association(associations, method): # TODO TEST
+	def adjust_pval_association(self, associations, method): # TODO TEST
 		pvals = numpy.array([val[2] for val in relations])
 		adj_pvals = statsmodels.stats.multitest.multipletests(pvals, method=method, is_sorted=False, returnsorted=False)
 		count = 0
@@ -268,12 +297,12 @@ class NetAnalyzer:
 			relations[count][2] = adj_pval
 			count +=1
 
-	def get_kernel(layer2kernel, kernel, normalization=False):
-		matrix, node_names = self.adjacency_matrices[layer2kernel]
-		matrix_result = Adv_mat_calc.get_kernel(matrix, node_names, kernel, normalization=normalization)
+	def get_kernel(self, layer2kernel, kernel, normalization=False):
+		matrix, node_names_x, node_names_y = self.adjacency_matrices[layer2kernel]
+		matrix_result = Adv_mat_calc.get_kernel(matrix, node_names_x, kernel, normalization=normalization)
 		self.kernels[layer2kernel] = matrix_result
 
-	def write_kernel(layer2kernel, output_file):
+	def write_kernel(self, layer2kernel, output_file):
 		numpy.save(output_file, self.kernels[layer2kernel])
 
 	## AUXILIAR METHODS

@@ -5,13 +5,13 @@ import sys
 import os
 import glob
 import numpy as np
+
 ROOT_PATH=os.path.dirname(__file__)
 sys.path.append(os.path.join(ROOT_PATH, '..'))
-
 from NetAnalyzer import Ranker
 
 ########################### METHODS ########################
-#############################################################
+############################################################
 
 def write_ranking(file, ranking_list):
   with open(file, 'w') as f:

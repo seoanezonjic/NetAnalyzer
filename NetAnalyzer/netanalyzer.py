@@ -38,6 +38,8 @@ class NetAnalyzer:
 		network_clone.kernels = self.kernels.copy()
 		return network_clone
 
+	# THE PREVIOUS METHODS NEED TO DEFINE/ACCESS THE VERY SAME ATTRIBUTES, WATCH OUT ABOUT THIS !!!!!!!!!!!!!
+
 	def set_compute_pairs(self, use_pairs, get_autorelations):
 		self.compute_pairs = use_pairs
 		self.compute_autorelations = get_autorelations
@@ -86,7 +88,7 @@ class NetAnalyzer:
 		if mode == 'd':
 			self.graph.remove_nodes_from(node_list)
 		elif mode == 'r': # reverse selection
-			self.graph.remove_nodes_from(list(n for n in G.nodes if n not in node_list ))
+			self.graph.remove_nodes_from(list(n for n in self.graph.nodes if n not in node_list ))
 
 	def get_nodes_by_attr(self, attrib, value):
 		return [nodeID for nodeID, attr in self.graph.nodes(data=True) if attr[attrib] == value]

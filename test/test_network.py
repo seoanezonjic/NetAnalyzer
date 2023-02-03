@@ -52,22 +52,22 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertEqual(2, network_clone.get_edge_number())
 
 	def test_delete_nodes_d_bi(self):
-		network_clone = self.monopartite_network.clone()
+		network_clone = self.network_obj.clone()
 		network_clone.delete_nodes(['M1', 'M2'])
-		self.assertEqual(5, len(network_clone.get_nodes_layer(['main'])))
-		self.assertEqual(4, network_clone.get_edge_number())
+		self.assertEqual(4, len(network_clone.get_nodes_layer(['main'])))
+		self.assertEqual(20, network_clone.get_edge_number())
 
 	def test_delete_nodes_r_mono(self):
 		network_clone = self.monopartite_network.clone()
-		network_clone.delete_nodes(['E'])
-		self.assertEqual(4, len(network_clone.get_nodes_layer(['main'])))
-		self.assertEqual(2, network_clone.get_edge_number())
+		network_clone.delete_nodes(['E', 'D'], mode = 'r')
+		self.assertEqual(2, len(network_clone.get_nodes_layer(['main'])))
+		self.assertEqual(1, network_clone.get_edge_number())
 
 	def test_delete_nodes_r_bi(self):
-		network_clone = self.monopartite_network.clone()
-		network_clone.delete_nodes(['M1', 'M2'])
-		self.assertEqual(5, len(network_clone.get_nodes_layer(['main'])))
-		self.assertEqual(4, network_clone.get_edge_number())
+		network_clone = self.network_obj.clone()
+		network_clone.delete_nodes(['M1', 'P1'], mode = 'r')
+		self.assertEqual(2, len(network_clone.get_nodes_layer(['main', 'projection'])))
+		self.assertEqual(1, network_clone.get_edge_number())
 
 	def test_get_counts_association(self):	
 		test_association = self.network_obj.get_counts_associations(['main'], 'projection')

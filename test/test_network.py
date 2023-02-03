@@ -69,6 +69,10 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertEqual(2, len(network_clone.get_nodes_layer(['main', 'projection'])))
 		self.assertEqual(1, network_clone.get_edge_number())
 
+	def test_get_connected_nodes(self):
+		test_result = self.monopartite_network.get_connected_nodes('A', 'main')
+		self.assertEqual(['C', 'E'], test_result)
+
 	def test_get_counts_association(self):	
 		test_association = self.network_obj.get_counts_associations(['main'], 'projection')
 		test_association = [[a[0], a[1], a[2]] for a in test_association]

@@ -90,6 +90,9 @@ class NetAnalyzer:
 		elif mode == 'r': # reverse selection
 			self.graph.remove_nodes_from(list(n for n in self.graph.nodes if n not in node_list ))
 
+	def get_connected_nodes(self, node_id, from_layer):
+		return [n for n in self.graph.neighbors(node_id) if self.graph.nodes[n]['layer'] == from_layer ]
+
 	def get_nodes_by_attr(self, attrib, value):
 		return [nodeID for nodeID, attr in self.graph.nodes(data=True) if attr[attrib] == value]
 

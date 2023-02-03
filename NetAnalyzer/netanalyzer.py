@@ -158,6 +158,11 @@ class NetAnalyzer:
 
 	## association methods adjacency matrix based
 	#---------------------------------------------------------
+
+	def clean_autorelations_on_association_values(self):
+		for meth, values in self.association_values.items():
+			self.association_values[meth] = [relation for relation in values if relation[0] != relation[1]] # FRED: Try this
+
 	def get_association_by_transference_resources(self, firstPairLayers, secondPairLayers, lambda_value1 = 0.5, lambda_value2 = 0.5):
 		relations = []
 		matrix1 = self.adjacency_matrices[firstPairLayers][0]

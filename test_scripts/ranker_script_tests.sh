@@ -3,8 +3,8 @@
 source ~soft_bio_267/initializes/init_python
 export PATH=../bin/:$PATH
 test_data=../test/data/data_ranker
-out=output_test_scripts 
-data_to_test=data_test_scripts
+out=output_test_scripts/ranker
+data_to_test=data_test_scripts/ranker
 mkdir $out
 
 

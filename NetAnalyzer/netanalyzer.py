@@ -161,7 +161,7 @@ class NetAnalyzer:
 
 	def clean_autorelations_on_association_values(self):
 		for meth, values in self.association_values.items():
-			self.association_values[meth] = [relation for relation in values if relation[0] != relation[1]] # FRED: Try this
+			self.association_values[meth] = [relation for relation in values if self.graph.nodes[relation[0]]["layer"] != self.graph.nodes[relation[1]]["layer"]]
 
 	def get_association_by_transference_resources(self, firstPairLayers, secondPairLayers, lambda_value1 = 0.5, lambda_value2 = 0.5):
 		relations = []

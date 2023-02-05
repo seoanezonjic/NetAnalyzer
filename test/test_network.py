@@ -75,6 +75,7 @@ class BaseNetTestCase(unittest.TestCase):
 
 	#def test_clean_autorelations_on_association_values(self):
 	#	self.network_obj.association_values = {"Fake": [["M1", "M1", 1], ["M1", "M2", 1], ["M2", "M2", 2]]}
+	#	
 	#	self.network_obj.clean_autorelations_on_association_values
 	#	v = self.network_obj.association_values['Fake']
 	#	self.assertEqual([], v)
@@ -165,6 +166,17 @@ class BaseNetTestCase(unittest.TestCase):
 		test_association = [row for row in test_association if not math.isnan(row[2])]
 		test_association.sort()
 		self.assertEqual(expected_values, test_association)
+
+	def test_clean_autorelations_on_association_values(self):
+		self.tripartite_network.get_pcc_associations(['main','salient'], 'projection')
+		self.tripartite_network.clean_autorelations_on_association_values()
+		expected_values = [['M1', 'S1', 0.5],
+						   ['M2', 'S1', -0.5],
+  						   ['M2', 'S2', 0.5],
+  						   ['M2', 'S3', 0.5],
+  						   ['M3', 'S2', 1.0],
+  						   ['M3', 'S3', 1.0]]
+		self.assertEqual(expected_values, self.tripartite_network.association_values['pcc'])
 
 	def test_hypergeometric_associations(self):
 		test_association = self.network_obj.get_hypergeometric_associations(['main'], 'projection')

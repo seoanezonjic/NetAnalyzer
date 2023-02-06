@@ -73,13 +73,6 @@ class BaseNetTestCase(unittest.TestCase):
 		test_result = self.monopartite_network.get_connected_nodes('A', 'main')
 		self.assertEqual(['C', 'E'], test_result)
 
-	#def test_clean_autorelations_on_association_values(self):
-	#	self.network_obj.association_values = {"Fake": [["M1", "M1", 1], ["M1", "M2", 1], ["M2", "M2", 2]]}
-	#	
-	#	self.network_obj.clean_autorelations_on_association_values
-	#	v = self.network_obj.association_values['Fake']
-	#	self.assertEqual([], v)
-
 	def test_get_counts_association(self):	
 		test_association = self.network_obj.get_counts_associations(['main'], 'projection')
 		test_association = [[a[0], a[1], a[2]] for a in test_association]

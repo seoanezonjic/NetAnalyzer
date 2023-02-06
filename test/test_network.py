@@ -73,6 +73,24 @@ class BaseNetTestCase(unittest.TestCase):
 		test_result = self.monopartite_network.get_connected_nodes('A', 'main')
 		self.assertEqual(['C', 'E'], test_result)
 
+	def test_get_edge_number(self):
+		edge_number_test = self.monopartite_network.get_edge_number()
+		self.assertEqual(4, edge_number_test)
+
+	def test_get_connected_nodes(self):
+		test_result = self.monopartite_network.get_connected_nodes('A', 'main')
+		self.assertEqual(['C', 'E'], test_result)
+
+	def test_get_nodes_from_layer(self):
+		test_result = self.network_obj.get_nodes_layer(['main'])
+		expected_result = ['M1', 'M2', 'M3', 'M4', 'M5', 'M6']
+		self.assertEqual(expected_result, test_result)
+
+	def test_get_bipartite_subgraph(self):
+		bipartirte_test = self.tripartite_network.get_bipartite_subgraph(['M1', 'M2', 'M3'], 'salient', 'projection')
+		expected_result = {'P1': ['S1'], 'P2': ['S2', 'S3']}
+		self.assertEqual(expected_result, bipartirte_test)
+		
 	def test_get_counts_association(self):	
 		test_association = self.network_obj.get_counts_associations(['main'], 'projection')
 		test_association = [[a[0], a[1], a[2]] for a in test_association]

@@ -93,6 +93,17 @@ class NetAnalyzer:
 	def get_connected_nodes(self, node_id, from_layer):
 		return [n for n in self.graph.neighbors(node_id) if self.graph.nodes[n]['layer'] == from_layer ]
 
+	def get_bipartite_subgraph(self, from_layer_node_ids, from_layer, to_layer):
+		bipartite_subgraph = {}
+		for from_layer_node_id in from_layer_node_ids:
+			connected_nodes = self.graph.neighbors(from_layer_node_id)
+			for connected_node in connected_nodes:
+				if self.graph.nodes[connected_node]['layer'] == to_layer:
+					query = bipartite_subgraph.get(connected_node)
+					if query == None:
+						bipartite_subgraph[connected_node] = self.get_connected_nodes(connected_node, from_layer)
+		return bipartite_subgraph
+
 	def get_nodes_by_attr(self, attrib, value):
 		return [nodeID for nodeID, attr in self.graph.nodes(data=True) if attr[attrib] == value]
 

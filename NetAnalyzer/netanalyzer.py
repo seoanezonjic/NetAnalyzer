@@ -117,8 +117,8 @@ class NetAnalyzer:
 		return len(self.graph.edges())
 
 	def collect_nodes(self, layers = 'all'):
-		nodeIDsA = None
-		nodeIDsB = None
+		nodeIDsA = []
+		nodeIDsB = []
 		if self.compute_autorelations:
 			if layers == 'all':
 				nodeIDsA = self.graph.nodes
@@ -126,9 +126,24 @@ class NetAnalyzer:
 				nodeIDsA = self.get_nodes_layer(layers)
 		else:
 			if layers != 'all': # layers contains two layer IDs
-				nodeIDsA = self.get_nodes_layer(layers[0])
-				nodeIDsB = self.get_nodes_layer(layers[1])
+				nodeIDsA = self.get_nodes_layer([layers[0]])
+				nodeIDsB = self.get_nodes_layer([layers[1]])
 		return nodeIDsA, nodeIDsB
+
+	def intersection(self, node1, node2):
+		shared_nodes = nx.common_neighbors(self.graph, node1, node2)
+		return shared_nodes
+
+	def get_all_intersections(self, layers = 'all'):
+		def _(node1, node2):
+			node_intersection = self.intersection(node1, node2)
+			if(node_intersection == None):
+				res = 0
+			else:
+				res = len(list(node_intersection))
+			return res
+		intersection_lengths = self.get_all_pairs(_, layers = layers)
+		return intersection_lengths
 
 	def connections(self, ids_connected_to_n1, ids_connected_to_n2):
 		res = False
@@ -136,34 +151,36 @@ class NetAnalyzer:
 			res = True
 		return res
 	
-	def get_all_pairs(self, pair_operation, layers = 'all'):
+	def get_all_pairs(self, pair_operation = None , layers = 'all'):
 		all_pairs = []
 		nodeIDsA, nodeIDsB = self.collect_nodes(layers = layers)
-		if self.compute_autorelations:
-			while len(nodeIDsA) > 0:
-				node1 = nodeIDsA.pop(0)
-				if self.compute_pairs == 'all':
-					for node2 in nodeIDsA:
-						res = pair_operation(node1, node2)
-						all_pairs.append(res)
-				elif self.compute_pairs == 'conn':
-					ids_connected_to_n1 = set(self.graph.neighbors(node1))
-					for node2 in nodeIDsA:
-						ids_connected_to_n2 = set(self.graph.neighbors(node2))
-						if self.connections(ids_connected_to_n1, ids_connected_to_n2):
+		if pair_operation != None:
+			if self.compute_autorelations:
+				node_list = [ n for n in nodeIDsA]
+				while len(node_list) > 0:
+					node1 = node_list.pop(0)
+					if self.compute_pairs == 'all':
+						for node2 in node_list:
 							res = pair_operation(node1, node2)
 							all_pairs.append(res)
-		else:
-			if self.compute_pairs == 'conn': #MAIN METHOD
-				for node1 in nodeIDsA:
-					ids_connected_to_n1 = set(self.graph.neighbors(node1))
-					for node2 in nodeIDsB:
-						ids_connected_to_n2 = set(self.graph.neighbors(node2))
-						if self.connections(ids_connected_to_n1, ids_connected_to_n2):
-							res = pair_operation(node1, node2)
-							all_pairs.append(res)
-			elif self.compute_pairs == 'all':
-				raise Exception('Not implemented')
+					elif self.compute_pairs == 'conn':
+						ids_connected_to_n1 = set(self.graph.neighbors(node1))
+						for node2 in node_list:
+							ids_connected_to_n2 = set(self.graph.neighbors(node2))
+							if self.connections(ids_connected_to_n1, ids_connected_to_n2):
+								res = pair_operation(node1, node2)
+								all_pairs.append(res)
+			else:
+				if self.compute_pairs == 'conn': #MAIN METHOD
+					for node1 in nodeIDsA:
+						ids_connected_to_n1 = set(self.graph.neighbors(node1))
+						for node2 in nodeIDsB:
+							ids_connected_to_n2 = set(self.graph.neighbors(node2))
+							if self.connections(ids_connected_to_n1, ids_connected_to_n2):
+								res = pair_operation(node1, node2)
+								all_pairs.append(res)
+				elif self.compute_pairs == 'all':
+					raise NotImplementedError('Not implemented')
 
 		return all_pairs
 

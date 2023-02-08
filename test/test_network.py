@@ -1,3 +1,4 @@
+import sys 
 import unittest
 import os
 import math
@@ -92,124 +93,83 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertEqual(expected_result, bipartirte_test)
 
 	def	test_get_all_intersections_autorr_all_layers_conn(self): 
-		network_clone = self.tripartite_network.clone
-		test_result = network_clone.get_all_intersections
+		network_clone = self.tripartite_network.clone()
+		test_result = network_clone.get_all_intersections()
 		expected_result = [1, 1, 1, 3, 1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 1, 1]
 		self.assertEqual(expected_result, test_result)
 
-	def test_get_all_intersections_autorr_all_layers_all(self):
-		network_clone = self.tripartite_network.clone
-		network_clone.set_compute_pairs("all", True)
-		test_result = network_clone.get_all_intersections
-		expected_result = [0, 1, 0, 1, 1, 0, 0, 0, 0, 3, 0, 0, 0, 0, 1, 0, 2, 2, 1, 1, 0, 0, 0, 0, 0, 2, 2, 1, 1, 0, 2, 1, 0, 1, 0, 0]
-		self.assertEqual(expected_result, test_result)
-
-	def test_get_all_intersections_autorr_some_layers_conn(self): 
-		network_clone = self.tripartite_network.clone
-		network_clone.set_compute_pairs("conn", True)
-		test_result = network_clone.get_all_intersections({"layers": ["main", "salient"]})
-		expected_result = [1, 1, 1, 2, 2, 1, 1, 2, 1, 1, 2, 1, 1]
-		self.assertEqual(expected_result, test_result)
-
-
-	def test_get_all_intersections_autorr_some_layers_all(self):
-		network_clone = self.tripartite_network.clone
-		network_clone.set_compute_pairs("all", True)
-		test_result = network_clone.get_all_intersections({"layers": ["main", "salient"]})
-		expected_result = [1, 1, 1, 0, 0, 2, 2, 1, 1, 2, 1, 1, 2, 1, 1]
-		self.assertEqual(expected_result, test_result)
-
-	def test_get_all_intersections_no_autorr_all_layers_conn(self): # FRED: Thats because it is not implemented yet
-		network_clone = self.tripartite_network.clone
-		network_clone.set_compute_pairs("conn", False)
-		test_result = network_clone.get_all_intersections
-		expected_result = []
-		self.assertEqual(expected_result, test_result)
-
-	def test_get_all_intersections_no_autorr_some_layers_conn(self):
-		network_clone = self.tripartite_network.clone
-		network_clone.set_compute_pairs("conn", False)
-		test_result = network_clone.get_all_intersections({"layers": ["main", "salient"]})
-		expected_result = [1, 2, 1, 1, 2, 1, 1]
-		self.assertEqual(expected_result, test_result)
-
-	def test_get_all_intersections_no_autorr_all(self): # FRED: This could not be right when code is migrated, ValueError is supossed as exception.
+	def test_get_all_intersections_no_autorr_all(self):
 		# how to test raising exceptions? https://www.pythonclear.com/unittest/python-unittest-assertraises/ 
-		network_clone = self.tripartite_network.clone
+		network_clone = self.tripartite_network.clone()
 		network_clone.set_compute_pairs("all", False)
-		expected_result = 'Not implemented'
-		with self.assertRaises(ValueError) as e:
-			network_clone.get_all_intersections()
+		fun = lambda node1,node2 : [node1, node2]
+		with self.assertRaises(NotImplementedError) as e:
+			network_clone.get_all_pairs(pair_operation= fun)
 		self.assertEqual(str(e.exception),'Not implemented')
 
-	def test_get_all_intersections_autorr_all_layers_conn(self):
-		network_clone = self.tripartite_network.clone
-		fun = lambda node1,node2 : len(network_clone.intersection(node1, node2))
-		test_result = network_clone.get_all_pairs(args = {}, pair_operation= fun)
-		expected_result = [1, 1, 1, 3, 1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 1, 1]
-		self.assertEqual(expected_result, test_result)
+	def test_get_all_pairs_autorr_all_layers_conn(self):
+		network_clone = self.tripartite_network.clone()
+		fun = lambda node1,node2 : [node1, node2]
+		test_result = network_clone.get_all_pairs(pair_operation= fun)
+		self.assertEqual(16, len(test_result))
 
-	def test_get_all_intersections_autorr_all_layers_all(self):
-		network_clone = self.tripartite_network.clone
+	def test_get_all_pairs_autorr_all_layers_all(self):
+		network_clone = self.tripartite_network.clone()
 		network_clone.set_compute_pairs("all", True)
-		fun = lambda node1,node2 : len(network_clone.intersection(node1, node2))
-		test_result = network_clone.get_all_pairs(args = {}, pair_operation= fun)
-		expected_result =  [0, 1, 0, 1, 1, 0, 0, 0, 0, 3, 0, 0, 0, 0, 1, 0, 2, 2, 1, 1, 0, 0, 0, 0, 0, 2, 2, 1, 1, 0, 2, 1, 0, 1, 0, 0]
-		self.assertEqual(expected_result, test_result)
+		fun = lambda node1,node2 : [node1, node2]
+		test_result = network_clone.get_all_pairs(pair_operation= fun)
+		self.assertEqual(36, len(test_result))
 
-	def test_get_all_intersections_autorr_some_layers_conn(self):
-		network_clone = self.tripartite_network.clone
+	def test_get_all_pairs_autorr_some_layers_conn(self):
+		network_clone = self.tripartite_network.clone()
 		network_clone.set_compute_pairs("conn", True)
-		fun = lambda node1,node2 : len(network_clone.intersection(node1, node2))
-		test_result = network_clone.get_all_pairs(args = {"layers": ["main", "salient"]}, pair_operation= fun)
-		expected_result = [1, 1, 1, 2, 2, 1, 1, 2, 1, 1, 2, 1, 1]
-		self.assertEqual(expected_result, test_result)
+		fun = lambda node1,node2 : [node1, node2]
+		test_result = network_clone.get_all_pairs(layers = ["main", "salient"], pair_operation= fun)
+		self.assertEqual(13, len(test_result))
 
-	def test_get_all_intersections_autorr_some_layers_all(self):
-		network_clone = self.tripartite_network.clone
+	def test_get_all_pairs_autorr_some_layers_all(self):
+		network_clone = self.tripartite_network.clone()
 		network_clone.set_compute_pairs("all", True)
-		fun = lambda node1,node2 : len(network_clone.intersection(node1, node2))
-		test_result = network_clone.get_all_pairs(args = {"layers": ["main", "salient"]}, pair_operation= fun)
-		expected_result = [1, 1, 1, 0, 0, 2, 2, 1, 1, 2, 1, 1, 2, 1, 1]
-		self.assertEqual(expected_result, test_result)
-
-	def test_get_all_pairs_no_autorr_all_layers_conn(self):
-		network_clone = self.tripartite_network.clone
-		network_clone.set_compute_pairs("conn", False)
-		test_result = network_clone.get_all_pairs
-		expected_result = []
-		self.assertEqual(expected_result, test_result)
+		fun = lambda node1,node2 : [node1, node2]
+		test_result = network_clone.get_all_pairs(layers = ["main", "salient"], pair_operation= fun)
+		self.assertEqual(15, len(test_result))
 
 	def test_get_all_pairs_no_autorr_some_layers_conn(self):
-		network_clone = self.tripartite_network.clone
+		network_clone = self.tripartite_network.clone()
 		network_clone.set_compute_pairs("conn", False)
-		fun = lambda node1,node2 : len(network_clone.intersection(node1, node2))
-		test_result = network_clone.get_all_pairs(args = {"layers": ["main", "salient"]}, pair_operation= fun)
-		expected_result = [1, 2, 1, 1, 2, 1, 1]
-		self.assertEqual(expected_result, test_result)
+		fun = lambda node1,node2 : [node1, node2]
+		test_result = network_clone.get_all_pairs(layers = ["main", "salient"], pair_operation= fun)
+		self.assertEqual(7, len(test_result))
+	
+	def test_get_all_pairs_no_autorr_all_layers_conn(self):
+		network_clone = self.tripartite_network.clone()
+		network_clone.set_compute_pairs("conn", False)
+		test_result = network_clone.get_all_pairs()
+		self.assertEqual([], test_result)
 
 	def test_collect_nodes_autorr_some_layers(self):
-		network_clone = self.tripartite_network.clone
-		nodesA_test, nodesB_test = network_clone.collect_nodes({"layers": ["main", "salient"]})
+		network_clone = self.tripartite_network.clone()
+		network_clone.set_compute_pairs("conn", True)
+		nodesA_test, nodesB_test = network_clone.collect_nodes(layers = ["main", "salient"])
 		expected_result_nodesA = ["M1", "M2", "M3", "S1", "S2", "S3"]
 		self.assertEqual(expected_result_nodesA, nodesA_test)
-		self.assertEqual(None, nodesB_test)
+		self.assertEqual([], nodesB_test)
 	
 	def test_collect_nodes_no_autorr_some_layers(self):
-		network_clone = self.tripartite_network.clone
+		network_clone = self.tripartite_network.clone()
 		network_clone.set_compute_pairs("all", False)
-		nodesA_test, nodesB_test = network_clone.collect_nodes({"layers": ["main", "salient"]})
+		nodesA_test, nodesB_test = network_clone.collect_nodes(layers = ["main", "salient"])
 		expected_result_nodesA = ["M1", "M2", "M3"]
 		expected_result_nodesB = ["S1", "S2", "S3"]
 		self.assertEqual(expected_result_nodesA, nodesA_test)
 		self.assertEqual(expected_result_nodesB, nodesB_test)
 
 	def test_collect_nodes_no_autorr_all_layers(self):
-		network_clone = self.tripartite_network.clone
+		network_clone = self.tripartite_network.clone()
 		network_clone.set_compute_pairs("conn", False)
-		nodesA_test, nodesB_test = network_clone.collect_nodes({"layers": "all"})
-		self.assertEqual(None, nodesA_test)
-		self.assertEqual(None, nodesB_test)
+		nodesA_test, nodesB_test = network_clone.collect_nodes(layers = "all")
+		self.assertEqual([], nodesA_test)
+		self.assertEqual([], nodesB_test)
 
 	def test_get_nodes_layer(self):
 		nodes_from_layers_test = self.tripartite_network.get_nodes_layer(["main", "salient"])

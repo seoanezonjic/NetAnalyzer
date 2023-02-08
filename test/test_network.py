@@ -78,6 +78,11 @@ class BaseNetTestCase(unittest.TestCase):
 		edge_number_test = self.monopartite_network.get_edge_number()
 		self.assertEqual(4, edge_number_test)
 
+	def test_get_degree(self):
+		degree_test = self.monopartite_network.get_degree(zscore = False)
+		expected_result = {'A' : 2, 'C' : 1, 'E' : 2, 'B' : 1, 'D' : 2}
+		self.assertEqual(expected_result, degree_test)
+
 	def test_get_connected_nodes(self):
 		test_result = self.monopartite_network.get_connected_nodes('A', 'main')
 		self.assertEqual(['C', 'E'], test_result)

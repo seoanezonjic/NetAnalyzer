@@ -116,6 +116,19 @@ class NetAnalyzer:
 	def get_edge_number(self):
 		return len(self.graph.edges())
 
+	def get_degree(self, zscore = True):
+		degree = dict(self.graph.degree())
+		if zscore:
+			deg = numpy.array([d for n, d in degree.items()])
+			deg_z = (deg - numpy.mean(deg)) / numpy.std(deg)
+			degree_z = {}
+			count = 0
+			for n, d in degree.items():
+				degree_z[n] = deg_z[count]
+				count += 1
+			degree = degree_z
+		return degree
+
 	def collect_nodes(self, layers = 'all'):
 		nodeIDsA = []
 		nodeIDsB = []
@@ -190,6 +203,32 @@ class NetAnalyzer:
 	def clean_autorelations_on_association_values(self):
 		for meth, values in self.association_values.items():
 			self.association_values[meth] = [relation for relation in values if self.graph.nodes[relation[0]]["layer"] != self.graph.nodes[relation[1]]["layer"]]
+
+	def get_association_values(layers, base_layer, meth):
+		relations = [] #node A, node B, val
+		if meth == 'counts':
+			relations = get_counts_association(layers, base_layer)
+		elif meth == 'jaccard': #all networks
+			relations = get_jaccard_association(layers, base_layer)
+		elif meth == 'simpson': #all networks
+			relations = get_simpson_association(layers, base_layer)
+		elif meth == 'geometric': #all networks
+			relations = get_geometric_associations(layers, base_layer)
+		elif meth == 'cosine': #all networks
+			relations = get_cosine_associations(layers, base_layer)
+		elif meth == 'pcc': #all networks
+			relations = get_pcc_associations(layers, base_layer)
+		elif meth == 'hypergeometric': #all networks
+			relations = get_hypergeometric_associations(layers, base_layer)
+		elif meth == 'hypergeometric_bf': #all networks
+			relations = get_hypergeometric_associations(layers, base_layer, pvalue_adj_method = 'bonferroni')
+		elif meth == 'hypergeometric_bh': #all networks
+			relations = get_hypergeometric_associations(layers, base_layer, pvalue_adj_method = 'benjamini_hochberg')
+		elif meth == 'csi': #all networks
+			relations = get_csi_associations(layers, base_layer)
+		elif meth == 'transference': #tripartite networks
+			relations = get_association_by_transference_resources(layers, base_layer)
+		return relations
 
 	def get_association_by_transference_resources(self, firstPairLayers, secondPairLayers, lambda_value1 = 0.5, lambda_value2 = 0.5):
 		relations = []

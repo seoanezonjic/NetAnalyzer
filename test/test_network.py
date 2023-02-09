@@ -181,6 +181,21 @@ class BaseNetTestCase(unittest.TestCase):
 		expected_result = ["M1", "M2", "M3", "S1", "S2", "S3"]
 		self.assertEqual(expected_result, nodes_from_layers_test)
 
+	def test_intersection(self):
+		test_result = self.network_obj.intersection('M3', 'M6')
+		expected_result = ['P1', 'P2']
+		self.assertEqual(['P1', 'P2'], list(test_result))
+
+	def test_get_node_attributes(self):
+		node_attribute_test = self.monopartite_network.get_node_attributes(['get_degree'])
+		expected_result = [['A', 2], ['C', 1], ['E', 2],['B', 1], ['D', 2]]
+		self.assertEqual(expected_result, node_attribute_test)
+
+	def test_get_node_attributes_zscore(self):
+		node_attribute_test = self.monopartite_network.get_node_attributes(['get_degreeZ', 'get_degree'])
+		expected_result = [['A', 0.8164965809277259, 2], ['C', -1.2247448713915894, 1], ['E', 0.8164965809277259, 2],['B', -1.2247448713915894, 1], ['D', 0.8164965809277259, 2]]
+		self.assertEqual(expected_result, node_attribute_test)
+
 	def test_get_counts_association(self):	
 		test_association = self.network_obj.get_counts_associations(['main'], 'projection')
 		test_association = [[a[0], a[1], a[2]] for a in test_association]

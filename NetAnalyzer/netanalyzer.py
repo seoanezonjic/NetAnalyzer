@@ -19,6 +19,7 @@ class NetAnalyzer:
 		self.compute_pairs = 'conn'
 		self.adjacency_matrices = {}
 		self.kernels = {}
+		self.group_nodes = [] # Communities are networkx objects
 
 	def __eq__(self, other): # https://igeorgiev.eu/python/tdd/python-unittest-assert-custom-objects-are-equal/
 		return nx.utils.misc.graphs_equal(self.graph, other.graph) and \
@@ -27,7 +28,8 @@ class NetAnalyzer:
 			self.compute_autorelations == other.compute_autorelations and \
 			self.compute_pairs == other.compute_pairs and \
 			self.adjacency_matrices == other.adjacency_matrices and \
-			self.kernels == other.kernels
+			self.kernels == other.kernels and \
+			self.group_nodes == other.group_nodes
 
 	def clone(self):
 		network_clone = NetAnalyzer(copy.copy(self.layers))
@@ -36,6 +38,7 @@ class NetAnalyzer:
 		network_clone.set_compute_pairs(self.compute_pairs, self.compute_autorelations)
 		network_clone.adjacency_matrices = self.adjacency_matrices.copy()
 		network_clone.kernels = self.kernels.copy()
+		network_clone.group_nodes = copy.deepcopy(self.group_nodes)
 		return network_clone
 
 	# THE PREVIOUS METHODS NEED TO DEFINE/ACCESS THE VERY SAME ATTRIBUTES, WATCH OUT ABOUT THIS !!!!!!!!!!!!!
@@ -382,6 +385,29 @@ class NetAnalyzer:
 	def write_kernel(self, layer2kernel, output_file):
 		numpy.save(output_file, self.kernels[layer2kernel])
 
+	def shortest_path(self, source, target):
+		return nx.shortest_path(self.graph, source, target)
+
+	def average_shortest_path_length(self, community):
+		return nx.average_shortest_path_length(community)
+
+	def shortest_paths(self, community):
+		return nx.all_pairs_shortest_path(community)
+
+	def get_node_attributes(self, attr_names):
+		attrs = []
+		for attr_name in attr_names:
+			if attr_name == 'get_degree':
+				attrs.append(self.get_degree(zscore=False))
+			elif attr_name == 'get_degreeZ':
+				attrs.append(self.get_degree())
+		node_ids = attrs[0].keys()
+		node_attrs = []
+		for n in node_ids:
+			n_attrs = [ at[n] for at in attrs ]
+			node_attrs.append([n] + n_attrs)
+		return node_attrs
+	
 	## AUXILIAR METHODS
 	#######################################################################################
 
@@ -406,3 +432,4 @@ class NetAnalyzer:
 	        hash[node1] = {node2: val}
 	    else:
 	        query_node1[node2] = val
+

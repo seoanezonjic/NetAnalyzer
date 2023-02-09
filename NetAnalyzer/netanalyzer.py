@@ -19,7 +19,7 @@ class NetAnalyzer:
 		self.compute_pairs = 'conn'
 		self.adjacency_matrices = {}
 		self.kernels = {}
-		self.group_nodes = [] # Communities are networkx objects
+		self.group_nodes = {} # Communities are networkx objects {community_id : networkx obj}
 
 	def __eq__(self, other): # https://igeorgiev.eu/python/tdd/python-unittest-assert-custom-objects-are-equal/
 		return nx.utils.misc.graphs_equal(self.graph, other.graph) and \
@@ -407,7 +407,27 @@ class NetAnalyzer:
 			n_attrs = [ at[n] for at in attrs ]
 			node_attrs.append([n] + n_attrs)
 		return node_attrs
+
+	# COMMUNITY METHODS
+	def compute_comparative_degree(self, com): # see Girvan-Newman Benchmark control parameter in http://networksciencebook.com/chapter/9#testing (communities chapter)
+		internal_degree = 0
+		external_degree = 0
+		com_nodes = set(com.nodes)
+		for nodeID in com_nodes:
+			nodeIDneigh = set(self.graph.neighbors(nodeID))
+			if nodeIDneigh == None: next
+			internal_degree += len(nodeIDneigh & com_nodes)
+			external_degree += len(nodeIDneigh - com_nodes)
+		comparative_degree = external_degree / (external_degree + internal_degree)
+		return comparative_degree
 	
+	# Iterative community methods
+	def communities_avg_sht_path(self, coms):
+		return [ self.average_shortest_path_length(com) for com_id, com in coms.items()]
+
+	def communities_comparative_degree(self, coms):
+		return [ self.compute_comparative_degree(com) for com_id, com in coms.items()]
+
 	## AUXILIAR METHODS
 	#######################################################################################
 

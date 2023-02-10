@@ -20,6 +20,7 @@ class NetAnalyzer:
 		self.adjacency_matrices = {}
 		self.kernels = {}
 		self.group_nodes = {} # Communities are networkx objects {community_id : networkx obj}
+		self.reference_nodes = []
 
 	def __eq__(self, other): # https://igeorgiev.eu/python/tdd/python-unittest-assert-custom-objects-are-equal/
 		return nx.utils.misc.graphs_equal(self.graph, other.graph) and \
@@ -29,7 +30,8 @@ class NetAnalyzer:
 			self.compute_pairs == other.compute_pairs and \
 			self.adjacency_matrices == other.adjacency_matrices and \
 			self.kernels == other.kernels and \
-			self.group_nodes == other.group_nodes
+			self.group_nodes == other.group_nodes and \
+			self.reference_nodes == other.reference_nodes
 
 	def clone(self):
 		network_clone = NetAnalyzer(copy.copy(self.layers))
@@ -39,6 +41,7 @@ class NetAnalyzer:
 		network_clone.adjacency_matrices = self.adjacency_matrices.copy()
 		network_clone.kernels = self.kernels.copy()
 		network_clone.group_nodes = copy.deepcopy(self.group_nodes)
+		network_clone.reference_nodes = self.reference_nodes.copy()
 		return network_clone
 
 	# THE PREVIOUS METHODS NEED TO DEFINE/ACCESS THE VERY SAME ATTRIBUTES, WATCH OUT ABOUT THIS !!!!!!!!!!!!!
@@ -421,12 +424,68 @@ class NetAnalyzer:
 		comparative_degree = external_degree / (external_degree + internal_degree)
 		return comparative_degree
 	
+	def compute_node_com_assoc(self, com, ref_node):
+		ref_edges = 0
+		ref_secondary_edges = 0
+		secondary_nodes = {}
+		other_edges = 0
+		other_nodes = {}
+
+		refNneigh = set(self.graph.neighbors(ref_node))
+		for nodeID in com.nodes:
+			nodeIDneigh = set(self.graph.neighbors(nodeID))
+			if nodeIDneigh == None: next
+			if ref_node in nodeIDneigh: ref_edges += 1
+			if refNneigh != None:
+				common_nodes = nodeIDneigh & refNneigh
+				for id in common_nodes: secondary_nodes[id] = True
+				ref_secondary_edges += len(common_nodes) 
+			specific_nodes = nodeIDneigh - refNneigh - {ref_node}
+			for id in specific_nodes: other_nodes[id] = True
+			other_edges += len(specific_nodes)
+		by_edge = (ref_edges + ref_secondary_edges) / other_edges
+		by_node = (ref_edges + len(secondary_nodes)) / len(other_nodes)
+		return by_edge, by_node
+
 	# Iterative community methods
 	def communities_avg_sht_path(self, coms):
 		return [ self.average_shortest_path_length(com) for com_id, com in coms.items()]
 
 	def communities_comparative_degree(self, coms):
 		return [ self.compute_comparative_degree(com) for com_id, com in coms.items()]
+
+	def communities_node_com_assoc(self, coms, ref_node):
+		return [ [self.compute_node_com_assoc(com, ref_node)] for com_id, com in coms.items()]
+	
+	def compute_group_metrics(self, output_filename): #Summary method
+		metrics = [[k] for k in self.group_nodes.keys()]
+		header = ['group', 'comparative_degree', 'avg_sht_path']
+		comparative_degree = self.communities_comparative_degree(self.group_nodes)
+		for i, val in enumerate(comparative_degree): metrics[i].append(replace_none_vals(val)) # Add to metrics
+		avg_sht_path = self.communities_avg_sht_path(self.group_nodes)
+		for i, val in enumerate(avg_sht_path): metrics[i].append(replace_none_vals(val)) # Add to metrics
+		if len(self.reference_nodes) > 0:
+			header.extend(['node_com_assoc_by_edge', 'node_com_assoc_by_node'])
+			node_com_assoc = self.communities_node_com_assoc(self.group_nodes, self.reference_nodes[0]) # Assume only obe reference node
+			for i, val in enumerate(node_com_assoc): metrics[i].extend(val) # Add to metrics
+
+		with open(output_filename, 'w') as out_file:
+			out_file.write("\t".join(header) + "\n")
+			for line in metrics:
+				out_file.write("\t".join(line) + "\n")
+
+	def expand_clusters(self, expand_method):
+		clusters = {}
+		for id, com in self.group_nodes.items():
+			if expand_method == 'sht_path':
+				paths = self.all_pairs_shortest_path()
+				new_nodes = set()
+				for source, path in paths.items():
+					for target, p in path.items():
+						for n in p: new_nodes.add(n) 
+				com.add_nodes_from(list(new_nodes))
+				clusters[id] = com
+		return clusters
 
 	## AUXILIAR METHODS
 	#######################################################################################
@@ -453,3 +512,5 @@ class NetAnalyzer:
 	    else:
 	        query_node1[node2] = val
 
+	def replace_none_vals(self, val):
+		return 'NULL' if val == None else val

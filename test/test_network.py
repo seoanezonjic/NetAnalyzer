@@ -351,9 +351,9 @@ class BaseNetTestCase(unittest.TestCase):
 	def test_randomize_monopartite_net_by_nodes(self):
 		nodes =  len(self.monopartite_network.get_nodes_layer([self.monopartite_layers[0][0]]))
 		edges = self.monopartite_network.get_edge_number()
-		self.monopartite_network.randomize_monopartite_net_by_nodes()
-		random_nodes =  len(self.monopartite_network.get_nodes_layer([self.monopartite_layers[0][0]]))
-		random_edges = self.monopartite_network.get_edge_number()
+		random_net = self.monopartite_network.randomize_monopartite_net_by_nodes()
+		random_nodes =  len(random_net.get_nodes_layer([self.monopartite_layers[0][0]]))
+		random_edges = random_net.get_edge_number()
 		self.assertEqual([nodes, edges], [random_nodes, random_edges])
 
 	def test_randomize_bipartite_net_by_nodes(self):

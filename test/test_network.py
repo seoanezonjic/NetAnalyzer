@@ -10,23 +10,28 @@ DATA_TEST_PATH = os.path.join(ROOT_PATH, 'data')
 
 class BaseNetTestCase(unittest.TestCase):
 	def setUp(self):
-		tripartite_layers = [['main', 'M[0-9]+'], ['projection', 'P[0-9]+'], ['salient', 'S[0-9]+']]
-		self.tripartite_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'tripartite_network_for_validating.txt'), tripartite_layers)
-		self.tripartite_network.generate_adjacency_matrix(tripartite_layers[0][0], tripartite_layers[1][0])
-		self.tripartite_network.generate_adjacency_matrix(tripartite_layers[1][0], tripartite_layers[2][0])
+		self.tripartite_layers = [['main', 'M[0-9]+'], ['projection', 'P[0-9]+'], ['salient', 'S[0-9]+']]
+		self.tripartite_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'tripartite_network_for_validating.txt'), self.tripartite_layers)
+		self.tripartite_network.generate_adjacency_matrix(self.tripartite_layers[0][0], self.tripartite_layers[1][0])
+		self.tripartite_network.generate_adjacency_matrix(self.tripartite_layers[1][0], self.tripartite_layers[2][0])
 		
-		bipartite_layers = [['main', 'M[0-9]+'], ['projection', 'P[0-9]+']]
-		self.network_obj = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'bipartite_network_for_validating.txt'), bipartite_layers)
-		self.network_obj.generate_adjacency_matrix(bipartite_layers[0][0], bipartite_layers[1][0])
+		self.bipartite_layers = [['main', 'M[0-9]+'], ['projection', 'P[0-9]+']]
+		self.network_obj = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'bipartite_network_for_validating.txt'), self.bipartite_layers)
+		self.network_obj.generate_adjacency_matrix(self.bipartite_layers[0][0], self.bipartite_layers[1][0])
 		
-		monopartite_layers = [['main', '\w'], ['main', '\w']]
-		self.monopartite_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'monopartite_network_for_validating.txt'), monopartite_layers)
-		self.monopartite_network.generate_adjacency_matrix(monopartite_layers[0][0], monopartite_layers[0][0])
+		self.monopartite_layers = [['main', '\w'], ['main', '\w']]
+		self.monopartite_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'monopartite_network_for_validating.txt'), self.monopartite_layers)
+		self.monopartite_network.generate_adjacency_matrix(self.monopartite_layers[0][0], self.monopartite_layers[0][0])
 
 	def test_clone(self):
 		network_clone = self.network_obj.clone()
 		self.assertEqual(self.network_obj, network_clone)
 
+	def test_clone_change(self):
+		network_clone = self.network_obj.clone()
+		network_clone.add_node('M8', network_clone.set_layer(self.bipartite_layers, 'M8'))
+		self.assertNotEqual(self.network_obj, network_clone	)
+	
 	def test_generate_adjacency_matrix_monopartite(self):
 		test_values = self.monopartite_network.adjacency_matrices
 		matrix_values = np.array([[0, 1, 1, 0, 0],[1, 0, 0, 0, 0], [1, 0, 0, 0, 1], [0, 0, 0, 0, 1], [0, 0, 1, 1, 0]],dtype='float')
@@ -341,3 +346,35 @@ class BaseNetTestCase(unittest.TestCase):
 		expected_values.sort()
 		test_association.sort()
 		self.assertEqual(expected_values, test_association)
+
+	# Random network generation
+	def test_randomize_monopartite_net_by_nodes(self):
+		nodes =  len(self.monopartite_network.get_nodes_layer([self.monopartite_layers[0][0]]))
+		edges = self.monopartite_network.get_edge_number()
+		self.monopartite_network.randomize_monopartite_net_by_nodes()
+		random_nodes =  len(self.monopartite_network.get_nodes_layer([self.monopartite_layers[0][0]]))
+		random_edges = self.monopartite_network.get_edge_number()
+		self.assertEqual([nodes, edges], [random_nodes, random_edges])
+
+	def test_randomize_bipartite_net_by_nodes(self):
+		layerA_nodes = len(self.network_obj.get_nodes_layer([self.bipartite_layers[0][0]]))
+		layerB_nodes = len(self.network_obj.get_nodes_layer([self.bipartite_layers[1][0]]))
+		edges = self.network_obj.get_edge_number()
+		self.network_obj.randomize_bipartite_net_by_nodes()
+		random_layerA_nodes = len(self.network_obj.get_nodes_layer([self.bipartite_layers[0][0]]))
+		random_layerB_nodes = len(self.network_obj.get_nodes_layer([self.bipartite_layers[1][0]]))
+		random_edges = self.network_obj.get_edge_number()
+		self.assertEqual([layerA_nodes, layerB_nodes, edges], [random_layerA_nodes, random_layerB_nodes, random_edges])
+
+	def test_randomize_monopartite_net_by_links(self):
+		previous_degree = self.monopartite_network.get_degree(zscore = False)
+		self.monopartite_network.randomize_monopartite_net_by_links()
+		random_degree = self.monopartite_network.get_degree(zscore = False)
+		assert_equal(previous_degree, random_degree)
+
+	def test_randomize_bipartite_net_by_links(self):
+		previous_degree = self.network_obj.get_degree(zscore = False)
+		self.network_obj.randomize_bipartite_net_by_links([ l[0] for l in self.bipartite_layers ])
+		random_degree = self.network_obj.get_degree(zscore = False)
+		self.assertEqual(previous_degree, random_degree)
+	

@@ -1,3 +1,4 @@
+import random
 import sys 
 import re
 import copy
@@ -486,6 +487,16 @@ class NetAnalyzer:
 				com.add_nodes_from(list(new_nodes))
 				clusters[id] = com
 		return clusters
+
+	## RAMDOMIZATION METHODS
+	############################################################
+	def randomize_monopartite_net_by_nodes(self):
+		nodeIds = list(self.graph.nodes)
+		random.shuffle(nodeIds)
+		new_mapping = dict(zip(self.graph.nodes, nodeIds))
+		random_network = self.clone() # TODO # Change to new instance with only an empty graph and layers defined
+		random_network.graph = nx.relabel_nodes(self.graph, new_mapping)
+		return random_network
 
 	## AUXILIAR METHODS
 	#######################################################################################

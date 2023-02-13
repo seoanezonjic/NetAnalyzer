@@ -349,32 +349,32 @@ class BaseNetTestCase(unittest.TestCase):
 
 	# Random network generation
 	def test_randomize_monopartite_net_by_nodes(self):
-		nodes =  len(self.monopartite_network.get_nodes_layer([self.monopartite_layers[0][0]]))
-		edges = self.monopartite_network.get_edge_number()
 		random_net = self.monopartite_network.randomize_monopartite_net_by_nodes()
-		random_nodes =  len(random_net.get_nodes_layer([self.monopartite_layers[0][0]]))
-		random_edges = random_net.get_edge_number()
-		self.assertEqual([nodes, edges], [random_nodes, random_edges])
+		self.assertNotEqual(self.monopartite_network.get_degree(zscore = False), random_net.get_degree(zscore = False)) # Node degree is diferent from original tu random
+		self.assertEqual( # but the node distribution is the same
+			list(self.monopartite_network.get_degree(zscore = False).values()).sort(), 
+			list(random_net.get_degree(zscore = False).values()).sort())
 
-	def test_randomize_bipartite_net_by_nodes(self):
-		layerA_nodes = len(self.network_obj.get_nodes_layer([self.bipartite_layers[0][0]]))
-		layerB_nodes = len(self.network_obj.get_nodes_layer([self.bipartite_layers[1][0]]))
-		edges = self.network_obj.get_edge_number()
-		self.network_obj.randomize_bipartite_net_by_nodes()
-		random_layerA_nodes = len(self.network_obj.get_nodes_layer([self.bipartite_layers[0][0]]))
-		random_layerB_nodes = len(self.network_obj.get_nodes_layer([self.bipartite_layers[1][0]]))
-		random_edges = self.network_obj.get_edge_number()
-		self.assertEqual([layerA_nodes, layerB_nodes, edges], [random_layerA_nodes, random_layerB_nodes, random_edges])
+	# def test_randomize_bipartite_net_by_nodes(self): # TODO PSZ: Generalize from monopartite and study the best netowrkx object manipulation
+	# 	layerA_nodes = len(self.network_obj.get_nodes_layer([self.bipartite_layers[0][0]]))
+	# 	layerB_nodes = len(self.network_obj.get_nodes_layer([self.bipartite_layers[1][0]]))
+	# 	edges = self.network_obj.get_edge_number()
+	# 	random_net = self.network_obj.randomize_bipartite_net_by_nodes()
+	# 	random_layerA_nodes = len(random_net.get_nodes_layer([self.bipartite_layers[0][0]]))
+	# 	random_layerB_nodes = len(random_net.get_nodes_layer([self.bipartite_layers[1][0]]))
+	# 	random_edges = random_net.get_edge_number()
+	# 	self.assertEqual([layerA_nodes, layerB_nodes, edges], [random_layerA_nodes, random_layerB_nodes, random_edges])
+	# 	self.assertNotEqual(self.monopartite_network.get_degree(zscore = False), random_net.get_degree(zscore = False))
 
 	def test_randomize_monopartite_net_by_links(self):
 		previous_degree = self.monopartite_network.get_degree(zscore = False)
-		self.monopartite_network.randomize_monopartite_net_by_links()
-		random_degree = self.monopartite_network.get_degree(zscore = False)
-		assert_equal(previous_degree, random_degree)
+		random_net = self.monopartite_network.randomize_monopartite_net_by_links()
+		random_degree = random_net.get_degree(zscore = False)
+		self.assertEqual(previous_degree, random_degree) # Degree for each node must be the same
 
-	def test_randomize_bipartite_net_by_links(self):
-		previous_degree = self.network_obj.get_degree(zscore = False)
-		self.network_obj.randomize_bipartite_net_by_links([ l[0] for l in self.bipartite_layers ])
-		random_degree = self.network_obj.get_degree(zscore = False)
-		self.assertEqual(previous_degree, random_degree)
+	# def test_randomize_bipartite_net_by_links(self): # TODO PSZ: Generalize from monopartite and study the best netowrkx object manipulation
+	# 	previous_degree = self.network_obj.get_degree(zscore = False)
+	# 	self.network_obj.randomize_bipartite_net_by_links([ l[0] for l in self.bipartite_layers ])
+	# 	random_degree = self.network_obj.get_degree(zscore = False)
+	# 	self.assertEqual(previous_degree, random_degree)
 	

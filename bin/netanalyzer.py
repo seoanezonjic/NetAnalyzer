@@ -16,6 +16,7 @@ def load_file(path):
 	with open(path, 'r') as file:
 		for line in file:
 			data.append(line.rstrip.split("\t"))
+	return data
 
 ########################### OPTPARSE ########################
 #############################################################
@@ -35,6 +36,12 @@ def group_nodes_parse(string):
 	else:
 		for i, group in enumerate(string.split(";")):
 			options.group_nodes[i] = group.split(',')
+def graph_options_parse(string):
+	graph_options = {}
+	for pair in string.split(','):
+	  fields = pair.split('=')
+	  graph_options[fields[0]] = fields[1]
+	return graph_options
 
 parser = argparse.ArgumentParser(description='Perform Network analysis from NetAnalyzer package')
 
@@ -68,6 +75,10 @@ parser.add_argument("-N","--no_autorelations", dest="no_autorelations", default=
 					help="Kernel operation to perform with the adjacency matrix")
 parser.add_argument("-z","--normalize_kernel_values", dest="normalize_kernel", default=False, action='store_true',
 					help="Apply cosine normalization to the obtained kernel")
+parser.add_argument("-g", "--graph_file", dest="graph_file", default=None,
+					help="Build a graphic representation of the network")
+parser.add_argument("--graph_options", dest="graph_options", default={'method': 'el_grapho', 'layout': 'forcedir', 'steps': '30'}, type= graph_options_parse,
+					help="Set graph parameters as 'NAME1=value1,NAME2=value2,...")
 parser.add_argument("-T","--threads", dest="threads", default=0, type= based_0,
 					help="Number of threads to use in computation, one thread will be reserved as manager.")
 parser.add_argument("-r","--reference_nodes", dest="reference_nodes", default=[], type= lambda x: x.split(","),
@@ -76,15 +87,19 @@ parser.add_argument("-G","--group_nodes", dest="group_nodes", default={}, type= 
 					help="File path or groups separated by ';' and group node ids comma separared")
 parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lambda x: x.split(";"),
 					help="Remove nodes from file. If PATH;r then nodes not included in file are removed")
+parser.add_argument("-x","--expand_clusters", dest="expand_clusters", default=None,
+					help="Method to expand clusters Available methods: sht_path")
+parser.add_argument("-M", "--group_metrics", dest="group_metrics", default=False, action='store_true',
+					help="Perform group group_metrics")
 options = parser.parse_args()
 
 ########## MAIN ##########
 ##########################
 print("Loading network data")
 fullNet = Net_parser.load(vars(options)) # FRED: Remove this part of vars and modify the loads methods (Tlk wth PSZ)
-#fullNet.reference_nodes = parser.reference_nodes
-#fullNet.threads = parser.threads
-#fullNet.group_nodes = parser.group_nodes
+fullNet.reference_nodes = options.reference_nodes
+#fullNet.threads = options.threads
+fullNet.group_nodes = options.group_nodes
 fullNet.set_compute_pairs(options.use_pairs, not options.no_autorelations)
 
 if options.delete_nodes:
@@ -119,3 +134,16 @@ if options.kernel is not None:
   fullNet.get_kernel(tuple(layer2kernel), options.kernel, options.normalize_kernel)
   fullNet.write_kernel(tuple(layer2kernel), options.kernel_file)
 
+if options.graph_file is not None:
+  print(repr(options.graph_options), file=sys.stderr)
+  options.graph_options['output_file'] = options.graph_file
+  fullNet.plot_network(options.graph_options)
+
+if options.group_metrics:
+  fullNet.compute_group_metrics(os.path.join(os.path.dirname(options.output_file), 'group_metrics.txt'))
+
+if options.expand_clusters is not None:
+  expanded_clusters = fullNet.expand_clusters(options.expand_clusters)
+  with open(os.path.join(os.path.dirname(options.output_file), 'expand_clusters.txt'), 'w') as out_file:
+    for cl_id, nodes in expanded_clusters.items():
+      for node in nodes: out_file.write(f"{cl_id}\t{node}\n")

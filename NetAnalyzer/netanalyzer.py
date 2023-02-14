@@ -8,6 +8,7 @@ import numpy
 import scipy.stats as stats
 import statsmodels
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
+from NetAnalyzer.net_plotter import Net_plotter
 # https://stackoverflow.com/questions/60392940/multi-layer-graph-in-networkx
 # http://mkivela.com/pymnet
 class NetAnalyzer:
@@ -411,6 +412,15 @@ class NetAnalyzer:
 			n_attrs = [ at[n] for at in attrs ]
 			node_attrs.append([n] + n_attrs)
 		return node_attrs
+
+	def plot_network(self, options = {}):
+		net_data = {
+			'group_nodes': self.group_nodes,
+			'reference_nodes': self.reference_nodes,
+			'graph': self.graph,
+			'layers': self.layers
+		}
+		Net_plotter(net_data, options)
 
 	# COMMUNITY METHODS
 	def compute_comparative_degree(self, com): # see Girvan-Newman Benchmark control parameter in http://networksciencebook.com/chapter/9#testing (communities chapter)

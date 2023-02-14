@@ -32,3 +32,6 @@ for file_to_test in `ls $out/kernels`; do
 	echo $file_to_test
 	diff $out/kernels/$file_to_test $data_kernel/$file_to_test
 done
+
+#PLotting
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=graphviz,layout=dot' -g ./test

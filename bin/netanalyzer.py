@@ -129,6 +129,18 @@ if options.meth is not None:
 		f.write("\t".join(map(str,fullNet.association_values[options.meth][-1])))
 	print(f"End of analysis: {options.meth}")
 
+	if options['control_file'] != None:
+		with open(options['control_file'], "r") as f:
+			control = [ control.append(line.rstrip().split("\t")) for line in f ]
+		Performancer.load_control(control)
+		predictions = fullNet.association_values[options['meth']]
+		performance = Performancer.get_pred_rec(predictions)
+		with open(options['performance_file'], 'r') as f:
+			f.print("\t".join(['cut', 'prec', 'rec', 'meth']))
+			for item in performance:
+				item.append(options['meth'])
+				f.print("\t".join(item))
+
 if options.kernel is not None:
   layer2kernel = options.use_layers[0] # we use only a layer to perform the kernel, so only one item it is selected.
   fullNet.get_kernel(tuple(layer2kernel), options.kernel, options.normalize_kernel)

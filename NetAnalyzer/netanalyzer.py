@@ -121,6 +121,9 @@ class NetAnalyzer:
 			nodes.extend(self.get_nodes_by_attr('layer', layer))
 		return nodes
 
+	def get_node_layer(self, node_id):
+		return self.graph.nodes(data=True)[node_id]['layer']
+
 	def get_edge_number(self):
 		return len(self.graph.edges())
 

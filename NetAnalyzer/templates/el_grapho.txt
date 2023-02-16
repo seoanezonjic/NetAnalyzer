@@ -1,0 +1,93 @@
+<%! # Environment to import libraries
+	import os
+	import base64
+	import json
+	import zlib
+	import sys
+	from collections import defaultdict
+%>
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<% 
+			with open(os.path.join(TEMPLATES, 'ElGrapho.min.js'), 'rb') as f:
+				js_base64 = base64.b64encode(f.read()).decode('UTF-8')
+		%>
+		<script src="data:application/javascript;base64,${js_base64}" type="application/javascript"></script>
+		<% 
+			with open(os.path.join(TEMPLATES, 'pako.min.js'), 'rb') as f:
+				js_base64 = base64.b64encode(f.read()).decode('UTF-8')
+		%>
+		<script src="data:application/javascript;base64,${js_base64}" type="application/javascript"></script>
+		
+		<style type="text/css">
+			#container {
+				margin: 10px;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="container"/>
+		</div>
+		<% 
+			groups_index = defaultdict(lambda: 0)
+			if len(net.reference_nodes) == 0: # If there are ref nodes, reserve group index 1 for them
+				add = 1  
+			else: 
+				add = 2 
+			if options.get('group') == 'layer':
+				for nodeID, attr in net.graph.nodes(data=True):
+					groups_index[nodeID] = net.layers.index(attr['layer']) + add
+			else:
+				for i, gr in enumerate(net.group_nodes.values()):
+					for gr_node in gr: groups_index[gr_node] = i + add
+
+			model = {'nodes': [], 'edges': []} 
+			if options.get('layout') == 'forcedir':
+				if options.get('steps') != None:
+					model['steps'] = 30
+				else:
+					model['steps'] = options['steps']
+			nodesIndex = {}
+			for i, nodeID in enumerate(net.graph.nodes):
+				nodesIndex[nodeID] = i
+				if nodeID in net.reference_nodes:
+					group = 1
+				else:
+					group = groups_index[nodeID]
+				model['nodes'].append({'group': group})
+
+			for e in net.graph.edges: model['edges'].append({'from': nodesIndex[e[0]], 'to': nodesIndex[e[1]]})
+			network = base64.b64encode(zlib.compress(json.dumps(model).encode('UTF-8'))).decode('UTF-8')
+		%>
+
+		<script>
+			let model = JSON.parse(pako.inflate(atob("${network}"), { to: 'string' }));
+		
+			graph = new ElGrapho({
+			  container: document.getElementById('container'),
+			  % if options['layout'] == 'hairball':
+			     model: ElGrapho.layouts.Hairball(model),
+			  % elif options['layout'] == 'forcedir':
+			     model: ElGrapho.layouts.ForceDirected(model),
+			  % elif options['layout'] == 'chord':
+			  	 model: ElGrapho.layouts.Chord(model),
+			  % elif options['layout'] == 'radial':
+			  	 model: ElGrapho.layouts.RadialTree(model),			  	 
+			  % elif options['layout'] == 'cl':
+			  	 model: ElGrapho.layouts.Cluster(model),
+			  % endif
+			  darkMode: true,
+			  debug: false,
+			  nodeOutline: false,
+			  glowBlend: 0.1,
+			  width: 1500,
+			  height: 1000,
+			  nodeSize: 0.2,
+			  edgeSize: 0.2
+			});
+		</script>		
+
+	</body>
+</html>

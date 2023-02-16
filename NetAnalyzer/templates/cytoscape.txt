@@ -1,0 +1,70 @@
+<%! # Environment to import libraries
+	import os
+	import base64
+	import json
+	import zlib
+	import sys
+	from collections import defaultdict
+%>
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<% 
+			with open(os.path.join(TEMPLATES, 'cytoscape.min.js'), 'rb') as f:
+				js_base64 = base64.b64encode(f.read()).decode('UTF-8')
+		%>
+		<script src="data:application/javascript;base64,${js_base64}" type="application/javascript"></script>
+		<% 
+			with open(os.path.join(TEMPLATES, 'pako.min.js'), 'rb') as f:
+				js_base64 = base64.b64encode(f.read()).decode('UTF-8')
+		%>
+		<script src="data:application/javascript;base64,${js_base64}" type="application/javascript"></script>
+
+		<style type="text/css">
+			#container {
+				margin: 10px;
+				width: 1100px;
+				height: 1000px;
+				border: 2px solid black;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="container"/>
+		</div>
+		<% 
+			model = {'nodes': [], 'edges': []}
+
+			for n in net.graph.nodes: model['nodes'].append({'data': {'id' : n}})
+			for e in net.graph.edges: model['edges'].append({'data': {'source': e[0], 'target': e[1]}})
+
+			network = base64.b64encode(zlib.compress(json.dumps(model).encode('UTF-8'))).decode('UTF-8')
+		%>
+
+		<script>
+			let model = JSON.parse(pako.inflate(atob("${network}"), { to: 'string' }));
+			cytoscape({
+			  container: document.getElementById('container'),
+			  elements: model,
+			  layout: {
+			    name: 'cose',
+			    animate: false,
+			  },
+
+			  // so we can see the ids
+			  style: [
+			    {
+			      selector: 'node',
+				  style: { 
+				  	'label': 'data(id)',
+				  	'background-color': '#666'
+				  }
+			    }
+			  ]
+			});		
+		
+		</script>
+	</body>
+</html>

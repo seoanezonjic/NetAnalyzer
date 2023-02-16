@@ -77,7 +77,7 @@ parser.add_argument("-z","--normalize_kernel_values", dest="normalize_kernel", d
 					help="Apply cosine normalization to the obtained kernel")
 parser.add_argument("-g", "--graph_file", dest="graph_file", default=None,
 					help="Build a graphic representation of the network")
-parser.add_argument("--graph_options", dest="graph_options", default={'method': 'el_grapho', 'layout': 'forcedir', 'steps': '30'}, type= graph_options_parse,
+parser.add_argument("--graph_options", dest="graph_options", default={'method': 'elgrapho', 'layout': 'forcedir', 'steps': '30'}, type= graph_options_parse,
 					help="Set graph parameters as 'NAME1=value1,NAME2=value2,...")
 parser.add_argument("-T","--threads", dest="threads", default=0, type= based_0,
 					help="Number of threads to use in computation, one thread will be reserved as manager.")
@@ -135,7 +135,6 @@ if options.kernel is not None:
   fullNet.write_kernel(tuple(layer2kernel), options.kernel_file)
 
 if options.graph_file is not None:
-  print(repr(options.graph_options), file=sys.stderr)
   options.graph_options['output_file'] = options.graph_file
   fullNet.plot_network(options.graph_options)
 

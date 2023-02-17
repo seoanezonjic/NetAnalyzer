@@ -32,11 +32,13 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Operating System :: OS Independent"
     ],
     packages=["NetAnalyzer"],
     include_package_data=True,
-    scripts=['bin/NetAnalyzer'],
+    scripts=['bin/netanalyzer', 'bin/ranker', 'bin/randomize_clustering', 'bin/randomize_network', 'bin/text2binary_matrix'],
     install_requires=["NetworkX", "numpy", "scipy", "statsmodels", "graphviz", "mako", "matplotlib"]
 
 )

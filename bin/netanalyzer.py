@@ -136,10 +136,10 @@ if options.meth is not None:
 		predictions = fullNet.association_values[options['meth']]
 		performance = Performancer.get_pred_rec(predictions)
 		with open(options['performance_file'], 'r') as f:
-			f.print("\t".join(['cut', 'prec', 'rec', 'meth']))
+			f.write("\t".join(['cut', 'prec', 'rec', 'meth']) + "\n")
 			for item in performance:
 				item.append(options['meth'])
-				f.print("\t".join(item))
+				f.write("\t".join(item) + "\n")
 
 if options.kernel is not None:
   layer2kernel = options.use_layers[0] # we use only a layer to perform the kernel, so only one item it is selected.

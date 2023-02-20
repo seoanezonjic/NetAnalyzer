@@ -16,7 +16,8 @@ class Adv_mat_calc:
 		#	matrix[n,n] = 0.0
 		#end
 		if kernel in ['el', 'ct', 'rf', 'me'] or 'vn' in kernel or 'rl' in kernel:
-			diagonal_matrix = np.diag(np.diag(matrix.sum(axis=1))) 	# get the total sum for each row, for this reason the sum method takes the 1 value. If sum colums is desired, use 0
+			diagonal_matrix = np.zeros((dimension_elements,dimension_elements))
+			np.fill_diagonal(diagonal_matrix,matrix.sum(axis=1))	# get the total sum for each row, for this reason the sum method takes the 1 value. If sum colums is desired, use 0
 													# Make a matrix whose diagonal is row_sum
 			matrix_L = diagonal_matrix - matrix
 			if kernel == 'el': #Exponential Laplacian diffusion kernel(active). F Fouss 2012 | doi: 10.1016/j.neunet.2012.03.001

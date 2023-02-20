@@ -13,7 +13,9 @@ def get_kernel(matrix, node_names, kernel, normalization=False):
 		matrix_result = None
 		dimension_elements = np.shape(matrix)[1]
 		if kernel in ['el', 'ct', 'rf', 'me'] or 'vn' in kernel or 'rl' in kernel:
-			diagonal_matrix = np.diag(np.diag(matrix.sum(axis=1))) 	
+			diagonal_matrix = np.zeros((dimension_elements,dimension_elements))
+			np.fill_diagonal(diagonal_matrix,matrix.sum(axis=1))	# get the total sum for each row, for this reason the sum method takes the 1 value. If sum colums is desired, use 0
+													# Make a matrix whose diagonal is row_sum 	
 			matrix_L = diagonal_matrix - matrix
 			if kernel == 'el':
 				beta = 0.02

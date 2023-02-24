@@ -22,7 +22,7 @@ def get_kernel(matrix, node_names, kernel, normalization=False):
 				beta_product = matrix_L * -beta
 				matrix_result = LA.expm(beta_product)
 			elif kernel == 'ct': 
-				matrix_result = np.linalg.pinv(matrix_L) 
+				matrix_result = np.linalg.pinv(matrix_L, hermitian=True) 
 			elif kernel == 'rf': 
 				matrix_result = np.linalg.inv(np.eye(dimension_elements) + matrix_L) #Krf = (I +L ) ^ −1
 			elif 'vn' in kernel:

@@ -22,17 +22,19 @@ def load_matrix_file(source, splitChar = "\t"):
 		for i, val in enumerate(row):
 			matrix[counter, i] = val 	
 		counter += 1
+
 	return matrix
 
-def load_pair_file(source, byte_format = "float32"):
+def load_pair_file(source, byte_format = "float32"): 
+	# Not used byte_forma parameter
 	connections = {}
 	for line in source:
-		node_a, node_b, weight = line.strip.split("\t")
+		node_a, node_b, weight = line.strip().split("\t")
 		weight = float(weight) if weight is not None else 1.0 
 		add_pair(node_a, node_b, weight, connections)
 		add_pair(node_b, node_a, weight, connections)
 
-	matrix, names = connections.to_wmatrix
+	matrix, names = dicti2wmatrix_squared(connections)
 	return matrix, names
 
 
@@ -44,6 +46,21 @@ def add_pair(node_a, node_b, weight, connections):
 		subhash = {}
 		subhash[node_b] = weight
 		connections[node_a] = subhash
+
+def dicti2wmatrix_squared(dicti,symm= True):
+	element_names = dicti.keys()
+	matrix = np.zeros((len(element_names), len(element_names)))
+	i = 0
+	for  elementA, relations in dicti.items():
+		for j, elementB in enumerate(element_names):
+			if elementA != elementB:
+				query = relations.get(elementB)
+				if query is not None:
+					matrix[i, j] = query
+					if symm:
+						matrix[j, i] = query 
+		i += 1
+	return matrix, element_names
 
 def get_stats(matrix):
 	stats = []
@@ -247,4 +264,4 @@ if options.stats:
 if options.output_type == 'bin':	
 	np.save(options.output_matrix_file, matrix)
 elif options.output_type == 'mat':
-	np.savetxt(options.output_matrix_file, matrix)
+	np.savetxt(options.output_matrix_file, matrix, delimiter='\t')

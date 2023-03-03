@@ -6,36 +6,29 @@ import numpy as np
 
 class Kernels:
 
-	def __init__(self): # TODO: Watch out with the new initilazers.
-		self.Kernels_raw =  []
-		self.integrated_kernel = None 
-		self.general_nodes = []
-
-		self.kernels_raw = []
-		self.local_indexes = []
-		self.integrated_kernel = []
-		self.general_nodes = []
-		self.kernels_position_index = {}
+	def __init__(self): 
+		self.kernels_raw = [] # [Mat1, Mat2, Mat3,...]
+		self.local_indexes = [] # [{Node1 => idx1, Node2=> idx2},{Node1 => idx4, Node2 => idx2}]
+		self.general_nodes = [] # list of all nodes
+		self.kernels_position_index = {} # { Node1 => [idx1, idx2, None], Node2 => ...}
+		self.integrated_kernel = [] # [integrated_matrix, list_of_nodes]
 
 	def load_kernels_by_bin_matrixes(self, input_matrix, input_nodes, kernels_names):
 		for pos, kernel_name in enumerate(kernels_names):
-			self.kernels_raw.append(np.load(input_matrix))
+			self.kernels_raw.append(np.load(input_matrix[pos]))
 			self.local_indexes.append(self.build_matrix_index(self.lst2arr(input_nodes[pos])))
 
 	def create_general_index(self):
 		self.general_nodes = []
-
 		for index in self.local_indexes:
-			self.general_nodes += index.keys
-	
-		self.general_nodes = list(set(self.general_nodes))
+			self.general_nodes += index.keys()
+		self.general_nodes = list(set(self.general_nodes)) # Uniq elements
 		
 		for node in self.general_nodes:
-			self.kernels_position_index[node] = [ind[node] for ind in self.local_indexes]
+			self.kernels_position_index[node] = [ind.get(node) for ind in self.local_indexes]
+		self.local_indexes = [] # Removing not needed local indexes
 
-		self.local_indexes = []
-
-	def integrate(self):
+	def integrate(self, method):
 		general_nodes = self.general_nodes.copy()
 		nodes_dimension = len(general_nodes)
 		
@@ -52,13 +45,12 @@ class Kernels:
 				j = ind
 				values = self.get_values(node_A, node_B)
 				if values:
-					result = yield(values, n_kernel) # Mirar para incorporar el yield
+					result = method(values, n_kernel) 
 					reversed_i = nodes_dimension -1 - i
 					general_kernel[reversed_i, j] = result
 					general_kernel[j, reversed_i] = result
-				
 				ind -= 1
-			
+
 			i += 1
 
 		self.integrated_kernel = [general_kernel, self.general_nodes]
@@ -75,15 +67,13 @@ class Kernels:
 		return values
 
 	def integrate_matrix(self, method):
-		integrate do |values, n_kernel|
-       if method == "mean" 
-			 	values.sum.fdiv(n_kernel)
-       elsif method == "integration_mean_by_presence"
-       	values.mean
+		if method == "mean":
+			self.integrate(method = lambda values, n_kernel: sum(values)/n_kernel)
+		elif method == "integration_mean_by_presence":
+			self.integrate(method = lambda values, n_kernel: np.mean(values))
 
 	## AUXILIAR METHODS
 	##############################
-
 
 	def lst2arr(self,lst_file):
 		nodes = []
@@ -96,7 +86,6 @@ class Kernels:
 		hash_nodes = {}
 		for i, node in enumerate(node_list):
 			hash_nodes[node] = i
-		
 		return hash_nodes
 
 

@@ -65,7 +65,7 @@ discarded_seeds = [seed_name for seed_name, ranks in rankings.items() if not ran
 if discarded_seeds:
   with open(options.output_name + "_discarded","w") as f:
     for seed_name in discarded_seeds:
-      f.write(f"{seed_name}\t{options[:seed_sep].join(ranker.seeds[seed_name])}")
+      f.write(f"{seed_name}\t{options.seed_sep.join(ranker.seeds[seed_name])}")
 
 if options.top_n is not None:
   top_n = ranker.get_top(options.top_n)

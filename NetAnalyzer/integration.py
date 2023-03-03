@@ -22,7 +22,7 @@ class Kernels:
 		self.general_nodes = []
 		for index in self.local_indexes:
 			self.general_nodes += index.keys()
-		self.general_nodes = list(set(self.general_nodes)) # Uniq elements
+		self.general_nodes = sorted(list(set(self.general_nodes))) # Uniq elements and sorted to remove permutated matrixes.
 		
 		for node in self.general_nodes:
 			self.kernels_position_index[node] = [ind.get(node) for ind in self.local_indexes]
@@ -35,8 +35,8 @@ class Kernels:
 		general_kernel = np.zeros((nodes_dimension,nodes_dimension))
 		n_kernel = len(self.kernels_raw)
 		i = 0
-		while len(general_nodes) > 1:
-			node_A = general_nodes.pop()
+		while len(general_nodes) > 0:
+			node_A = general_nodes[-1]
 			ind = len(general_nodes) - 1
 
 			for node_B in reversed(general_nodes):
@@ -50,6 +50,7 @@ class Kernels:
 					general_kernel[reversed_i, j] = result
 					general_kernel[j, reversed_i] = result
 				ind -= 1
+			general_nodes.pop()
 
 			i += 1
 

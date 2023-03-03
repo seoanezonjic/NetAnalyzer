@@ -34,7 +34,9 @@ class KernelTestCase(unittest.TestCase):
 	def test_integrate(self):
 		self.kernels.create_general_index()
 		self.kernels.integrate_matrix("mean")
-		print(self.kernels.integrated_kernel[0])
-		print(self.kernels.integrated_kernel[1])
-		self.assertEqual([],self.kernels.integrated_kernel[0])
-		self.assertEqual([],self.kernels.integrated_kernel[1])
+		self.assertTrue((np.array([[0.5, 0.5, 0.5, 0], [0.5, 1.5, 0, 0], [0.5, 0, 3.5, 2.5], [0, 0, 2.5, 0]]) == self.kernels.integrated_kernel[0]).all())
+		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.kernels.integrated_kernel[1])
+
+		self.kernels.integrate_matrix("integration_mean_by_presence")
+		self.assertTrue((np.array([[1, 1, 1, 0], [1, 3, 0, 0], [1, 0, 3.5, 5], [0, 0, 5, 0]]) == self.kernels.integrated_kernel[0]).all())
+		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.kernels.integrated_kernel[1])

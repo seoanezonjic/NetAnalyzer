@@ -59,8 +59,8 @@ def get_kernel(matrix, node_names, kernel, normalization=False):
 def cosine_normalization(matrix):
 		dims = np.shape(matrix)
 		normalized_matrix =  np.zeros(dims)
-		for i in range(0, dims[0] - 1):
-			for j in range(0, dims[1] - 1):
+		for i in range(0, dims[0]):
+			for j in range(0, dims[1]):
 				norm = matrix[i, j]/np.sqrt(matrix[i, i] * matrix[j,j])
 				normalized_matrix[i, j] = norm
 		return normalized_matrix

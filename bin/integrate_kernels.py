@@ -8,17 +8,17 @@ import numpy as np
 
 ROOT_PATH=os.path.dirname(__file__)
 sys.path.append(os.path.join(ROOT_PATH, '..'))
-from NetAnalyzer import Kernel
+from NetAnalyzer import Kernels
 
 ########################### OPTPARSE ########################
 #############################################################
 
 parser = argparse.ArgumentParser(description='Integrate kernels or embedding in matrix format')
-parser.add_argument("-t", "--input_kernels", dest="kernel_file", default= None, type= lambda x: x.split("\t"),
+parser.add_argument("-t", "--input_kernels", dest="kernel_files", default= None, type= lambda x : x.strip().split(";"),
 					help="The roots from each kernel to integrate")
-parser.add_argument("-n", "--input_nodes", dest="node_files", default= None, type = lambda x: x.split("\t"),
+parser.add_argument("-n", "--input_nodes", dest="node_files", default= None, type = lambda x : x.strip().split(";"),
 					help="The list of node for each kernel in lst format")
-parser.add_argument("-I", "--kernel_ids", dest="kernel_ids", default= None, type = lambda x: x.split(";"),
+parser.add_argument("-I", "--kernel_ids", dest="kernel_ids", default= None, type = lambda x : x.strip().split(";"),
 					help="The names of each kernel")
 parser.add_argument("-f","--format_kernel",dest= "input_format", default="bin", 
 					help= "The format of the kernels to integrate")
@@ -33,7 +33,7 @@ options = parser.parse_args()
 kernels = Kernels()
 
 if not options.kernel_ids:
-	options.kernel_ids = list(range(0,len(options[:kernel_files])))
+	options.kernel_ids = list(range(0,len(options.kernel_files)))
 	options.kernel_ids = [str(k) for k in options.kernel_ids]
 
 if options.input_format == "bin":
@@ -47,7 +47,7 @@ if options.output_matrix_file is not None:
 	kernel, names = kernels.integrated_kernel
 	np.save(options.output_matrix_file, kernel)
 
-	with open(options.output_matrix_file +'.lst', 'w') as file:
+	with open(options.output_matrix_file +'.lst', 'w') as f:
 		for name in names:
 			f.write(name + "\n")  
 

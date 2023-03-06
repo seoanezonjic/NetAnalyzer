@@ -84,14 +84,4 @@ class Kernels:
 		return nodes
 
 	def build_matrix_index(self, node_list):
-		hash_nodes = {}
-		for i, node in enumerate(node_list):
-			hash_nodes[node] = i
-		return hash_nodes
-
-
-
-
-
-
-
+		return {node: i for i, node in enumerate(node_list)}

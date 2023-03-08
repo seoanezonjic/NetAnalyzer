@@ -486,10 +486,11 @@ class NetAnalyzer:
 		clusters = {}
 		for id, com in self.group_nodes.items():
 			if expand_method == 'sht_path':
-				paths = self.all_pairs_shortest_path()
+				paths = self.all_pairs_shortest_path() #TODO: fix to: self.shortest_paths(com)
 				new_nodes = set()
-				for source, path in paths.items():
-					for target, p in path.items():
+				for source, path in paths.items(): #TODO: fix, for path in paths
+													#TODO: fix, source = path[0]
+					for target, p in path.items(): #TODO: fix, for target, p in path[1].items()
 						for n in p: new_nodes.add(n) 
 				com.add_nodes_from(list(new_nodes))
 				clusters[id] = com

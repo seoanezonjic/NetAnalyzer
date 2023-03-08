@@ -1,6 +1,7 @@
 import sys 
 import numpy as np
 from scipy import linalg
+from warnings import warn
 class Adv_mat_calc:
 
 	def get_kernel(matrix, node_names, kernel, normalization=False):

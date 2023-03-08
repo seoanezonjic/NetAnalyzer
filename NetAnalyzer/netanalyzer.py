@@ -374,12 +374,10 @@ class NetAnalyzer:
 		return relations
 
 	def adjust_pval_association(self, associations, method): # TODO TEST
-		pvals = numpy.array([val[2] for val in relations])
+		pvals = numpy.array([val[2] for val in associations])
 		adj_pvals = statsmodels.stats.multitest.multipletests(pvals, method=method, is_sorted=False, returnsorted=False)
-		count = 0
-		for adj_pval in adj_pvals:
-			relations[count][2] = adj_pval
-			count +=1
+		for idx, adj_pval in enumerate(adj_pvals):
+			associations[idx][2] = adj_pval
 
 	def get_kernel(self, layer2kernel, kernel, normalization=False):
 		matrix, node_names_x, node_names_y = self.adjacency_matrices[layer2kernel]
@@ -471,9 +469,9 @@ class NetAnalyzer:
 		metrics = [[k] for k in self.group_nodes.keys()]
 		header = ['group', 'comparative_degree', 'avg_sht_path']
 		comparative_degree = self.communities_comparative_degree(self.group_nodes)
-		for i, val in enumerate(comparative_degree): metrics[i].append(replace_none_vals(val)) # Add to metrics
+		for i, val in enumerate(comparative_degree): metrics[i].append(self.replace_none_vals(val)) # Add to metrics
 		avg_sht_path = self.communities_avg_sht_path(self.group_nodes)
-		for i, val in enumerate(avg_sht_path): metrics[i].append(replace_none_vals(val)) # Add to metrics
+		for i, val in enumerate(avg_sht_path): metrics[i].append(self.replace_none_vals(val)) # Add to metrics
 		if len(self.reference_nodes) > 0:
 			header.extend(['node_com_assoc_by_edge', 'node_com_assoc_by_node'])
 			node_com_assoc = self.communities_node_com_assoc(self.group_nodes, self.reference_nodes[0]) # Assume only obe reference node

@@ -161,11 +161,7 @@ class NetAnalyzer:
 	def get_all_intersections(self, layers = 'all'):
 		def _(node1, node2):
 			node_intersection = self.intersection(node1, node2)
-			if(node_intersection == None):
-				res = 0
-			else:
-				res = len(list(node_intersection))
-			return res
+			return len(list(node_intersection))
 		intersection_lengths = self.get_all_pairs(_, layers = layers)
 		return intersection_lengths
 

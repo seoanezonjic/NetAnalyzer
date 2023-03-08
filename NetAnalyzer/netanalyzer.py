@@ -375,7 +375,7 @@ class NetAnalyzer:
 
 	def adjust_pval_association(self, associations, method): # TODO TEST
 		pvals = numpy.array([val[2] for val in associations])
-		adj_pvals = statsmodels.stats.multitest.multipletests(pvals, method=method, is_sorted=False, returnsorted=False)
+		adj_pvals = statsmodels.stats.multitest.multipletests(pvals, method=method, is_sorted=False, returnsorted=False)[1]
 		for idx, adj_pval in enumerate(adj_pvals):
 			associations[idx][2] = adj_pval
 

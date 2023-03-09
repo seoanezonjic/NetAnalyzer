@@ -38,7 +38,7 @@ setup(
     ],
     packages=["NetAnalyzer"],
     include_package_data=True,
-    scripts=['bin/netanalyzer', 'bin/ranker', 'bin/randomize_clustering', 'bin/randomize_network', 'bin/text2binary_matrix'],
+    scripts=['bin/netanalyzer.py', 'bin/ranker.py', 'bin/randomize_clustering.py', 'bin/randomize_network.py', 'bin/text2binary_matrix.py'],
     install_requires=["NetworkX", "numpy", "scipy", "statsmodels", "graphviz", "mako", "matplotlib"]
 
 )

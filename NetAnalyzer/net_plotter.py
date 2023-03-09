@@ -1,8 +1,9 @@
 import os
+import sys
 import graphviz
 import json
 import base64
-from mako.template import Template
+from py_report_html import Py_report_html
 
 class Net_plotter:
 
@@ -20,15 +21,11 @@ class Net_plotter:
         elif options['method'] == 'cyt_app':
             self.plot_cyt_app(options)
         else:
-            if options['method'] == 'elgrapho':
-                template_file = 'el_grapho'
-            elif options['method'] == 'cytoscape':
-                template_file = 'cytoscape'
-            elif options['method'] == 'sigma':
-                template_file = 'sigma'
-            template = Template(filename=os.path.join(Net_plotter.TEMPLATES, template_file + '.txt'))
-            renderered_template = template.render(TEMPLATES=Net_plotter.TEMPLATES, options=options, net=self)
-            with open(options['output_file'] + '.html', 'w') as f: f.write(renderered_template)
+            container = {'net_data' : {'group_nodes' : self.group_nodes, 'reference_nodes' : self.reference_nodes, 'graph' : self.graph, 'layers' : self.layers}}
+            template = open(os.path.join(Net_plotter.TEMPLATES, 'network.txt')).read()
+            report = Py_report_html(container, os.path.basename(options['output_file']), True, True)
+            report.build(template, build_options=options)
+            report.write(options['output_file'] + '.html')
 
     def get_node_layer(self, node_id):
         return self.graph.nodes(data=True)[node_id]['layer']

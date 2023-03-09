@@ -5,7 +5,7 @@ import sys
 import os
 import glob
 ROOT_PATH=os.path.dirname(__file__)
-sys.path.append(os.path.join(ROOT_PATH, '..'))
+sys.path.insert(0, os.path.join(ROOT_PATH, '..'))
 from NetAnalyzer import Net_parser, NetAnalyzer
 
 ########################### METHODS ########################

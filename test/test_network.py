@@ -3,6 +3,7 @@ import unittest
 import os
 import math
 import numpy as np
+import networkx as nx
 from NetAnalyzer import NetAnalyzer
 from NetAnalyzer import Net_parser
 ROOT_PATH=os.path.dirname(__file__)
@@ -22,6 +23,28 @@ class BaseNetTestCase(unittest.TestCase):
 		self.monopartite_layers = [['main', '\w'], ['main', '\w']]
 		self.monopartite_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'monopartite_network_for_validating.txt'), self.monopartite_layers)
 		self.monopartite_network.generate_adjacency_matrix(self.monopartite_layers[0][0], self.monopartite_layers[0][0])
+
+		self.comunities_network_layers = [[['main', '\w'], ['main', '\w']]]
+		self.comunities_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'comunities_network_for_validating.txt'), self.comunities_network_layers)
+		self.comunities_network.generate_adjacency_matrix(self.comunities_network_layers[0][0], self.comunities_network_layers[0][0])
+		com1 = nx.Graph()
+		com1.add_edges_from(self.comunities_network.graph.edges)
+		com1.remove_nodes_from("LMNVWXYZ")
+		com2 = nx.Graph()
+		com2.add_edges_from(self.comunities_network.graph.edges)
+		com2.remove_nodes_from("ABCDEFVWXY")
+		self.comunities_network.group_nodes = {'com1': com1, 'com2': com2}
+
+		self.clusters_network_layers = [[['main', '\w'], ['main', '\w']]]
+		self.clusters_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'clusters_network_for_validating.txt'), self.clusters_network_layers)
+		self.clusters_network.generate_adjacency_matrix(self.clusters_network_layers[0][0], self.clusters_network_layers[0][0])
+		clust1 = nx.Graph()
+		clust1.add_edges_from(self.clusters_network.graph.edges)
+		clust1.remove_nodes_from("MNOPQRWXYZ")
+		clust2 = nx.Graph()
+		clust2.add_edges_from(self.clusters_network.graph.edges)
+		clust2.remove_edges_from("ABCDEFGHIJWXYZ")
+		self.clusters_network.group_nodes = {'clust1': clust1, 'clust2': clust2}
 
 	def test_clone(self):
 		network_clone = self.network_obj.clone()
@@ -346,6 +369,65 @@ class BaseNetTestCase(unittest.TestCase):
 		expected_values.sort()
 		test_association.sort()
 		self.assertEqual(expected_values, test_association)
+	
+	def test_adjust_pval_association_bonferroni(self):
+		mock_hypergeo_assoc = [["A", "B", 0.01], ["A", "C", 0.05], ["A", "D", 0.6]]
+		trials = len(mock_hypergeo_assoc)
+		expected = [[node1, node2, pval*len(mock_hypergeo_assoc)] 
+	      			if pval*trials <= 1 else [node1, node2, 1] 
+					for node1, node2, pval in mock_hypergeo_assoc]
+		returned = self.network_obj.adjust_pval_association(mock_hypergeo_assoc, "bonferroni")
+		returned = []
+		self.assertEqual(expected, returned)
+		
+	def test_adjust_pval_association_benjamini(self):
+		mock_hypergeo_assoc = [["A", "B", 0.01], ["A", "C", 0.05], ["A", "D", 0.6]]
+		def _calculate_fdr_bh(pvalues):
+			pvalues = np.array(pvalues)
+			nobs = len(pvalues)
+			ecdffactor = np.arange(1,nobs+1)/float(nobs)
+			pvals_corrected_raw = pvalues / ecdffactor
+			return np.minimum.accumulate(pvals_corrected_raw[::-1])[::-1]
+		
+		returned = self.network_obj.adjust_pval_association(mock_hypergeometric_assoc, "fdr_bh")
+	
+	# Testing comunities methods
+
+	def test_compute_comparative_degree(self):
+		expected = []
+		returned = self.comunities_network.compute_comparative_degree()
+		pass
+
+	def test_compute_node_com_assoc(self):
+		expected = []
+		returned = self.comunities_network.compute_node_com_assoc()
+		pass
+	
+	# Testing iterative comunities methods
+	def test_communities_avg_sht_path(self):
+		expected = []
+		returned = self.comunities_network.communities_avg_sht_path()
+		pass
+
+	def test_communities_comparative_degree(self):
+		expected = []
+		returned = self.comunities_network.communities_comparative_degree()
+		pass
+
+	def test_communities_node_com_assoc(self):
+		expected = []
+		returned = self.comunities_network.communities_node_com_assoc()
+		pass
+
+	def test_compute_group_metrics(self):
+		expected = []
+		returned = self.comunities_network.compute_group_metrics()
+		pass
+
+	def test_expand_clusters(self):
+		expected = []
+		returned = self.clusters_network.expand_clusters()
+		pass
 
 	# Random network generation
 	def test_randomize_monopartite_net_by_nodes(self):

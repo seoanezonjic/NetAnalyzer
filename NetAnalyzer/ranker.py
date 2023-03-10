@@ -48,7 +48,7 @@ class Ranker:
     # TODO: Implement parallelization in the process as ruby if needed.
     for seed_name, seed in self.seeds.items():
       # The code in this block CANNOT modify nothing outside
-      if leave_one_out and len(self.reference_nodes[seed_name]) <= 1:
+      if leave_one_out and len(self.reference_nodes[seed_name]) == 1:
          rank_list = self.get_individual_rank(seed, self.reference_nodes[seed_name][0])
       else:
          rank_list = self.rank_by_seed(seed_indexes, seed)  # Production mode

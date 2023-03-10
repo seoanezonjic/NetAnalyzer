@@ -7,7 +7,7 @@ import glob
 import numpy as np
 
 ROOT_PATH=os.path.dirname(__file__)
-sys.path.append(os.path.join(ROOT_PATH, '..'))
+sys.path.insert(0,os.path.join(ROOT_PATH, '..'))
 from NetAnalyzer import Ranker
 
 ########################### METHODS ########################

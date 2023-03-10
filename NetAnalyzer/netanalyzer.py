@@ -453,7 +453,7 @@ class NetAnalyzer:
 			other_edges += len(specific_nodes)
 		by_edge = (ref_edges + ref_secondary_edges) / other_edges
 		by_node = (ref_edges + len(secondary_nodes)) / len(other_nodes)
-		return by_edge, by_node
+		return [by_edge, by_node]
 
 	# Iterative community methods
 	def communities_avg_sht_path(self, coms):
@@ -463,7 +463,7 @@ class NetAnalyzer:
 		return [ self.compute_comparative_degree(com) for com_id, com in coms.items()]
 
 	def communities_node_com_assoc(self, coms, ref_node):
-		return [ [self.compute_node_com_assoc(com, ref_node)] for com_id, com in coms.items()]
+		return [ self.compute_node_com_assoc(com, ref_node) for com_id, com in coms.items()]
 	
 	def compute_group_metrics(self, output_filename): #Summary method
 		metrics = [[k] for k in self.group_nodes.keys()]
@@ -486,11 +486,11 @@ class NetAnalyzer:
 		clusters = {}
 		for id, com in self.group_nodes.items():
 			if expand_method == 'sht_path':
-				paths = self.all_pairs_shortest_path() #TODO: fix to: self.shortest_paths(com)
+				paths = self.shortest_paths(com) #TODO: fix to: self.shortest_paths(com)
 				new_nodes = set()
-				for source, path in paths.items(): #TODO: fix, for path in paths
-													#TODO: fix, source = path[0]
-					for target, p in path.items(): #TODO: fix, for target, p in path[1].items()
+				for path in paths: #TODO: fix, for path in paths
+					source = path[0]								#TODO: fix, source = path[0]
+					for target, p in path[1].items(): #TODO: fix, for target, p in path[1].items()
 						for n in p: new_nodes.add(n) 
 				com.add_nodes_from(list(new_nodes))
 				clusters[id] = com

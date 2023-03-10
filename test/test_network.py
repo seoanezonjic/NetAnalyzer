@@ -6,6 +6,7 @@ import numpy as np
 import networkx as nx
 from NetAnalyzer import NetAnalyzer
 from NetAnalyzer import Net_parser
+from statsmodels.stats.multitest import multipletests
 ROOT_PATH=os.path.dirname(__file__)
 DATA_TEST_PATH = os.path.join(ROOT_PATH, 'data')
 
@@ -24,7 +25,7 @@ class BaseNetTestCase(unittest.TestCase):
 		self.monopartite_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'monopartite_network_for_validating.txt'), self.monopartite_layers)
 		self.monopartite_network.generate_adjacency_matrix(self.monopartite_layers[0][0], self.monopartite_layers[0][0])
 
-		self.comunities_network_layers = [[['main', '\w'], ['main', '\w']]]
+		self.comunities_network_layers = [['main', '\w'], ['main', '\w']]
 		self.comunities_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'comunities_network_for_validating.txt'), self.comunities_network_layers)
 		self.comunities_network.generate_adjacency_matrix(self.comunities_network_layers[0][0], self.comunities_network_layers[0][0])
 		com1 = nx.Graph()
@@ -35,7 +36,7 @@ class BaseNetTestCase(unittest.TestCase):
 		com2.remove_nodes_from("ABCDEFVWXY")
 		self.comunities_network.group_nodes = {'com1': com1, 'com2': com2}
 
-		self.clusters_network_layers = [[['main', '\w'], ['main', '\w']]]
+		self.clusters_network_layers = [['main', '\w'], ['main', '\w']]
 		self.clusters_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'clusters_network_for_validating.txt'), self.clusters_network_layers)
 		self.clusters_network.generate_adjacency_matrix(self.clusters_network_layers[0][0], self.clusters_network_layers[0][0])
 		clust1 = nx.Graph()
@@ -43,7 +44,7 @@ class BaseNetTestCase(unittest.TestCase):
 		clust1.remove_nodes_from("MNOPQRWXYZ")
 		clust2 = nx.Graph()
 		clust2.add_edges_from(self.clusters_network.graph.edges)
-		clust2.remove_edges_from("ABCDEFGHIJWXYZ")
+		clust2.remove_nodes_from("ABCDEFGHIJWXYZ")
 		self.clusters_network.group_nodes = {'clust1': clust1, 'clust2': clust2}
 
 	def test_clone(self):
@@ -372,62 +373,114 @@ class BaseNetTestCase(unittest.TestCase):
 	
 	def test_adjust_pval_association_bonferroni(self):
 		mock_hypergeo_assoc = [["A", "B", 0.01], ["A", "C", 0.05], ["A", "D", 0.6]]
-		trials = len(mock_hypergeo_assoc)
-		expected = [[node1, node2, pval*len(mock_hypergeo_assoc)] 
-	      			if pval*trials <= 1 else [node1, node2, 1] 
-					for node1, node2, pval in mock_hypergeo_assoc]
-		returned = self.network_obj.adjust_pval_association(mock_hypergeo_assoc, "bonferroni")
-		returned = []
-		self.assertEqual(expected, returned)
+		p_adjusted = multipletests([pvalue[2] for pvalue in mock_hypergeo_assoc], 
+							 	method="bonferroni", is_sorted=False, returnsorted=False)[1]
+		expected = [[nodeA, nodeB, p_adjusted[idx]] for idx, (nodeA, nodeB, pvalue) in enumerate(mock_hypergeo_assoc)]
+		
+		self.network_obj.adjust_pval_association(mock_hypergeo_assoc, "bonferroni") # This method modifies the list in place
+		self.assertEqual(expected, mock_hypergeo_assoc)
 		
 	def test_adjust_pval_association_benjamini(self):
 		mock_hypergeo_assoc = [["A", "B", 0.01], ["A", "C", 0.05], ["A", "D", 0.6]]
-		def _calculate_fdr_bh(pvalues):
-			pvalues = np.array(pvalues)
-			nobs = len(pvalues)
-			ecdffactor = np.arange(1,nobs+1)/float(nobs)
-			pvals_corrected_raw = pvalues / ecdffactor
-			return np.minimum.accumulate(pvals_corrected_raw[::-1])[::-1]
+		p_adjusted = multipletests([pvalue[2] for pvalue in mock_hypergeo_assoc], 
+							 	method="fdr_bh", is_sorted=False, returnsorted=False)[1]
+		expected = [[nodeA, nodeB, p_adjusted[idx]] for idx, (nodeA, nodeB, pvalue) in enumerate(mock_hypergeo_assoc)]
 		
-		returned = self.network_obj.adjust_pval_association(mock_hypergeometric_assoc, "fdr_bh")
+		self.network_obj.adjust_pval_association(mock_hypergeo_assoc, "fdr_bh") # Same as benjamini in the test before
+		self.assertEqual(expected, mock_hypergeo_assoc)
 	
 	# Testing comunities methods
 
 	def test_compute_comparative_degree(self):
-		expected = []
-		returned = self.comunities_network.compute_comparative_degree()
-		pass
+		internal, external = (5+5+5+5+5+5, 2+1+1+0+0+0) 
+		expected = external / (internal + external)
+		returned = self.comunities_network.compute_comparative_degree(self.comunities_network.group_nodes["com1"])
+		
+		internal2, external2 = (3+3+3+3, 0+0+0+2)
+		expected2 = external2 / (internal2 + external2)
+		returned2 = self.comunities_network.compute_comparative_degree(self.comunities_network.group_nodes["com2"])
 
-	def test_compute_node_com_assoc(self):
-		expected = []
-		returned = self.comunities_network.compute_node_com_assoc()
-		pass
+		self.assertEqual(expected2, returned2)
+		self.assertEqual(expected, returned)
 	
-	# Testing iterative comunities methods
-	def test_communities_avg_sht_path(self):
-		expected = []
-		returned = self.comunities_network.communities_avg_sht_path()
-		pass
+	def test_compute_node_com_assoc(self):
+		ref_edges, secondary_edges, other_edges = (1+0+0+0+0+0, 1+2+2+1+1+1, 5+4+4+4+4+4)		
+		secondary_nodes, other_nodes = (2, 5)
+		by_edge, by_node = ((ref_edges + secondary_edges) / other_edges, (ref_edges + secondary_nodes) / other_nodes) 
+		expected = [by_edge, by_node]
+		returned = self.comunities_network.compute_node_com_assoc(self.comunities_network.group_nodes["com1"], "X")
 
+		ref_edges2, secondary_edges2, other_edges2 = (1+0+0+0, 1+1+1+1, 3+2+2+2)		
+		secondary_nodes2, other_nodes2 = (2, 3)
+		by_edge2, by_node2 = ((ref_edges2 + secondary_edges2) / other_edges2, (ref_edges2 + secondary_nodes2) / other_nodes2)
+		expected2 = [by_edge2, by_node2]
+		returned2 = self.comunities_network.compute_node_com_assoc(self.comunities_network.group_nodes["com2"], "X")
+
+		self.assertEqual(set(expected), set(returned))
+		self.assertEqual(set(expected2), set(returned2))		
+
+
+	# Testing iterative comunities methods
+	
+	def test_communities_avg_sht_path(self):
+		paths_clust1 = (1+1+2+2+3) / 5 #This is only for one node, but the community is k2-regular cycle so the value holds the same for all nodes 
+		paths_clust2 = (1+1+2+2+3+3+4+4+5) / 9 #Same as above
+		expected = sorted([paths_clust1, paths_clust2]) #Cluster1 and Cluster2 average shortest path
+		
+		returned = self.clusters_network.communities_avg_sht_path(self.clusters_network.group_nodes)
+		self.assertEqual(expected, sorted(returned))
+	
 	def test_communities_comparative_degree(self):
-		expected = []
-		returned = self.comunities_network.communities_comparative_degree()
-		pass
+		internal, external = (5+5+5+5+5+5, 2+1+1+0+0+0) 
+		expected_com1 = external / (internal + external)
+		internal2, external2 = (3+3+3+3, 0+0+0+2)
+		expected_com2 = external2 / (internal2 + external2)
+		
+		returned = self.comunities_network.communities_comparative_degree(self.comunities_network.group_nodes)
+		self.assertEqual(set([expected_com1, expected_com2]), set(returned))
 
 	def test_communities_node_com_assoc(self):
-		expected = []
-		returned = self.comunities_network.communities_node_com_assoc()
-		pass
+		ref_edges, secondary_edges, other_edges = (1+0+0+0+0+0, 1+2+2+1+1+1, 5+4+4+4+4+4)		
+		secondary_nodes, other_nodes = (2, 5)
+		by_edge, by_node = ((ref_edges + secondary_edges) / other_edges, (ref_edges + secondary_nodes) / other_nodes) 
+		expected = [by_edge, by_node]
+	
+		ref_edges2, secondary_edges2, other_edges2 = (1+0+0+0, 1+1+1+1, 3+2+2+2)		
+		secondary_nodes2, other_nodes2 = (2, 3)
+		by_edge2, by_node2 = ((ref_edges2 + secondary_edges2) / other_edges2, (ref_edges2 + secondary_nodes2) / other_nodes2)
+		expected2 = [by_edge2, by_node2]
 
+		returned = self.comunities_network.communities_node_com_assoc(self.comunities_network.group_nodes, "X")
+		self.assertEqual([expected, expected2], returned)
+
+	"""
 	def test_compute_group_metrics(self):
 		expected = []
 		returned = self.comunities_network.compute_group_metrics()
 		pass
+	"""
+	
+	# ASK PEDRO: HERE THE TEST FAIL BECAUSE THE SHORTEST PARTH IS BEING CALCULATED
+	# BETWEEN THE ELEMENTS OF THE COMUNITY NETWORK OBJECT, BUT NOT USING
+	# ALL THE NODES OF THE NETWORK, ONLY THE NODES IN THE COMUNITY
 
+	# SOLUTION 1: CALCULATE THE SHORTEST PATH BETWEEN ALL THE NODES OF THE WHOLE NETWORK
+	# AND ADDING ONLY THE NEW NODES INSIDE THE SHORTESTS PATH OF THE COMMUNITY NODES
+	# (POSSIBLY COMPUTATIONALLY EXPENSIVE)
+
+	# SOLUTION 2: ADAPT THE PAIRWISE SHORTEST PATH NETANALYZER METHOD TO IMPLEMENT LOGIC
+	# TO CALCULATE ONLY SHORTEST PATHS BETWEEN THE ASKED NODES USING HIS OTHER METHOD SHORTEST_PATH 
 	def test_expand_clusters(self):
-		expected = []
-		returned = self.clusters_network.expand_clusters()
-		pass
+		expected_expanded_cluster_1 = set(["A","B","C","D","E","F","G","H","I","J"]) | set(["X","Y","Z"])
+		expected_expanded_cluster_2 = set(["M","N","O","P","Q","R","W"]) | set(["W"])
+		
+		returned = self.clusters_network.expand_clusters("sht_path")
+		returned_cluster1 = returned["clust1"]
+		returned_cluster2 = returned["clust2"]
+
+		self.assertEqual(expected_expanded_cluster_1, set(returned_cluster1.nodes))
+		self.assertEqual(expected_expanded_cluster_2, set(returned_cluster2.nodes))
+	
 
 	# Random network generation
 	def test_randomize_monopartite_net_by_nodes(self):

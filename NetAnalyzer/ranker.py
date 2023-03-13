@@ -12,8 +12,10 @@ class Ranker:
     self.reference_nodes = {}
     self.ranking = {}  # ranked_genes
 
-  def load_seeds(self, node_groups, sep=','):
+  def load_seeds(self, node_groups, sep=',', uniq= True):
     self.seeds = self.load_nodes_by_group(node_groups, sep=sep)
+    if uniq:
+      self.seeds = {key: sorted(list(set(seed))) for key, seed in self.seeds.items()}
 
   def load_references(self, node_groups, sep=','):
     self.reference_nodes = self.load_nodes_by_group(node_groups, sep=sep)
@@ -48,7 +50,7 @@ class Ranker:
     # TODO: Implement parallelization in the process as ruby if needed.
     for seed_name, seed in self.seeds.items():
       # The code in this block CANNOT modify nothing outside
-      if leave_one_out and len(self.reference_nodes[seed_name]) == 1:
+      if leave_one_out:
          rank_list = self.get_individual_rank(seed, self.reference_nodes[seed_name][0])
       else:
          rank_list = self.rank_by_seed(seed_indexes, seed)  # Production mode

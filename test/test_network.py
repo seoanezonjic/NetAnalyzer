@@ -28,6 +28,7 @@ class BaseNetTestCase(unittest.TestCase):
 		self.comunities_network_layers = [['main', '\w'], ['main', '\w']]
 		self.comunities_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'comunities_network_for_validating.txt'), self.comunities_network_layers)
 		self.comunities_network.generate_adjacency_matrix(self.comunities_network_layers[0][0], self.comunities_network_layers[0][0])
+		self.comunities_network.reference_nodes = ["X"]
 		com1 = nx.Graph()
 		com1.add_edges_from(self.comunities_network.graph.edges)
 		com1.remove_nodes_from("LMNVWXYZ")
@@ -41,11 +42,12 @@ class BaseNetTestCase(unittest.TestCase):
 		self.clusters_network.generate_adjacency_matrix(self.clusters_network_layers[0][0], self.clusters_network_layers[0][0])
 		clust1 = nx.Graph()
 		clust1.add_edges_from(self.clusters_network.graph.edges)
-		clust1.remove_nodes_from("MNOPQRWXYZ")
+		clust1.remove_nodes_from("MNOPQR"+"VWXYZ")
 		clust2 = nx.Graph()
 		clust2.add_edges_from(self.clusters_network.graph.edges)
-		clust2.remove_nodes_from("ABCDEFGHIJWXYZ")
+		clust2.remove_nodes_from("ABCDEFGHIJ"+"VWXYZ")
 		self.clusters_network.group_nodes = {'clust1': clust1, 'clust2': clust2}
+		
 
 	def test_clone(self):
 		network_clone = self.network_obj.clone()
@@ -400,8 +402,9 @@ class BaseNetTestCase(unittest.TestCase):
 		expected2 = external2 / (internal2 + external2)
 		returned2 = self.comunities_network.compute_comparative_degree(self.comunities_network.group_nodes["com2"])
 
-		self.assertEqual(expected2, returned2)
 		self.assertEqual(expected, returned)
+		self.assertEqual(expected2, returned2)
+
 	
 	def test_compute_node_com_assoc(self):
 		ref_edges, secondary_edges, other_edges = (1+0+0+0+0+0, 1+2+2+1+1+1, 5+4+4+4+4+4)		
@@ -453,30 +456,54 @@ class BaseNetTestCase(unittest.TestCase):
 		returned = self.comunities_network.communities_node_com_assoc(self.comunities_network.group_nodes, "X")
 		self.assertEqual([expected, expected2], returned)
 
-	"""
+
 	def test_compute_group_metrics(self):
-		expected = []
-		returned = self.comunities_network.compute_group_metrics()
-		pass
-	"""
-	
-	# ASK PEDRO: HERE THE TEST FAIL BECAUSE THE SHORTEST PARTH IS BEING CALCULATED
-	# BETWEEN THE ELEMENTS OF THE COMUNITY NETWORK OBJECT, BUT NOT USING
-	# ALL THE NODES OF THE NETWORK, ONLY THE NODES IN THE COMUNITY
+		expected = {
+			"com1": {
+			  "comparative_degree": self.comunities_network.compute_comparative_degree(self.comunities_network.group_nodes["com1"]), 
+			  "avg_sht_path": self.comunities_network.average_shortest_path_length(self.comunities_network.group_nodes["com1"]), 
+			  "node_com_assoc_by_edge":	self.comunities_network.compute_node_com_assoc(self.comunities_network.group_nodes["com1"], "X")[0],
+			  "node_com_assoc_by_node": self.comunities_network.compute_node_com_assoc(self.comunities_network.group_nodes["com1"], "X")[1]}, 
+			"com2": {
+			  "comparative_degree":	self.comunities_network.compute_comparative_degree(self.comunities_network.group_nodes["com2"]), 
+			  "avg_sht_path": self.comunities_network.average_shortest_path_length(self.comunities_network.group_nodes["com2"]), 
+			  "node_com_assoc_by_edge":	self.comunities_network.compute_node_com_assoc(self.comunities_network.group_nodes["com2"], "X")[0],
+			  "node_com_assoc_by_node":	self.comunities_network.compute_node_com_assoc(self.comunities_network.group_nodes["com2"], "X")[1]}
+			}
+		
+		self.comunities_network.compute_group_metrics(os.path.join(DATA_TEST_PATH, "group_metrics_test.tsv"))
+		
+		reread_metrics = {}
+		with open(os.path.join(DATA_TEST_PATH, "group_metrics_test.tsv"), "r") as f:
+			header = []
+			comunity_id = ""
+			for line, content in enumerate(f):
+				if line == 0:
+					header = content.strip().split("\t")
+				else:
+					values = content.strip().split("\t")
+					for pos, value in enumerate(values):
+						if pos == 0:
+							comunity_id = value
+							reread_metrics[comunity_id] = {}
+						else:
+							reread_metrics[comunity_id][header[pos]] = float(value)
+		
+		self.assertEqual(expected, reread_metrics)
+		os.remove(os.path.join(DATA_TEST_PATH, "group_metrics_test.tsv"))
 
-	# SOLUTION 1: CALCULATE THE SHORTEST PATH BETWEEN ALL THE NODES OF THE WHOLE NETWORK
-	# AND ADDING ONLY THE NEW NODES INSIDE THE SHORTESTS PATH OF THE COMMUNITY NODES
-	# (POSSIBLY COMPUTATIONALLY EXPENSIVE)
-
-	# SOLUTION 2: ADAPT THE PAIRWISE SHORTEST PATH NETANALYZER METHOD TO IMPLEMENT LOGIC
-	# TO CALCULATE ONLY SHORTEST PATHS BETWEEN THE ASKED NODES USING HIS OTHER METHOD SHORTEST_PATH 
 	def test_expand_clusters(self):
 		expected_expanded_cluster_1 = set(["A","B","C","D","E","F","G","H","I","J"]) | set(["X","Y","Z"])
-		expected_expanded_cluster_2 = set(["M","N","O","P","Q","R","W"]) | set(["W"])
+		expected_expanded_cluster_2 = set(["M","N","O","P","Q","R","W"]) | set(["W", "V"])
 		
 		returned = self.clusters_network.expand_clusters("sht_path")
 		returned_cluster1 = returned["clust1"]
 		returned_cluster2 = returned["clust2"]
+
+		import matplotlib.pyplot as plt
+		nx.draw_kamada_kawai(returned_cluster2, with_labels = True)
+		plt.show(block = False)
+		plt.savefig("graph.png")
 
 		self.assertEqual(expected_expanded_cluster_1, set(returned_cluster1.nodes))
 		self.assertEqual(expected_expanded_cluster_2, set(returned_cluster2.nodes))

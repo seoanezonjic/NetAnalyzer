@@ -36,6 +36,7 @@ def group_nodes_parse(string):
 	else:
 		for i, group in enumerate(string.split(";")):
 			options.group_nodes[i] = group.split(',')
+
 def graph_options_parse(string):
 	graph_options = {}
 	for pair in string.split(','):
@@ -83,14 +84,26 @@ parser.add_argument("-T","--threads", dest="threads", default=0, type= based_0,
 					help="Number of threads to use in computation, one thread will be reserved as manager.")
 parser.add_argument("-r","--reference_nodes", dest="reference_nodes", default=[], type= lambda x: x.split(","),
 					help="Node ids comma separared")
+
+parser.add_argument("-R","--reference_clusters", dest="reference_clusters", default=[], type= group_nodes_parse,
+					help="File path or groups separated by ';' and group node ids comma separared")
 parser.add_argument("-G","--group_nodes", dest="group_nodes", default={}, type= group_nodes_parse,
 					help="File path or groups separated by ';' and group node ids comma separared")
+
+parser.add_argument("-b", "--build_clusters_alg", dest="build_cluster_alg", default=None,
+					help="Type of cluster algorithm")
+parser.add_argument("-B", "--build_clusters_add_options", dest="build_clusters_add_options", default=None,
+					help="additional options from cdlib")
+
 parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lambda x: x.split(";"),
 					help="Remove nodes from file. If PATH;r then nodes not included in file are removed")
 parser.add_argument("-x","--expand_clusters", dest="expand_clusters", default=None,
 					help="Method to expand clusters Available methods: sht_path")
-parser.add_argument("-M", "--group_metrics", dest="group_metrics", default=False, action='store_true',
+parser.add_argument("-M", "--group_metrics", dest="group_metrics", default=None, type= lambda x: x.split(";"),
 					help="Perform group group_metrics")
+parser.add_argument("-S", "--summarize_metrics", dest="summarize_metrics", default=False, action='store_true',
+					help="Summarize metrics from groups")
+
 options = parser.parse_args()
 
 ########## MAIN ##########
@@ -151,26 +164,27 @@ if options.graph_file is not None:
   fullNet.plot_network(options.graph_options)
 
 # Group creation
-#if options.cluster_method is not None:
-#	fullNet.discover_clusters(options.cluster_method, options.cluster_additional_options)
-
-# TODO: Add if write output necessary.
+if options.build_cluster_alg is not None:
+	fullNet.discover_clusters(options.build_cluster_alg, options.build_clusters_add_options)
+  with open(os.path.join(os.path.dirname(options.output_file), 'discovered_clusters.txt'), 'w') as out_file:
+    for cl_id, nodes in fullNet.group_nodes.items():
+      for node in nodes: out_file.write(f"{cl_id}\t{node}\n")
 
 # Group metrics # Add summary options etc.
 
 if options.group_metrics:
-  fullNet.compute_group_metrics(os.path.join(os.path.dirname(options.output_file), 'group_metrics.txt'))
+  fullNet.compute_group_metrics(output_filename= os.path.join(os.path.dirname(options.output_file), 'group_metrics.txt'), metrics = options)
 
 
-#if(options.stats):
-#		metrics, results = get_stats(g, communities)
-#		f = open(options.output_stats, "w")
-#		count = 0
-#		for res in results:
-#			metric_name = metrics[count]
-#			f.write("\t".join([metric_name, str(res.score), str(res.max), str(res.min), str(res.std)]) + "\n")
-#			count += 1
-#		f.close()
+if(options.stats):
+		metrics, results = get_stats(g, communities)
+		f = open(options.output_stats, "w")
+		count = 0
+		for res in results:
+			metric_name = metrics[count]
+			f.write("\t".join([metric_name, str(res.score), str(res.max), str(res.min), str(res.std)]) + "\n")
+			count += 1
+		f.close()
 
 
 # Comparing communities:

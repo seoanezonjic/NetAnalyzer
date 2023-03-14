@@ -579,7 +579,7 @@ class NetAnalyzer:
                 count += 1
 
     def load_group_nx(self):
-        self.group_nx = {id: self.graph.subgraph(nodes) for id, nodes in self.group_nodes}
+        self.group_nx = {id: self.graph.subgraph(nodes) for id, nodes in self.group_nodes.items()}
 
     def compute_group_metrics(self, output_filename, metrics = ['comparative_degree', 'avg_sht_path', 'node_com_assoc']): #metics by each clusters
         output_metrics = [[k] for k in self.group_nodes.keys()]

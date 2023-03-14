@@ -584,7 +584,7 @@ class NetAnalyzer:
                 for i, val in enumerate(node_com_assoc): output_metrics[i].extend(val) # Add to metrics
         else:
             # https://www.kite.com/python/answers/how-to-call-a-function-by-its-name-as-a-string-in-python
-            communities = NodeClustering(list(self.group_nodes.values()), self.graph, "external", overlap=True)
+            communities = NodeClustering(list(self.group_nodes.values()), self.graph, "external", overlap=True) # TODO Maybe this is not the most efficient way (?)
             class_method = getattr(evaluation, metric)
             res = class_method(self.graph, communities, summary=False)
             for i, val in enumerate(res): output_metrics[i].append(self.replace_none_vals(val))

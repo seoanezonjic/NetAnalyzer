@@ -150,9 +150,34 @@ if options.graph_file is not None:
   options.graph_options['output_file'] = options.graph_file
   fullNet.plot_network(options.graph_options)
 
+# Group creation
+#if options.cluster_method is not None:
+#	fullNet.discover_clusters(options.cluster_method, options.cluster_additional_options)
+
+# TODO: Add if write output necessary.
+
+# Group metrics # Add summary options etc.
+
 if options.group_metrics:
   fullNet.compute_group_metrics(os.path.join(os.path.dirname(options.output_file), 'group_metrics.txt'))
 
+
+#if(options.stats):
+#		metrics, results = get_stats(g, communities)
+#		f = open(options.output_stats, "w")
+#		count = 0
+#		for res in results:
+#			metric_name = metrics[count]
+#			f.write("\t".join([metric_name, str(res.score), str(res.max), str(res.min), str(res.std)]) + "\n")
+#			count += 1
+#		f.close()
+
+
+# Comparing communities:
+#if options.compare_groups:
+#	# ...TODO...
+
+# Group expansion
 if options.expand_clusters is not None:
   expanded_clusters = fullNet.expand_clusters(options.expand_clusters)
   with open(os.path.join(os.path.dirname(options.output_file), 'expand_clusters.txt'), 'w') as out_file:

@@ -8,6 +8,7 @@ import numpy
 import scipy.stats as stats
 import statsmodels
 import itertools
+from cdlib import algorithms, viz, evaluation
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 from NetAnalyzer.net_plotter import Net_plotter
 # https://stackoverflow.com/questions/60392940/multi-layer-graph-in-networkx
@@ -421,6 +422,76 @@ class NetAnalyzer:
         Net_plotter(net_data, options)
 
     # COMMUNITY METHODS
+
+    # Cluster (community) dicovery
+
+    def discover_clusters(self, cluster_method, cluster_additional_options):
+        communities = self.get_clusters_by_algorithm(cluster_method, cluster_additional_options)
+        communities = { cluster_method + "_" + str(idx): self.graph.subgraph(community) for idx, community in enumerate(communities)}
+        self.group_nodes.update(communities) # If external added, thay will not be removed!
+
+    def get_clusters_by_algorithm(self, cluster_method, cluster_additional_options):
+        exec('clust_kwargs = {' + options.additional_options +'}') # This allows inject custom arguments for each clustering method
+        if(cluster_method == 'leiden'):
+            communities = algorithms.leiden(g, weights='weight', **clust_kwargs)
+        elif(cluster_method == 'louvain'):
+            communities = algorithms.louvain(g, weight='weight', **clust_kwargs)
+        elif(cluster_method == 'cpm'):
+            communities = algorithms.cpm(g, weights='weight', **clust_kwargs)
+        elif(cluster_method == 'der'):
+            communities = algorithms.der(g, **clust_kwargs)
+        elif(cluster_method == 'edmot'):
+            communities = algorithms.edmot(g, **clust_kwargs)
+        elif(cluster_method == 'eigenvector'):
+            communities = algorithms.eigenvector(g, **clust_kwargs)
+        elif(cluster_method == 'gdmp2'):
+            communities = algorithms.gdmp2(g, **clust_kwargs)
+        elif(cluster_method == 'greedy_modularity'):
+            communities = algorithms.greedy_modularity(g, weight='weight', **clust_kwargs)
+        elif(cluster_method == 'label_propagation'):
+            communities = algorithms.label_propagation(g, **clust_kwargs)
+        elif(cluster_method == 'markov_clustering'):
+            communities = algorithms.markov_clustering(g, **clust_kwargs)
+        elif(cluster_method == 'rber_pots'):
+            communities = algorithms.rber_pots(g, weights='weight', **clust_kwargs)
+        elif(cluster_method == 'rb_pots'):
+            communities = algorithms.rb_pots(g, weights='weight', **clust_kwargs)
+        elif(cluster_method == 'significance_communities'):
+            communities = algorithms.significance_communities(g, **clust_kwargs)
+        elif(cluster_method == 'spinglass'):
+            communities = algorithms.spinglass(g, **clust_kwargs)
+        elif(cluster_method == 'surprise_communities'):
+            communities = algorithms.surprise_communities(g, **clust_kwargs)
+        elif(cluster_method == 'walktrap'):
+            communities = algorithms.walktrap(g, **clust_kwargs)
+        elif(cluster_method == 'lais2'):
+            communities = algorithms.lais2(g, **clust_kwargs)
+        elif(cluster_method == 'big_clam'):
+            communities = algorithms.big_clam(g, **clust_kwargs)
+        elif(cluster_method == 'danmf'):
+            communities = algorithms.danmf(g, **clust_kwargs)
+        elif(cluster_method == 'ego_networks'):
+            communities = algorithms.ego_networks(g, **clust_kwargs)
+        elif(cluster_method == 'egonet_splitter'):
+            communities = algorithms.egonet_splitter(g, **clust_kwargs)
+        elif(cluster_method == 'nmnf'):
+            communities = algorithms.nmnf(g, **clust_kwargs)
+        elif(cluster_method == 'nnsed'):
+            communities = algorithms.nnsed(g, **clust_kwargs)
+        elif(cluster_method == 'slpa'):
+            communities = algorithms.slpa(g, **clust_kwargs)
+        elif(cluster_method == 'bimlpa'):
+            communities = actlgorithms.bimlpa(g, **clust_kwargs)
+        elif(cluster_method == 'wcommunity'):
+            communities = algorithms.wCommunity(g, **clust_kwargs)
+        elif(cluster_method == 'aslpaw'):
+            import warnings
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore")
+                communities = algorithms.aslpaw(g)
+
+        return communities.communities # To return a list of list with each of the nodes names for each communities.
+    # Metrics
     def compute_comparative_degree(self, com): # see Girvan-Newman Benchmark control parameter in http://networksciencebook.com/chapter/9#testing (communities chapter)
         internal_degree = 0
         external_degree = 0
@@ -465,23 +536,59 @@ class NetAnalyzer:
 
     def communities_node_com_assoc(self, coms, ref_node):
         return [ self.compute_node_com_assoc(com, ref_node) for com_id, com in coms.items()]
-    
-    def compute_group_metrics(self, output_filename): #Summary method
-        metrics = [[k] for k in self.group_nodes.keys()]
-        header = ['group', 'comparative_degree', 'avg_sht_path']
-        comparative_degree = self.communities_comparative_degree(self.group_nodes)
-        for i, val in enumerate(comparative_degree): metrics[i].append(self.replace_none_vals(val)) # Add to metrics
-        avg_sht_path = self.communities_avg_sht_path(self.group_nodes)
-        for i, val in enumerate(avg_sht_path): metrics[i].append(self.replace_none_vals(val)) # Add to metrics
-        if len(self.reference_nodes) > 0:
-            header.extend(['node_com_assoc_by_edge', 'node_com_assoc_by_node'])
-            node_com_assoc = self.communities_node_com_assoc(self.group_nodes, self.reference_nodes[0]) # Assume only obe reference node
-            for i, val in enumerate(node_com_assoc): metrics[i].extend(val) # Add to metrics
+
+    def compute_summarized_group_metrics(self, output_filename, metrics = ['size', 'avg_transitivity', 'internal_edge_density',
+     'conductance', 'triangle_participation_ratio', 'max_odf', 'avg_odf', 'avg_embeddedness', 'average_internal_degree','cut_ratio',
+     'fraction_over_median_degree', 'scaled_density']):
+        communities = NodeClustering(list(self.group_nodes.values()), self.graph, "external", overlap=True)
+        results = []
+        for metric in metrics:
+            # https://www.kite.com/python/answers/how-to-call-a-function-by-its-name-as-a-string-in-python
+            class_method = getattr(evaluation, metric)
+            res = class_method(graph, communities)
+            results.append(res)
+
+        with open(output_filename, 'w') as out_file:
+            count = 0
+            for res in results:
+                metric_name = metrics[count]
+                f.write("\t".join([metric_name, str(res.score), str(res.max), str(res.min), str(res.std)]) + "\n")
+                count += 1
+
+    def compute_group_metrics(self, output_filename, metrics = ['comparative_degree', 'avg_sht_path', 'node_com_assoc']): #metics by each clusters
+        output_metrics = [[k] for k in self.group_nodes.keys()]
+        header = ['group']
+
+        for metric in metrics: 
+            self.add_metrics(header, output_metrics, metric)
 
         with open(output_filename, 'w') as out_file:
             out_file.write("\t".join(header) + "\n")
-            for line in metrics:
+            for line in output_metrics:
                 out_file.write("\t".join(list(map(str, line))) + "\n")
+
+    def add_metrics(self, header, output_metrics, metric):
+        # Fusion of cdlib stats methods with NetAnalyzer "original" methods.
+        if metric == 'comparative_degree':
+            comparative_degree = self.communities_comparative_degree(self.group_nodes)
+            for i, val in enumerate(comparative_degree): output_metrics[i].append(self.replace_none_vals(val)) # Add to metrics
+            header.append(metric)
+        elif metric == 'avg_sht_path': 
+            avg_sht_path = self.communities_avg_sht_path(self.group_nodes)
+            for i, val in enumerate(avg_sht_path): output_metrics[i].append(self.replace_none_vals(val)) # Add to metrics
+            header.append(metric)
+        elif metric == 'node_com_assoc':
+            if len(self.reference_nodes) > 0:
+                header.extend(['node_com_assoc_by_edge', 'node_com_assoc_by_node'])
+                node_com_assoc = self.communities_node_com_assoc(self.group_nodes, self.reference_nodes[0]) # Assume only obe reference node
+                for i, val in enumerate(node_com_assoc): output_metrics[i].extend(val) # Add to metrics
+        else:
+            # https://www.kite.com/python/answers/how-to-call-a-function-by-its-name-as-a-string-in-python
+            communities = NodeClustering(list(self.group_nodes.values()), self.graph, "external", overlap=True)
+            class_method = getattr(evaluation, metric)
+            res = class_method(self.graph, communities, summary=False)
+            for i, val in enumerate(res): output_metrics[i].append(self.replace_none_vals(val))
+            header.append(metric)
 
     def expand_clusters(self, expand_method):
         clusters = {}

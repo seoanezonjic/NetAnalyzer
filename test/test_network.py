@@ -241,7 +241,6 @@ class BaseNetTestCase(unittest.TestCase):
 		test_association.sort()
 		self.assertEqual(expected_values, test_association)
 
-
 	def test_get_jaccard_association(self):
 		test_association = self.network_obj.get_jaccard_associations(['main'], 'projection')
 		test_association = [[a[0], a[1], round(a[2], 6)] for a in test_association]

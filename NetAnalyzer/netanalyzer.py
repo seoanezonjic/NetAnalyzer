@@ -23,7 +23,8 @@ class NetAnalyzer:
         self.compute_pairs = 'conn'
         self.adjacency_matrices = {}
         self.kernels = {}
-        self.group_nodes = {} # Communities are networkx objects {community_id : networkx obj}
+        self.group_nodes = {} # Communities are lists {community_id : [Node1, Node2,...]}
+        self.group_nx = {} # Communities are networkx objects {community_id : networkx obj}
         self.reference_nodes = []
 
     def __eq__(self, other): # https://igeorgiev.eu/python/tdd/python-unittest-assert-custom-objects-are-equal/
@@ -35,6 +36,7 @@ class NetAnalyzer:
             self.adjacency_matrices == other.adjacency_matrices and \
             self.kernels == other.kernels and \
             self.group_nodes == other.group_nodes and \
+            self.group_nx == other.group_nx and \
             self.reference_nodes == other.reference_nodes
 
     def clone(self):
@@ -45,6 +47,7 @@ class NetAnalyzer:
         network_clone.adjacency_matrices = self.adjacency_matrices.copy()
         network_clone.kernels = self.kernels.copy()
         network_clone.group_nodes = copy.deepcopy(self.group_nodes)
+        network_clone.group_nx = copy.deepcopy(self.group_nx)
         network_clone.reference_nodes = self.reference_nodes.copy()
         return network_clone
 
@@ -414,21 +417,27 @@ class NetAnalyzer:
 
     def plot_network(self, options = {}):
         net_data = {
-            'group_nodes': self.group_nodes,
+            'group_nodes': self.group_nx,
             'reference_nodes': self.reference_nodes,
             'graph': self.graph,
             'layers': self.layers
         }
         Net_plotter(net_data, options)
 
-    # COMMUNITY METHODS
+    # Community Methods #
+    #####################
 
-    # Cluster (community) dicovery
+    # Cluster (community) dicovery #
+
+    def get_communities_as_cdlibObj(self,communities): # communites is a hash like group_nodes
+        coms = [list(c) for c in communities.values()]
+        communities = NodeClustering(coms, self.graph, "external", method_parameters={}, overlap=overlaping)
+        return communities
 
     def discover_clusters(self, cluster_method, cluster_additional_options):
         communities = self.get_clusters_by_algorithm(cluster_method, cluster_additional_options)
-        communities = { cluster_method + "_" + str(idx): self.graph.subgraph(community) for idx, community in enumerate(communities)}
-        self.group_nodes.update(communities) # If external added, thay will not be removed!
+        communities = { cluster_method + "_" + str(idx): community for idx, community in enumerate(communities)}
+        self.group_nodes.update(communities) # If external coms added, thay will not be removed!
 
     def get_clusters_by_algorithm(self, cluster_method, cluster_additional_options):
         exec('clust_kwargs = {' + options.additional_options +'}') # This allows inject custom arguments for each clustering method
@@ -489,9 +498,22 @@ class NetAnalyzer:
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore")
                 communities = algorithms.aslpaw(g)
+        elif(options.method == 'external'):
+            communities  = self.get_communities_as_cdlibObj(self.group_nodes)
+        else:
+            print('Not defined method')                                                                                                      
+            sys.exit(0)
+        print(communities.method_parameters, file=sys.stderr)
+        print(communities.overlap, file=sys.stderr)
+        print(communities.node_coverage, file=sys.stderr)
 
         return communities.communities # To return a list of list with each of the nodes names for each communities.
+    
+
     # Metrics
+
+    # Evalutating one community
+
     def compute_comparative_degree(self, com): # see Girvan-Newman Benchmark control parameter in http://networksciencebook.com/chapter/9#testing (communities chapter)
         internal_degree = 0
         external_degree = 0
@@ -512,7 +534,7 @@ class NetAnalyzer:
         other_nodes = {}
 
         refNneigh = set(self.graph.neighbors(ref_node))
-        for nodeID in com.nodes:
+        for nodeID in com.nodes: # Change this to put as a list of nodes
             nodeIDneigh = set(self.graph.neighbors(nodeID))
             if nodeIDneigh == None: next
             if ref_node in nodeIDneigh: ref_edges += 1
@@ -527,7 +549,8 @@ class NetAnalyzer:
         by_node = (ref_edges + len(secondary_nodes)) / len(other_nodes)
         return [by_edge, by_node]
 
-    # Iterative community methods
+    # Evaluating all communities
+
     def communities_avg_sht_path(self, coms):
         return [ self.average_shortest_path_length(com) for com_id, com in coms.items()]
 
@@ -555,9 +578,14 @@ class NetAnalyzer:
                 f.write("\t".join([metric_name, str(res.score), str(res.max), str(res.min), str(res.std)]) + "\n")
                 count += 1
 
+    def load_group_nx(self):
+        self.group_nx = {id: self.graph.subgraph(nodes) for id, nodes in self.group_nodes}
+
     def compute_group_metrics(self, output_filename, metrics = ['comparative_degree', 'avg_sht_path', 'node_com_assoc']): #metics by each clusters
         output_metrics = [[k] for k in self.group_nodes.keys()]
         header = ['group']
+
+        if not self.group_nx: self.load_group_nx()
 
         for metric in metrics: 
             self.add_metrics(header, output_metrics, metric)
@@ -570,17 +598,17 @@ class NetAnalyzer:
     def add_metrics(self, header, output_metrics, metric):
         # Fusion of cdlib stats methods with NetAnalyzer "original" methods.
         if metric == 'comparative_degree':
-            comparative_degree = self.communities_comparative_degree(self.group_nodes)
+            comparative_degree = self.communities_comparative_degree(self.group_nx)
             for i, val in enumerate(comparative_degree): output_metrics[i].append(self.replace_none_vals(val)) # Add to metrics
             header.append(metric)
         elif metric == 'avg_sht_path': 
-            avg_sht_path = self.communities_avg_sht_path(self.group_nodes)
+            avg_sht_path = self.communities_avg_sht_path(self.group_nx)
             for i, val in enumerate(avg_sht_path): output_metrics[i].append(self.replace_none_vals(val)) # Add to metrics
             header.append(metric)
         elif metric == 'node_com_assoc':
             if len(self.reference_nodes) > 0:
                 header.extend(['node_com_assoc_by_edge', 'node_com_assoc_by_node'])
-                node_com_assoc = self.communities_node_com_assoc(self.group_nodes, self.reference_nodes[0]) # Assume only obe reference node
+                node_com_assoc = self.communities_node_com_assoc(self.group_nx, self.reference_nodes[0]) # Assume only obe reference node
                 for i, val in enumerate(node_com_assoc): output_metrics[i].extend(val) # Add to metrics
         else:
             # https://www.kite.com/python/answers/how-to-call-a-function-by-its-name-as-a-string-in-python
@@ -590,6 +618,20 @@ class NetAnalyzer:
             for i, val in enumerate(res): output_metrics[i].append(self.replace_none_vals(val))
             header.append(metric)
 
+    # Evaluating comparison between partitions (EXTERNAL EVALUATION IN CDLIB)
+    # Note: Partitions are non overlapped communities (Must be).
+
+    def compare_partitions(self, communities_ref):
+        # TODO (fred): adjust this method to correct functionality
+        communities = self.get_communities_as_cdlibObj(self.group_nodes)
+        ref_communities = self.get_communities_as_cdlibObj(communities_ref)
+        res = evaluation.adjusted_mutual_information(ref_communities,communities) # (TODO: Fred) This could be easily extended
+        return(res)
+        #print(str(res.score))
+
+    # TODO: Add ranker evalutation for set of clusterings (This is told to be added in a posterior expansion phase of lib)
+
+    # Cluster Expansions
     def expand_clusters(self, expand_method):
         clusters = {}
         for id, com in self.group_nodes.items():

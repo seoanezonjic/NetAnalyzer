@@ -499,11 +499,6 @@ class BaseNetTestCase(unittest.TestCase):
 		returned_cluster1 = returned["clust1"]
 		returned_cluster2 = returned["clust2"]
 
-		import matplotlib.pyplot as plt
-		nx.draw_kamada_kawai(returned_cluster2, with_labels = True)
-		plt.show(block = False)
-		plt.savefig("graph.png")
-
 		self.assertEqual(expected_expanded_cluster_1, set(returned_cluster1.nodes))
 		self.assertEqual(expected_expanded_cluster_2, set(returned_cluster2.nodes))
 	

@@ -1,0 +1,4 @@
+Metric	Mean	Max	Min	Std
+max_odf	6.0	6	6	0.0
+avg_transitivity	0.0	0.0	0.0	0.0
+conductance	0.8245614035087719	1.0	0.47368421052631576	0.24810764252159562

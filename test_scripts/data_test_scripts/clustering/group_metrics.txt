@@ -1,0 +1,4 @@
+group	comparative_degree	max_odf
+der_0	1.0	6
+der_2	1.0	6
+der_1	0.47368421052631576	6

@@ -5,7 +5,8 @@ export PATH=../bin/:$PATH
 data_kernel=../test/data/data_kernel
 out=output_test_scripts/netanalyzer
 data_to_test=../test/data
-mkdir $out
+data_test_scripts=data_test_scripts
+mkdir -p $out
 
 
 # Projections  -----------------------------------------------------------------------------------------------------------------------------------------------
@@ -43,3 +44,26 @@ netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 
 # Randoms
 randomize_clustering.py -i $data_to_test/bipartite_network_for_validating.txt -o ./random_clusters.txt -r 'fixed:10:3'
 randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o ./random_net.txt -f pair -l 'nodes,[A-Z]' -r links
+
+# Communities
+# Create Communities
+echo "Community discovery\n"
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -o ./output_test_scripts/clustering/ -l 'genes' -b "der" 
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -o ./output_test_scripts/clustering/ -l 'genes' -b "label_propagation"
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -o ./output_test_scripts/clustering/ -l 'genes' -b "gdmp2"
+netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./output_test_scripts/clustering/ -l 'genes' -b "rber_pots"
+# Community Metrics
+echo "Community metrics \n"
+## Summ
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./output_test_scripts/clustering/  -f pair -l 'genes' -M 'max_odf;avg_transitivity;conductance' -S
+## Not Summ
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./output_test_scripts/clustering/ -f pair -l 'genes' -M 'comparative_degree;max_odf'
+# Comparing group families
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -R $data_test_scripts/clustering/der_discovered_clusters.txt -f pair -l 'genes' | tail -n 1 > ./output_test_scripts/clustering/comparing_clusters.txt
+# Group expansion
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./output_test_scripts/clustering/ -f pair -l 'genes' -x 'sht_path'
+
+for file_to_test in `ls ./output_test_scripts/clustering`; do
+	echo $file_to_test
+	diff ./output_test_scripts/clustering/$file_to_test $data_test_scripts/clustering/$file_to_test
+done

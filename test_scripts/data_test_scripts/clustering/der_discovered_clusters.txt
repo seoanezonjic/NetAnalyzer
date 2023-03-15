@@ -1,0 +1,16 @@
+der_0	P1
+der_0	P2
+der_0	P3
+der_0	P4
+der_0	P5
+der_0	P6
+der_0	M4
+der_0	M5
+der_0	M6
+der_1	M1
+der_1	P7
+der_1	P8
+der_1	P9
+der_1	P10
+der_1	M2
+der_1	M3

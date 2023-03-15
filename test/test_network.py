@@ -487,7 +487,6 @@ class BaseNetTestCase(unittest.TestCase):
 		expected_expanded_cluster_1 = set(["A","B","C","D","E","F","G","H","I","J"]) | set(["X","Y","Z"])
 		expected_expanded_cluster_2 = set(["M","N","O","P","Q","R","W"]) | set(["W", "V"])
 		
-		print(self.clusters_network.group_nodes)
 		returned = self.clusters_network.expand_clusters("sht_path")
 		self.assertEqual(expected_expanded_cluster_1, set(returned["clust1"]))
 		self.assertEqual(expected_expanded_cluster_2, set(returned["clust2"]))	

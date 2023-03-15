@@ -4,6 +4,7 @@ import argparse
 import sys
 import os
 import glob
+import networkx as nx # TODO rm()fred nor
 ROOT_PATH=os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(ROOT_PATH, '..'))
 from NetAnalyzer import Net_parser, NetAnalyzer
@@ -24,18 +25,21 @@ def load_file(path):
 def based_0(string): return int(string) - 1
 def layer_parse(string): return [sublst.split(",") for sublst in string.split(";")]
 def group_nodes_parse(string):
+	group_nodes = {}
 	if os.path.isfile(string):
 		with open(string) as file:
 			for line in file:
-				groupID, nodeID = line.strip.split("\t")
-				query = options.group_nodes.get(groupID)
+				groupID, nodeID = line.strip().split("\t")
+				query = group_nodes.get(groupID)
 				if query is None:
-					options.group_nodes[groupID] = [nodeID]
+					group_nodes[groupID] = [nodeID]
 				else:
 					query.append(nodeID)
 	else:
 		for i, group in enumerate(string.split(";")):
-			options.group_nodes[i] = group.split(',')
+			group_nodes[i] = group.split(',')
+	
+	return group_nodes
 
 def graph_options_parse(string):
 	graph_options = {}
@@ -54,6 +58,8 @@ parser.add_argument("-s","--split_char", dest="split_char", default='\t',
 					help = "Character for splitting input file. Default: tab")
 parser.add_argument("-f","--input_format", dest="input_format", default='pair',
 					help="Input file format: pair (default), bin, matrix")
+parser.add_argument("-o","--output_file", dest="output_file", default='output_file',
+					help="Output file name")
 parser.add_argument("-P","--use_pairs", dest="use_pairs", default='conn',
 					help="Which pairs must be computed. 'all' means all posible pair node combinations and 'conn' means the pair are truly connected in the network. Default 'conn' ")
 parser.add_argument("-a","--assoc_file", dest="assoc_file", default='assoc_values.txt',
@@ -85,15 +91,15 @@ parser.add_argument("-T","--threads", dest="threads", default=0, type= based_0,
 parser.add_argument("-r","--reference_nodes", dest="reference_nodes", default=[], type= lambda x: x.split(","),
 					help="Node ids comma separared")
 
-parser.add_argument("-R","--reference_clusters", dest="reference_clusters", default=[], type= group_nodes_parse,
+parser.add_argument("-R","--compare_clusters_reference", dest="compare_clusters_reference", default=None, type= group_nodes_parse,
 					help="File path or groups separated by ';' and group node ids comma separared")
 parser.add_argument("-G","--group_nodes", dest="group_nodes", default={}, type= group_nodes_parse,
 					help="File path or groups separated by ';' and group node ids comma separared")
 
 parser.add_argument("-b", "--build_clusters_alg", dest="build_cluster_alg", default=None,
 					help="Type of cluster algorithm")
-parser.add_argument("-B", "--build_clusters_add_options", dest="build_clusters_add_options", default=None,
-					help="additional options from cdlib")
+parser.add_argument("-B", "--build_clusters_add_options", dest="build_clusters_add_options", default="",
+					help="Additional options for clustering methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...'")
 
 parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lambda x: x.split(";"),
 					help="Remove nodes from file. If PATH;r then nodes not included in file are removed")
@@ -142,13 +148,13 @@ if options.meth is not None:
 		f.write("\t".join(map(str,fullNet.association_values[options.meth][-1])))
 	print(f"End of analysis: {options.meth}")
 
-	if options['control_file'] != None:
-		with open(options['control_file'], "r") as f:
+	if options.control_file != None:
+		with open(options.control_file, "r") as f:
 			control = [ control.append(line.rstrip().split("\t")) for line in f ]
 		Performancer.load_control(control)
-		predictions = fullNet.association_values[options['meth']]
+		predictions = fullNet.association_values[options.meth]
 		performance = Performancer.get_pred_rec(predictions)
-		with open(options['performance_file'], 'r') as f:
+		with open(options.performance_file, 'r') as f:
 			f.write("\t".join(['cut', 'prec', 'rec', 'meth']) + "\n")
 			for item in performance:
 				item.append(options['meth'])
@@ -165,33 +171,26 @@ if options.graph_file is not None:
 
 # Group creation
 if options.build_cluster_alg is not None:
-	fullNet.discover_clusters(options.build_cluster_alg, options.build_clusters_add_options)
-  with open(os.path.join(os.path.dirname(options.output_file), 'discovered_clusters.txt'), 'w') as out_file:
-    for cl_id, nodes in fullNet.group_nodes.items():
-      for node in nodes: out_file.write(f"{cl_id}\t{node}\n")
+	exec('clust_kwargs = {' + options.build_clusters_add_options +'}') # This allows inject custom arguments for each clustering method
+	fullNet.discover_clusters(options.build_cluster_alg, clust_kwargs)
+  
+	with open(os.path.join(os.path.dirname(options.output_file), options.build_cluster_alg + '_' + 'discovered_clusters.txt'), 'w') as out_file:
+		for cl_id, nodes in fullNet.group_nodes.items():
+			for node in nodes: out_file.write(f"{cl_id}\t{node}\n")
 
-# Group metrics # Add summary options etc.
-
+# Group metrics 
 if options.group_metrics:
-  fullNet.compute_group_metrics(output_filename= os.path.join(os.path.dirname(options.output_file), 'group_metrics.txt'), metrics = options)
+	if options.summarize_metrics:
+		fullNet.compute_summarized_group_metrics(output_filename=os.path.join(os.path.dirname(options.output_file), 'group_metrics_summarized.txt'), metrics = options.group_metrics)
+	else:
+		fullNet.compute_group_metrics(output_filename= os.path.join(os.path.dirname(options.output_file), 'group_metrics.txt'), metrics = options.group_metrics)
 
+# Comparing Group Families (Two by now)
+if options.compare_clusters_reference is not None:
+	res = fullNet.compare_partitions(options.compare_clusters_reference)
+	print(str(res.score))
 
-if(options.stats):
-		metrics, results = get_stats(g, communities)
-		f = open(options.output_stats, "w")
-		count = 0
-		for res in results:
-			metric_name = metrics[count]
-			f.write("\t".join([metric_name, str(res.score), str(res.max), str(res.min), str(res.std)]) + "\n")
-			count += 1
-		f.close()
-
-
-# Comparing communities:
-#if options.compare_groups:
-#	# ...TODO...
-
-# Group expansion
+# Group Expansion
 if options.expand_clusters is not None:
   expanded_clusters = fullNet.expand_clusters(options.expand_clusters)
   with open(os.path.join(os.path.dirname(options.output_file), 'expand_clusters.txt'), 'w') as out_file:

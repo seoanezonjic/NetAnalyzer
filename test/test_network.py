@@ -4,6 +4,7 @@ import os
 import math
 import numpy as np
 import networkx as nx
+import random
 from NetAnalyzer import NetAnalyzer
 from NetAnalyzer import Net_parser
 from statsmodels.stats.multitest import multipletests
@@ -29,25 +30,16 @@ class BaseNetTestCase(unittest.TestCase):
 		self.comunities_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'comunities_network_for_validating.txt'), self.comunities_network_layers)
 		self.comunities_network.generate_adjacency_matrix(self.comunities_network_layers[0][0], self.comunities_network_layers[0][0])
 		self.comunities_network.reference_nodes = ["X"]
-		com1 = nx.Graph()
-		com1.add_edges_from(self.comunities_network.graph.edges)
-		com1.remove_nodes_from("LMNVWXYZ")
-		com2 = nx.Graph()
-		com2.add_edges_from(self.comunities_network.graph.edges)
-		com2.remove_nodes_from("ABCDEFVWXY")
+		com1 = [node for node in self.comunities_network.graph.nodes if node in "ABCDEF"]		
+		com2 = [node for node in self.comunities_network.graph.nodes if node in "ZLNM"]
 		self.comunities_network.group_nodes = {'com1': com1, 'com2': com2}
 
 		self.clusters_network_layers = [['main', '\w'], ['main', '\w']]
 		self.clusters_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'clusters_network_for_validating.txt'), self.clusters_network_layers)
 		self.clusters_network.generate_adjacency_matrix(self.clusters_network_layers[0][0], self.clusters_network_layers[0][0])
-		clust1 = nx.Graph()
-		clust1.add_edges_from(self.clusters_network.graph.edges)
-		clust1.remove_nodes_from("MNOPQR"+"VWXYZ")
-		clust2 = nx.Graph()
-		clust2.add_edges_from(self.clusters_network.graph.edges)
-		clust2.remove_nodes_from("ABCDEFGHIJ"+"VWXYZ")
-		self.clusters_network.group_nodes = {'clust1': clust1, 'clust2': clust2}
-		
+		clust1 = [node for node in self.clusters_network.graph.nodes if node in "ABCDEFGHIJ"]
+		clust2 = [node for node in self.clusters_network.graph.nodes if node in "MNOPQR"]
+		self.clusters_network.group_nodes = {'clust1': clust1, 'clust2': clust2}	
 
 	def test_clone(self):
 		network_clone = self.network_obj.clone()
@@ -425,12 +417,12 @@ class BaseNetTestCase(unittest.TestCase):
 	# Testing iterative comunities methods
 	
 	def test_communities_avg_sht_path(self):
-		paths_clust1 = (1+1+2+2+3) / 5 #This is only for one node, but the community is k2-regular cycle so the value holds the same for all nodes 
-		paths_clust2 = (1+1+2+2+3+3+4+4+5) / 9 #Same as above
-		expected = sorted([paths_clust1, paths_clust2]) #Cluster1 and Cluster2 average shortest path
+		paths_clust1 = (1+1+2+2+3+3+4+4+5) / 9 #Same as below
+		paths_clust2 = (1+1+2+2+3) / 5 #This is only for one node, but the community is k2-regular cycle so the value holds the same for all nodes 		
 		
+		expected = [paths_clust1, paths_clust2] #Cluster1 and Cluster2 average shortest path
 		returned = self.clusters_network.communities_avg_sht_path(self.clusters_network.group_nodes)
-		self.assertEqual(expected, sorted(returned))
+		self.assertEqual(sorted(expected), sorted(returned))
 	
 	def test_communities_comparative_degree(self):
 		internal, external = (5+5+5+5+5+5, 2+1+1+0+0+0) 
@@ -495,21 +487,26 @@ class BaseNetTestCase(unittest.TestCase):
 		expected_expanded_cluster_1 = set(["A","B","C","D","E","F","G","H","I","J"]) | set(["X","Y","Z"])
 		expected_expanded_cluster_2 = set(["M","N","O","P","Q","R","W"]) | set(["W", "V"])
 		
+		print(self.clusters_network.group_nodes)
 		returned = self.clusters_network.expand_clusters("sht_path")
-		returned_cluster1 = returned["clust1"]
-		returned_cluster2 = returned["clust2"]
-
-		self.assertEqual(expected_expanded_cluster_1, set(returned_cluster1.nodes))
-		self.assertEqual(expected_expanded_cluster_2, set(returned_cluster2.nodes))
-	
+		self.assertEqual(expected_expanded_cluster_1, set(returned["clust1"]))
+		self.assertEqual(expected_expanded_cluster_2, set(returned["clust2"]))	
 
 	# Random network generation
 	def test_randomize_monopartite_net_by_nodes(self):
+		random.seed(1)
 		random_net = self.monopartite_network.randomize_monopartite_net_by_nodes()
 		self.assertNotEqual(self.monopartite_network.get_degree(zscore = False), random_net.get_degree(zscore = False)) # Node degree is diferent from original tu random
 		self.assertEqual( # but the node distribution is the same
 			list(self.monopartite_network.get_degree(zscore = False).values()).sort(), 
 			list(random_net.get_degree(zscore = False).values()).sort())
+		
+	def test_randomize_monopartite_net_by_links(self):
+		random.seed(1)
+		previous_degree = self.monopartite_network.get_degree(zscore = False)
+		random_net = self.monopartite_network.randomize_monopartite_net_by_links()
+		random_degree = random_net.get_degree(zscore = False)
+		self.assertEqual(previous_degree, random_degree) # Degree for each node must be the same
 
 	# def test_randomize_bipartite_net_by_nodes(self): # TODO PSZ: Generalize from monopartite and study the best netowrkx object manipulation
 	# 	layerA_nodes = len(self.network_obj.get_nodes_layer([self.bipartite_layers[0][0]]))
@@ -521,12 +518,6 @@ class BaseNetTestCase(unittest.TestCase):
 	# 	random_edges = random_net.get_edge_number()
 	# 	self.assertEqual([layerA_nodes, layerB_nodes, edges], [random_layerA_nodes, random_layerB_nodes, random_edges])
 	# 	self.assertNotEqual(self.monopartite_network.get_degree(zscore = False), random_net.get_degree(zscore = False))
-
-	def test_randomize_monopartite_net_by_links(self):
-		previous_degree = self.monopartite_network.get_degree(zscore = False)
-		random_net = self.monopartite_network.randomize_monopartite_net_by_links()
-		random_degree = random_net.get_degree(zscore = False)
-		self.assertEqual(previous_degree, random_degree) # Degree for each node must be the same
 
 	# def test_randomize_bipartite_net_by_links(self): # TODO PSZ: Generalize from monopartite and study the best netowrkx object manipulation
 	# 	previous_degree = self.network_obj.get_degree(zscore = False)

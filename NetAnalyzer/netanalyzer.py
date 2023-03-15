@@ -396,7 +396,8 @@ class NetAnalyzer:
         return nx.shortest_path(self.graph, source, target)
 
     def average_shortest_path_length(self, community):
-        return nx.average_shortest_path_length(community)
+        return nx.average_shortest_path_length(self.graph.subgraph(community)) #TODO JPG: I made this temporal solution, but i dont know if is the best possible one
+        #return nx.average_shortest_path_length(community)  #Previous version, when community was a networkx object
 
     def shortest_paths(self, community):
         return nx.all_pairs_shortest_path(community)
@@ -517,7 +518,7 @@ class NetAnalyzer:
     def compute_comparative_degree(self, com): # see Girvan-Newman Benchmark control parameter in http://networksciencebook.com/chapter/9#testing (communities chapter)
         internal_degree = 0
         external_degree = 0
-        com_nodes = set(com.nodes)
+        com_nodes = set(com)
         for nodeID in com_nodes:
             nodeIDneigh = set(self.graph.neighbors(nodeID))
             if nodeIDneigh == None: next
@@ -534,7 +535,7 @@ class NetAnalyzer:
         other_nodes = {}
 
         refNneigh = set(self.graph.neighbors(ref_node))
-        for nodeID in com.nodes: # Change this to put as a list of nodes
+        for nodeID in com: # Change this to put as a list of nodes
             nodeIDneigh = set(self.graph.neighbors(nodeID))
             if nodeIDneigh == None: next
             if ref_node in nodeIDneigh: ref_edges += 1
@@ -636,13 +637,16 @@ class NetAnalyzer:
         clusters = {}
         for id, com in self.group_nodes.items():
             if expand_method == 'sht_path':
-                new_nodes = set()
-                all_sht_paths = (nx.all_shortest_paths(self.graph, NodeA, NodeB) for NodeA, NodeB in itertools.combinations(com.nodes, 2))
+                new_nodes = set(com) 
+                #Community nodes are included in the set above and then this set is expanded with shortest path nodes
+                # between community nodes and assigned as the new cluster nodes list, otherwise updating the current list 
+                # could potentially add original community nodes again if they are found in the shortest path between other community nodes.  
+                all_sht_paths = (nx.all_shortest_paths(self.graph, NodeA, NodeB) for NodeA, NodeB in itertools.combinations(com, 2))
                 for node_pair_sht_paths in all_sht_paths:
                     for path in node_pair_sht_paths:
                         new_nodes = new_nodes.union(set(path))
-                com.add_nodes_from(list(new_nodes))
-                clusters[id] = com
+                self.group_nodes[id] = new_nodes #Originally it was modified inplace with "com.add_nodes_from(list(new_nodes))" because "com" were networkx objects
+                clusters[id] = new_nodes
         return clusters
 
     ## RAMDOMIZATION METHODS

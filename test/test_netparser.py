@@ -2,6 +2,7 @@ import unittest
 import os
 import numpy
 from NetAnalyzer import Net_parser
+import networkx as nx
 ROOT_PATH=os.path.dirname(__file__)
 DATA_TEST_PATH = os.path.join(ROOT_PATH, 'data')
 
@@ -27,6 +28,7 @@ class NetworkParserTestCase(unittest.TestCase):
 		self.assertEqual(40, test_connections)
 
 	def test_load_network_by_pairs(self):
+		# Non weighted
 		network_obj = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'bipartite_network_for_validating.txt'), self.bipartite_layers)
 		test_main_layer = network_obj.get_nodes_layer(['main'])
 		self.assertEqual(6, len(test_main_layer))
@@ -34,6 +36,13 @@ class NetworkParserTestCase(unittest.TestCase):
 		self.assertEqual(10, len(test_projection_layer))
 		test_connections = network_obj.get_edge_number()
 		self.assertEqual(40, test_connections)
+
+		## Weighted
+		network_obj = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'monopartite_network_weights_for_validating.txt'), self.monopartite_layers)
+		test =  nx.get_edge_attributes(network_obj.graph,"weight")
+		expected = {('M3', 'M4'): 1.0, ('M3', 'M2'): 2.0, ('M3', 'M1'): 7.0, ('M2', 'M1'): 3.0}
+		self.assertEqual(expected, test)
+
 
 	def test_load_bin_matrix(self):
 		options = {'input_format' : 'bin', 'input_file' : os.path.join(DATA_TEST_PATH, 'monopartite_network_bin_matrix.npy'), 'layers' : self.monopartite_layers, 'node_file' : self.monopartite_network_node_names}

@@ -25,6 +25,11 @@ class Net_parser:
 			node2 = pair[1]
 			net.add_node(node1, net.set_layer(layers, node1))
 			net.add_node(node2, net.set_layer(layers, node2))
+			if len(pair) == 3:
+				net.add_edge(node1, node2, weight=float(pair[2]))
+			else:
+				net.add_edge(node1, node2)
+
 			net.add_edge(node1, node2)	
 		f.close()
 		return net

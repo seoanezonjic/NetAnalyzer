@@ -28,6 +28,8 @@ class BaseNetTestCase(unittest.TestCase):
 
 		self.comunities_network_layers = [['main', '\w'], ['main', '\w']]
 		self.comunities_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'comunities_network_for_validating.txt'), self.comunities_network_layers)
+		self.comunities_network_no_coms = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'comunities_network_for_validating.txt'), self.comunities_network_layers)
+
 		self.comunities_network.generate_adjacency_matrix(self.comunities_network_layers[0][0], self.comunities_network_layers[0][0])
 		self.comunities_network.reference_nodes = ["X"]
 		com1 = [node for node in self.comunities_network.graph.nodes if node in "ABCDEF"]		
@@ -382,8 +384,27 @@ class BaseNetTestCase(unittest.TestCase):
 		self.network_obj.adjust_pval_association(mock_hypergeo_assoc, "fdr_bh") # Same as benjamini in the test before
 		self.assertEqual(expected, mock_hypergeo_assoc)
 	
-	# Testing comunities methods
 
+	# Testing community discovery
+	def test_community_discovery(self):
+		self.comunities_network_no_coms.discover_clusters("louvain",{})
+		returned = list(self.comunities_network_no_coms.group_nodes.items())
+		expected = [('louvain_0', ['A', 'B', 'C', 'D', 'E', 'F']), ('louvain_1', ['X', 'Y', 'V', 'W']), ('louvain_2', ['Z', 'L', 'M', 'N'])]
+		self.assertEqual(expected, returned)
+
+
+	# Testing Family community comparation
+	def test_compute_comparative_community(self):
+		com1_alt = [node for node in self.comunities_network.graph.nodes if node in "ABDF"]		
+		com2_alt = [node for node in self.comunities_network.graph.nodes if node in "ZLCENM"]
+		ref_com = {'com1_alt': com1_alt, 'com2_alt': com2_alt}
+		res = self.comunities_network.compare_partitions(ref_com)
+		returned = round(res.score,5)
+		expected = 0.37444
+		self.assertEqual(expected, returned)
+	
+
+	# Testing comunities methods
 	def test_compute_comparative_degree(self):
 		internal, external = (5+5+5+5+5+5, 2+1+1+0+0+0) 
 		expected = external / (internal + external)
@@ -451,18 +472,45 @@ class BaseNetTestCase(unittest.TestCase):
 	def test_compute_group_metrics(self):
 		expected = {
 			"com1": {
+			  'average_internal_degree': 5.0,
 			  "comparative_degree": self.comunities_network.compute_comparative_degree(self.comunities_network.group_nodes["com1"]), 
 			  "avg_sht_path": self.comunities_network.average_shortest_path_length(self.comunities_network.group_nodes["com1"]), 
 			  "node_com_assoc_by_edge":	self.comunities_network.compute_node_com_assoc(self.comunities_network.group_nodes["com1"], "X")[0],
 			  "node_com_assoc_by_node": self.comunities_network.compute_node_com_assoc(self.comunities_network.group_nodes["com1"], "X")[1]}, 
 			"com2": {
+			  'average_internal_degree': 3.0,
 			  "comparative_degree":	self.comunities_network.compute_comparative_degree(self.comunities_network.group_nodes["com2"]), 
 			  "avg_sht_path": self.comunities_network.average_shortest_path_length(self.comunities_network.group_nodes["com2"]), 
 			  "node_com_assoc_by_edge":	self.comunities_network.compute_node_com_assoc(self.comunities_network.group_nodes["com2"], "X")[0],
 			  "node_com_assoc_by_node":	self.comunities_network.compute_node_com_assoc(self.comunities_network.group_nodes["com2"], "X")[1]}
 			}
 		
-		self.comunities_network.compute_group_metrics(os.path.join(DATA_TEST_PATH, "group_metrics_test.tsv"))
+		self.comunities_network.compute_group_metrics(os.path.join(DATA_TEST_PATH, "group_metrics_test.tsv"),['comparative_degree', 'avg_sht_path', 'node_com_assoc','average_internal_degree'])
+		
+		reread_metrics = {}
+		with open(os.path.join(DATA_TEST_PATH, "group_metrics_test.tsv"), "r") as f:
+			header = []
+			comunity_id = ""
+			for line, content in enumerate(f):
+				if line == 0:
+					header = content.strip().split("\t")
+				else:
+					values = content.strip().split("\t")
+					for pos, value in enumerate(values):
+						if pos == 0:
+							comunity_id = value
+							reread_metrics[comunity_id] = {}
+						else:
+							reread_metrics[comunity_id][header[pos]] = float(value)
+		
+		self.assertEqual(expected, reread_metrics)
+		os.remove(os.path.join(DATA_TEST_PATH, "group_metrics_test.tsv"))
+
+	def test_compute_group_metrics_summarized(self):
+		expected = {'max_odf': {'Max': 2.0, 'Mean': 2.0, 'Min': 2.0, 'Std': 0.0}, 
+		               'size': {'Max': 6.0, 'Mean': 5.0, 'Min': 4.0, 'Std': 1.0}}
+		
+		self.comunities_network.compute_summarized_group_metrics(os.path.join(DATA_TEST_PATH, "group_metrics_test.tsv"),['size','max_odf'])
 		
 		reread_metrics = {}
 		with open(os.path.join(DATA_TEST_PATH, "group_metrics_test.tsv"), "r") as f:

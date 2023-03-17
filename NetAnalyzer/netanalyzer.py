@@ -445,7 +445,7 @@ class NetAnalyzer:
         communities = { cluster_method + "_" + str(idx): community for idx, community in enumerate(communities)}
         self.group_nodes.update(communities) # If external coms added, thay will not be removed!
 
-    def get_clusters_by_algorithm(self, cluster_method, clust_kwargs):
+    def get_clusters_by_algorithm(self, cluster_method, clust_kwargs={}):
         if(cluster_method == 'leiden'):
             communities = algorithms.leiden(self.graph, weights='weight', **clust_kwargs)
         elif(cluster_method == 'louvain'):

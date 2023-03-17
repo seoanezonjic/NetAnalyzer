@@ -25,8 +25,8 @@ netanalyzer.py -i $data_kernel/adj_mat.npy -f bin -l 'genes' -K $out/kernels/ka_
 
 
 for file_to_test in `ls $out/projections`; do
-	echo $file_to_test
-	diff $out/projections/$file_to_test $data_to_test/$file_to_test
+ 	echo $file_to_test
+ 	diff $out/projections/$file_to_test $data_to_test/$file_to_test
 done
 
 for file_to_test in `ls $out/kernels`; do
@@ -34,7 +34,7 @@ for file_to_test in `ls $out/kernels`; do
 	diff $out/kernels/$file_to_test $data_kernel/$file_to_test
 done
 
-#PLotting
+# PLotting
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=graphviz,layout=dot' -g ./test
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=cyt_app' -g ./test
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' -g ./test
@@ -47,21 +47,18 @@ randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o 
 
 # Communities
 # Create Communities
-echo "Community discovery\n"
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -o ./output_test_scripts/clustering/ -l 'genes' -b "der" 
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -o ./output_test_scripts/clustering/ -l 'genes' -b "label_propagation"
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -o ./output_test_scripts/clustering/ -l 'genes' -b "gdmp2"
-netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./output_test_scripts/clustering/ -l 'genes' -b "rber_pots"
+netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./output_test_scripts/clustering/ -l 'genes' -b "rber_pots" 
 # Community Metrics
-echo "Community metrics \n"
 ## Summ
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./output_test_scripts/clustering/  -f pair -l 'genes' -M 'max_odf;avg_transitivity;conductance' -S
 ## Not Summ
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./output_test_scripts/clustering/ -f pair -l 'genes' -M 'comparative_degree;max_odf'
 # Comparing group families
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -R $data_test_scripts/clustering/der_discovered_clusters.txt -f pair -l 'genes' | tail -n 1 > ./output_test_scripts/clustering/comparing_clusters.txt
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -R $data_test_scripts/clustering/rber_pots_discovered_clusters.txt -f pair -l 'genes' | tail -n 1 > ./output_test_scripts/clustering/comparing_clusters.txt
 # Group expansion
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./output_test_scripts/clustering/ -f pair -l 'genes' -x 'sht_path'
+sort -k1 ./output_test_scripts/clustering/expand_clusters.txt | sort -k2 > ./output_test_scripts/clustering/tmp_expand_clusters.txt
+mv ./output_test_scripts/clustering/tmp_expand_clusters.txt ./output_test_scripts/clustering/expand_clusters.txt
 
 for file_to_test in `ls ./output_test_scripts/clustering`; do
 	echo $file_to_test

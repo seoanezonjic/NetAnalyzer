@@ -4,7 +4,7 @@ import argparse
 import sys
 import os
 import glob
-import networkx as nx # TODO rm()fred nor
+import random
 ROOT_PATH=os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(ROOT_PATH, '..'))
 from NetAnalyzer import Net_parser, NetAnalyzer
@@ -109,8 +109,14 @@ parser.add_argument("-M", "--group_metrics", dest="group_metrics", default=None,
 					help="Perform group group_metrics")
 parser.add_argument("-S", "--summarize_metrics", dest="summarize_metrics", default=False, action='store_true',
 					help="Summarize metrics from groups")
+#parser.add_argument("--seed", dest="seed", default=None, type = lambda x: int(x),
+#					help="sepecify seed for random processes")
 
 options = parser.parse_args()
+
+#if options.seed is not None:
+#	random.seed(options.seed)
+# TODO: Talk with PSZ this section.
 
 ########## MAIN ##########
 ##########################

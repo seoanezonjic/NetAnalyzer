@@ -109,8 +109,8 @@ parser.add_argument("-M", "--group_metrics", dest="group_metrics", default=None,
 					help="Perform group group_metrics")
 parser.add_argument("-S", "--summarize_metrics", dest="summarize_metrics", default=False, action='store_true',
 					help="Summarize metrics from groups")
-#parser.add_argument("--seed", dest="seed", default=None, type = lambda x: int(x),
-#					help="sepecify seed for random processes")
+parser.add_argument("--seed", dest="seed", default=None, type = lambda x: int(x),
+					help="sepecify seed for clusterin processes")
 
 options = parser.parse_args()
 

@@ -40,7 +40,7 @@ class Ranker:
       for line in f:
         self.nodes.append(line.rstrip())
 
-  def do_ranking(self, leave_one_out=False, threads=0):
+  def do_ranking(self, leave_one_out=False): #TODO: Add thread option
     if leave_one_out:
       self.get_seed_leave_one_out()
 

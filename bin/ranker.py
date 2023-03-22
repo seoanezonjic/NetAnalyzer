@@ -44,8 +44,9 @@ parser.add_argument("--output_top", dest="output_top", default=None,
   help="File to save Top N genes")
 parser.add_argument("-o", "--output_name", dest="output_name", default="ranked_genes",
  help="PATH to file with seed_name and genes to keep in output")
-parser.add_argument("-T", "--threads", dest="threads", default=0, type=threads_based_0,
- help="Number of threads to use in computation, one thread will be reserved as manager.")
+# TODO: Add Threat section
+#parser.add_argument("-T", "--threads", dest="threads", default=0, type=threads_based_0,
+# help="Number of threads to use in computation, one thread will be reserved as manager.")
 options = parser.parse_args()
 
 
@@ -57,7 +58,7 @@ ranker.matrix = np.load(options.kernel_file)
 ranker.load_nodes_from_file(options.input_nodes)
 ranker.load_seeds(options.genes_seed, sep= options.seed_sep)
 options.filter is not None and ranker.load_references(options.filter, sep= ",") 
-ranker.do_ranking(leave_one_out= options.leave_one_out, threads= options.threads)
+ranker.do_ranking(leave_one_out= options.leave_one_out)
 rankings = ranker.ranking
 
 discarded_seeds = [seed_name for seed_name, ranks in rankings.items() if not ranks]

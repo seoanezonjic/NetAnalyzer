@@ -7,6 +7,8 @@ out=output_test_scripts/netanalyzer
 data_to_test=../test/data
 data_test_scripts=data_test_scripts
 mkdir -p $out
+mkdir -p $out/random
+mkdir -p $out/plots
 
 
 # Projections  -----------------------------------------------------------------------------------------------------------------------------------------------
@@ -35,15 +37,19 @@ for file_to_test in `ls $out/kernels`; do
 done
 
 # PLotting
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=graphviz,layout=dot' -g ./test
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=cyt_app' -g ./test
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' -g ./test
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=cytoscape' -g ./test
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=sigma' -g ./test
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=graphviz,layout=dot' -g $out/plots/test
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=cyt_app' -g $out/plots/test
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' -g $out/plots/test
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=cytoscape' -g $out/plots/test
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=sigma' -g $out/plots/test
 
 # Randoms
-randomize_clustering.py -i $data_to_test/bipartite_network_for_validating.txt -o ./random_clusters.txt -r 'fixed:10:3'
-randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o ./random_net.txt -f pair -l 'nodes,[A-Z]' -r links
+randomize_clustering.py -i $data_to_test/bipartite_network_for_validating.txt -o $out/random/random_clusters.txt -r 'fixed:10:3'
+randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o $out/random/random_net.txt -f pair -l 'nodes,[A-Z]' -r links
+randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o $out/random/random_net_same_seed1.txt -f pair -l 'nodes,[A-Z]' -r links --seed 1
+randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o $out/random/random_net_same_seed2.txt -f pair -l 'nodes,[A-Z]' -r links --seed 1
+diff $out/random/random_net_same_seed1.txt $out/random/random_net_same_seed2.txt #We should expect no difference is the seed is the same
+
 
 # Communities
 # Create Communities

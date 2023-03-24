@@ -554,6 +554,7 @@ class BaseNetTestCase(unittest.TestCase):
 		random_net = self.monopartite_network.randomize_monopartite_net_by_links()
 		random_degree = random_net.get_degree(zscore = False)
 		self.assertEqual(previous_degree, random_degree) # Degree for each node must be the same
+		self.assertNotEqual(self.monopartite_network.graph.edges, random_net.graph.edges) # But the overall edge set must be different
 
 	# def test_randomize_bipartite_net_by_nodes(self): # TODO PSZ: Generalize from monopartite and study the best netowrkx object manipulation
 	# 	layerA_nodes = len(self.network_obj.get_nodes_layer([self.bipartite_layers[0][0]]))

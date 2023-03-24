@@ -28,7 +28,8 @@ parser.add_argument("-l","--layers", dest="layers", default=['layer', '-'], type
           help="Layer definition on network: layer1name,regexp1;layer2name,regexp2...")
 parser.add_argument("-r", "--type_random", dest="type_random", default= None, 
           help="Randomized basis. 'nodes' Node-baseds randomize or 'links' Links-baseds randomize")
-
+parser.add_argument("-d", "--seed", dest="seed", default= None, 
+          help="Allows to set a seed for the randomization process. Set to a number. Otherwise results are not reproducible.")
 options = parser.parse_args()
 
 ##########################
@@ -36,8 +37,8 @@ options = parser.parse_args()
 ##########################
 
 fullNet = Net_parser.load(vars(options)) 
-fullNet.randomize_network(options.type_random)
+randomNet = fullNet.randomize_network(options.type_random, **{"seed":options.seed})
 
 with open(options.output_file, "w") as outfile:
-  for e in fullNet.graph.edges:
+  for e in randomNet.graph.edges:
     outfile.write(f"{e[0]}\t{e[1]}\n")

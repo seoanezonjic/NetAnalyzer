@@ -488,14 +488,14 @@ class NetAnalyzer:
             communities = algorithms.ego_networks(self.graph, **clust_kwargs)
         elif(cluster_method == 'egonet_splitter'):
             communities = algorithms.egonet_splitter(self.graph, **clust_kwargs)
-        elif(cluster_method == 'nmnf'):
-            communities = algorithms.nmnf(self.graph, **clust_kwargs)
+        elif(cluster_method == 'mnmf'):
+            communities = algorithms.mnmf(self.graph, **clust_kwargs)
         elif(cluster_method == 'nnsed'):
             communities = algorithms.nnsed(self.graph, **clust_kwargs)
         elif(cluster_method == 'slpa'):
             communities = algorithms.slpa(self.graph, **clust_kwargs)
         elif(cluster_method == 'bimlpa'):
-            communities = actlgorithms.bimlpa(self.graph, **clust_kwargs)
+            communities = algorithms.bimlpa(self.graph, **clust_kwargs)
         elif(cluster_method == 'wcommunity'):
             communities = algorithms.wCommunity(self.graph, **clust_kwargs)
         elif(cluster_method == 'aslpaw'):
@@ -677,7 +677,13 @@ class NetAnalyzer:
         return random_network
 
 
-    def randomize_network(self, random_type):
+    def randomize_network(self, random_type, **user_options):
+        if user_options.get("seed") != None:
+            try: 
+                random.seed(int(user_options.get("seed")))
+            except ValueError:
+                raise(f"ERROR: The seed must be a valid number")
+            
         if random_type == 'nodes':
             if len(self.layers) == 1:
                 random_network = self.randomize_monopartite_net_by_nodes()

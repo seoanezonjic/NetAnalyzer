@@ -440,7 +440,8 @@ class NetAnalyzer:
         communities = NodeClustering(coms, self.graph, "external", method_parameters={}, overlap=overlaping)
         return communities
 
-    def discover_clusters(self, cluster_method, clust_kwargs):
+    def discover_clusters(self, cluster_method, clust_kwargs, **user_options):
+        if user_options.get("seed") != None: self.set_seed(user_options.get("seed"))
         communities = self.get_clusters_by_algorithm(cluster_method, clust_kwargs)
         communities = { cluster_method + "_" + str(idx): community for idx, community in enumerate(communities)}
         self.group_nodes.update(communities) # If external coms added, thay will not be removed!
@@ -678,12 +679,8 @@ class NetAnalyzer:
 
 
     def randomize_network(self, random_type, **user_options):
-        if user_options.get("seed") != None:
-            try: 
-                random.seed(int(user_options.get("seed")))
-            except ValueError:
-                raise(f"ERROR: The seed must be a valid number")
-            
+        if user_options.get("seed") != None: self.set_seed(user_options.get("seed"))
+
         if random_type == 'nodes':
             if len(self.layers) == 1:
                 random_network = self.randomize_monopartite_net_by_nodes()
@@ -725,3 +722,12 @@ class NetAnalyzer:
 
     def replace_none_vals(self, val):
         return 'NULL' if val == None else val
+
+
+    def set_seed(self, seed):
+        try: 
+            random.seed(int(seed))
+            numpy.random.seed(int(seed))
+        except ValueError:
+            #Numpy seed cannot used something else but integers, and although random allows it, 200, 200.0 and "200" gives different results, so in order to avoid weird results, we force the seed to be an integer
+            raise(f"ERROR: The seed must be a valid number")

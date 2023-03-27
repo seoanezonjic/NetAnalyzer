@@ -109,7 +109,7 @@ parser.add_argument("-M", "--group_metrics", dest="group_metrics", default=None,
 					help="Perform group group_metrics")
 parser.add_argument("-S", "--summarize_metrics", dest="summarize_metrics", default=False, action='store_true',
 					help="Summarize metrics from groups")
-parser.add_argument("--seed", dest="seed", default=None, type = lambda x: int(x),
+parser.add_argument("--seed", dest="seed", default=None, type = lambda x: x,
 					help="sepecify seed for clusterin processes")
 
 options = parser.parse_args()
@@ -178,7 +178,7 @@ if options.graph_file is not None:
 # Group creation
 if options.build_cluster_alg is not None:
 	exec('clust_kwargs = {' + options.build_clusters_add_options +'}') # This allows inject custom arguments for each clustering method
-	fullNet.discover_clusters(options.build_cluster_alg, clust_kwargs)
+	fullNet.discover_clusters(options.build_cluster_alg, clust_kwargs, **{'seed': options.seed})
   
 	with open(os.path.join(os.path.dirname(options.output_file), options.build_cluster_alg + '_' + 'discovered_clusters.txt'), 'w') as out_file:
 		for cl_id, nodes in fullNet.group_nodes.items():

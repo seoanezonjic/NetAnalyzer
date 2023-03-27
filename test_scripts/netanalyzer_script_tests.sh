@@ -4,6 +4,7 @@ source ~soft_bio_267/initializes/init_python
 export PATH=../bin/:$PATH
 data_kernel=../test/data/data_kernel
 out=output_test_scripts/netanalyzer
+out_cluster=output_test_scripts/clustering
 data_to_test=../test/data
 data_test_scripts=data_test_scripts
 mkdir -p $out
@@ -29,11 +30,13 @@ netanalyzer.py -i $data_kernel/adj_mat.npy -f bin -l 'genes' -K $out/kernels/ka_
 for file_to_test in `ls $out/projections`; do
  	echo $file_to_test
  	diff $out/projections/$file_to_test $data_to_test/$file_to_test
+	rm $out/projections/$file_to_test
 done
 
 for file_to_test in `ls $out/kernels`; do
 	echo $file_to_test
 	diff $out/kernels/$file_to_test $data_kernel/$file_to_test
+	rm $out/kernels/$file_to_test
 done
 
 # PLotting
@@ -49,24 +52,30 @@ randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o 
 randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o $out/random/random_net_same_seed1.txt -f pair -l 'nodes,[A-Z]' -r links --seed 1
 randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o $out/random/random_net_same_seed2.txt -f pair -l 'nodes,[A-Z]' -r links --seed 1
 diff $out/random/random_net_same_seed1.txt $out/random/random_net_same_seed2.txt #We should expect no difference is the seed is the same
-
+rm $out/random/random_net_same_seed1.txt $out/random/random_net_same_seed2.txt #We remove the files to avoid unexpected errors that could not overwrite the file
 
 # Communities
 # Create Communities
-netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./output_test_scripts/clustering/ -l 'genes' -b "rber_pots" 
+netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out_cluster/ -l 'genes' -b "rber_pots" #Deternimistic algorithm
+netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out_cluster/ -l 'genes' -b "der" --seed 1 #Non-deterministic algorithm
+mv ./$out_cluster/der_discovered_clusters.txt ./$out_cluster/der_discovered_clusters2.txt
+netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out_cluster/ -l 'genes' -b "der" --seed 1
+diff ./$out_cluster/der_discovered_clusters.txt ./$out_cluster/der_discovered_clusters2.txt #We should expect no difference if the seed is the same
+rm ./$out_cluster/der_discovered_clusters.txt ./$out_cluster/der_discovered_clusters2.txt #We remove the files to avoid unexpected errors that could not overwrite the file
 # Community Metrics
 ## Summ
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./output_test_scripts/clustering/  -f pair -l 'genes' -M 'max_odf;avg_transitivity;conductance' -S
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./$out_cluster/  -f pair -l 'genes' -M 'max_odf;avg_transitivity;conductance' -S
 ## Not Summ
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./output_test_scripts/clustering/ -f pair -l 'genes' -M 'comparative_degree;max_odf'
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./$out_cluster/ -f pair -l 'genes' -M 'comparative_degree;max_odf'
 # Comparing group families
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -R $data_test_scripts/clustering/rber_pots_discovered_clusters.txt -f pair -l 'genes' | tail -n 1 > ./output_test_scripts/clustering/comparing_clusters.txt
 # Group expansion
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./output_test_scripts/clustering/ -f pair -l 'genes' -x 'sht_path'
-sort -k1 ./output_test_scripts/clustering/expand_clusters.txt | sort -k2 > ./output_test_scripts/clustering/tmp_expand_clusters.txt
-mv ./output_test_scripts/clustering/tmp_expand_clusters.txt ./output_test_scripts/clustering/expand_clusters.txt
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./$out_cluster/ -f pair -l 'genes' -x 'sht_path'
+sort -k1 ./$out_cluster/expand_clusters.txt | sort -k2 > ./$out_cluster/tmp_expand_clusters.txt
+mv ./$out_cluster/tmp_expand_clusters.txt ./$out_cluster/expand_clusters.txt
 
-for file_to_test in `ls ./output_test_scripts/clustering`; do
+for file_to_test in `ls ./$out_cluster`; do
 	echo $file_to_test
-	diff ./output_test_scripts/clustering/$file_to_test $data_test_scripts/clustering/$file_to_test
+	diff ./$out_cluster/$file_to_test $data_test_scripts/clustering/$file_to_test
+	rm ./$out_cluster/$file_to_test
 done

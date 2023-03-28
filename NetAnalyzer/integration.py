@@ -29,14 +29,14 @@ class Kernels:
 			self.kernels_position_index[node] = [ind.get(node) for ind in self.local_indexes]
 		self.local_indexes = [] # Removing not needed local indexes
 
-	def integrate(self, method, n_workers = 8, symmetry = True, maximum_set = 2): # TODO: Change default of n_workers to 1
+	def integrate(self, method, n_workers = 8, symmetry = True, n_partition_axis = 2): # TODO: Change default of n_workers to 1
 		general_nodes = self.general_nodes.copy()
 		nodes_dimension = len(general_nodes)
 		general_kernel = np.zeros((nodes_dimension,nodes_dimension))
 		n_kernel = len(self.kernels_raw)
 
 		# Filling the argument section
-		splitted_general_nodes = list(self.split(general_nodes, maximum_set))
+		splitted_general_nodes = list(self.split(general_nodes, n_partition_axis))
 		if symmetry:
 			pair_nodes = list(itertools.combinations_with_replacement(splitted_general_nodes, 2))
 		else:
@@ -48,7 +48,7 @@ class Kernels:
 		with concurrent.futures.ProcessPoolExecutor(max_workers=n_workers) as executor:
 
 			results = [executor.submit(self.build_matrix_block, pair_nodes[i][0],
-				pair_nodes[i][1], method, n_kernel, general_nodes, splitted_general_nodes) for i in range(process_number)]
+				pair_nodes[i][1], method, n_kernel, general_nodes, splitted_general_nodes, symmetry) for i in range(process_number)]
 
 			for f in concurrent.futures.as_completed(results):
 				row_start, row_end, col_start, col_end, block_matrix = f.result()
@@ -59,19 +59,38 @@ class Kernels:
 		self.integrated_kernel = [general_kernel, self.general_nodes]
 
 	
-	def build_matrix_block(self, row_nodes, col_nodes, method, n_kernel, general_nodes, splitted_general_nodes):
+	def build_matrix_block(self, row_nodes, col_nodes, method, n_kernel, general_nodes, splitted_general_nodes, symmetry):
 		general_block_matrix = np.zeros((len(row_nodes),len(col_nodes)))
-
-		for i, node_A in enumerate(row_nodes):
-			for j, node_B in enumerate(col_nodes):
-				values = self.get_values(node_A, node_B)
-				if values: 
-					general_block_matrix[i, j] = method(values, n_kernel)
 
 		row_start = general_nodes.index(row_nodes[0])
 		row_end = row_start + len(row_nodes)
 		col_start = general_nodes.index(col_nodes[0])
 		col_end = col_start + len(col_nodes)
+
+		if row_start != col_start:
+			# Filling all vs all
+			for i, node_A in enumerate(row_nodes):
+				for j, node_B in enumerate(col_nodes):
+					values = self.get_values(node_A, node_B)
+					if values: 
+						general_block_matrix[i, j] = method(values, n_kernel)
+		elif symmetry:
+			# Filling main diagonal blocks with upper triang.
+			nodes_dimension = len(row_nodes)
+			i = 0
+			while len(row_nodes) > 0:
+				node_A = row_nodes[-1]
+				ind = len(row_nodes) - 1
+				for node_B in reversed(row_nodes):
+					j = ind
+					values = self.get_values(node_A, node_B)
+					if values:
+						reversed_i = nodes_dimension -1 - i
+						general_block_matrix[reversed_i, j] = method(values, n_kernel)
+						general_block_matrix[j, reversed_i] = general_block_matrix[reversed_i, j]
+					ind -= 1
+				row_nodes.pop()
+				i += 1
 
 		return row_start, row_end, col_start, col_end, general_block_matrix
 
@@ -92,7 +111,7 @@ class Kernels:
 	def mean_by_presence(self, values, n_kernel):
 		return sum(values)/len(values)
 
-	def integrate_matrix(self, method, n_workers = 8):
+	def integrate_matrix(self, method, n_workers = 8, symmetry = True):
 		if method == "mean":
 			self.integrate(method = self.mean, n_workers = n_workers)
 		elif method == "integration_mean_by_presence":

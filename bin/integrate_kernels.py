@@ -47,6 +47,7 @@ if options.input_format == "bin":
 	kernels.create_general_index()
 
 if options.integration_type is not None:
+	print(options.n_workers)
 	kernels.integrate_matrix(options.integration_type, options.n_workers, options.symmetric)
 
 if options.output_matrix_file is not None:

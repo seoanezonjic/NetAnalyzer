@@ -29,11 +29,12 @@ class Kernels:
 			self.kernels_position_index[node] = [ind.get(node) for ind in self.local_indexes]
 		self.local_indexes = [] # Removing not needed local indexes
 
-	def integrate(self, method, n_workers = 8, symmetry = True, n_partition_axis = 2): # TODO: Change default of n_workers to 1
+	def integrate(self, method, n_workers = 8, symmetry = True, n_partition_axis = None): 
 		general_nodes = self.general_nodes.copy()
 		nodes_dimension = len(general_nodes)
 		general_kernel = np.zeros((nodes_dimension,nodes_dimension))
 		n_kernel = len(self.kernels_raw)
+		if n_partition_axis == None: n_partition_axis = int(np.trunc(np.sqrt(n_workers))) # Default value to use the corect number of blocks for n_workers
 
 		# Filling the argument section
 		splitted_general_nodes = list(self.split(general_nodes, n_partition_axis))
@@ -43,6 +44,7 @@ class Kernels:
 			pair_nodes = list(itertools.product(splitted_general_nodes, repeat = 2))
 		
 		process_number = len(pair_nodes)
+		print(process_number)
 
  		# Calling the multiprocessing
 		with concurrent.futures.ProcessPoolExecutor(max_workers=n_workers) as executor:
@@ -60,7 +62,7 @@ class Kernels:
 
 	
 	def build_matrix_block(self, row_nodes, col_nodes, method, n_kernel, general_nodes, splitted_general_nodes, symmetry):
-		general_block_matrix = np.zeros((len(row_nodes),len(col_nodes)))
+		general_block_matrix = np.zeros((len(row_nodes),len(col_nodes))) # TODO: Add option to considerar matrixes (maybe the min.
 
 		row_start = general_nodes.index(row_nodes[0])
 		row_end = row_start + len(row_nodes)
@@ -111,11 +113,27 @@ class Kernels:
 	def mean_by_presence(self, values, n_kernel):
 		return sum(values)/len(values)
 
+	def median(self, values, n_kernel):
+		return np.median(values)
+
+	def max(self, values, n_kernel):
+		return max(values)
+
+	def geometric_mean(self, values, n_kernel):
+		# log to avoid overflows
+		return np.exp(np.log(values).mean())
+
 	def integrate_matrix(self, method, n_workers = 8, symmetry = True):
 		if method == "mean":
-			self.integrate(method = self.mean, n_workers = n_workers)
+			self.integrate(method = self.mean, n_workers = n_workers, symmetry = symmetry)
 		elif method == "integration_mean_by_presence":
-			self.integrate(method = self.mean_by_presence, n_workers = n_workers)
+			self.integrate(method = self.mean_by_presence, n_workers = n_workers, symmetry = symmetry)
+		elif method == "median":
+			self.integrate(method = self.median, n_workers = n_workers, symmetry = symmetry)
+		elif method == "max":
+			self.integrate(method = self.max, n_workers = n_workers, symmetry = symmetry)
+		elif method == "geometric_mean":
+			self.integrate(method = self.geometric_mean, n_workers = n_workers, symmetry = symmetry)
 
 	## AUXILIAR METHODS
 	##############################

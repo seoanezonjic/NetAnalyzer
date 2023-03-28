@@ -2,7 +2,8 @@ import sys
 import os
 import glob
 import numpy as np
-
+import concurrent.futures
+import itertools
 
 class Kernels:
 
@@ -28,33 +29,51 @@ class Kernels:
 			self.kernels_position_index[node] = [ind.get(node) for ind in self.local_indexes]
 		self.local_indexes = [] # Removing not needed local indexes
 
-	def integrate(self, method):
+	def integrate(self, method, n_workers = 8, symmetry = True, maximum_set = 2): # TODO: Change default of n_workers to 1
 		general_nodes = self.general_nodes.copy()
 		nodes_dimension = len(general_nodes)
-		
 		general_kernel = np.zeros((nodes_dimension,nodes_dimension))
 		n_kernel = len(self.kernels_raw)
-		i = 0
-		while len(general_nodes) > 0:
-			node_A = general_nodes[-1]
-			ind = len(general_nodes) - 1
 
-			for node_B in reversed(general_nodes):
-				#x = nodes_dimension - i
-				#print x 
-				j = ind
-				values = self.get_values(node_A, node_B)
-				if values:
-					result = method(values, n_kernel) 
-					reversed_i = nodes_dimension -1 - i
-					general_kernel[reversed_i, j] = result
-					general_kernel[j, reversed_i] = result
-				ind -= 1
-			general_nodes.pop()
+		# Filling the argument section
+		splitted_general_nodes = list(self.split(general_nodes, maximum_set))
+		if symmetry:
+			pair_nodes = list(itertools.combinations_with_replacement(splitted_general_nodes, 2))
+		else:
+			pair_nodes = list(itertools.product(splitted_general_nodes, repeat = 2))
+		
+		process_number = len(pair_nodes)
 
-			i += 1
+ 		# Calling the multiprocessing
+		with concurrent.futures.ProcessPoolExecutor(max_workers=n_workers) as executor:
+
+			results = [executor.submit(self.build_matrix_block, pair_nodes[i][0],
+				pair_nodes[i][1], method, n_kernel, general_nodes, splitted_general_nodes) for i in range(process_number)]
+
+			for f in concurrent.futures.as_completed(results):
+				row_start, row_end, col_start, col_end, block_matrix = f.result()
+				general_kernel[row_start:row_end, col_start:col_end] = block_matrix
+				if row_start != col_start and symmetry:
+					general_kernel[col_start:col_end, row_start:row_end] = block_matrix.transpose()
 
 		self.integrated_kernel = [general_kernel, self.general_nodes]
+
+	
+	def build_matrix_block(self, row_nodes, col_nodes, method, n_kernel, general_nodes, splitted_general_nodes):
+		general_block_matrix = np.zeros((len(row_nodes),len(col_nodes)))
+
+		for i, node_A in enumerate(row_nodes):
+			for j, node_B in enumerate(col_nodes):
+				values = self.get_values(node_A, node_B)
+				if values: 
+					general_block_matrix[i, j] = method(values, n_kernel)
+
+		row_start = general_nodes.index(row_nodes[0])
+		row_end = row_start + len(row_nodes)
+		col_start = general_nodes.index(col_nodes[0])
+		col_end = col_start + len(col_nodes)
+
+		return row_start, row_end, col_start, col_end, general_block_matrix
 
 	def get_values(self, node_A, node_B):
 		rows = self.kernels_position_index[node_A]
@@ -67,14 +86,24 @@ class Kernels:
 					values.append(self.kernels_raw[i][r_ind, c_ind])
 		return values
 
-	def integrate_matrix(self, method):
+	def mean(self, values, n_kernel):
+		return sum(values)/n_kernel
+
+	def mean_by_presence(self, values, n_kernel):
+		return sum(values)/len(values)
+
+	def integrate_matrix(self, method, n_workers = 8):
 		if method == "mean":
-			self.integrate(method = lambda values, n_kernel: sum(values)/n_kernel)
+			self.integrate(method = self.mean, n_workers = n_workers)
 		elif method == "integration_mean_by_presence":
-			self.integrate(method = lambda values, n_kernel: np.mean(values))
+			self.integrate(method = self.mean_by_presence, n_workers = n_workers)
 
 	## AUXILIAR METHODS
 	##############################
+
+	def split(self, a, n): # https://stackoverflow.com/questions/2130016/splitting-a-list-into-n-parts-of-approximately-equal-length
+		k, m = divmod(len(a), n)
+		return (a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n))
 
 	def lst2arr(self,lst_file):
 		nodes = []

@@ -42,9 +42,7 @@ class Kernels:
 			pair_nodes = list(itertools.combinations_with_replacement(splitted_general_nodes, 2))
 		else:
 			pair_nodes = list(itertools.product(splitted_general_nodes, repeat = 2))
-		
 		process_number = len(pair_nodes)
-		print(process_number)
 
  		# Calling the multiprocessing
 		with concurrent.futures.ProcessPoolExecutor(max_workers=n_workers) as executor:
@@ -69,14 +67,7 @@ class Kernels:
 		col_start = general_nodes.index(col_nodes[0])
 		col_end = col_start + len(col_nodes)
 
-		if row_start != col_start:
-			# Filling all vs all
-			for i, node_A in enumerate(row_nodes):
-				for j, node_B in enumerate(col_nodes):
-					values = self.get_values(node_A, node_B)
-					if values: 
-						general_block_matrix[i, j] = method(values, n_kernel)
-		elif symmetry:
+		if symmetry and row_start == col_start:
 			# Filling main diagonal blocks with upper triang.
 			nodes_dimension = len(row_nodes)
 			i = 0
@@ -93,6 +84,14 @@ class Kernels:
 					ind -= 1
 				row_nodes.pop()
 				i += 1
+		else:
+			# Filling all vs all
+			for i, node_A in enumerate(row_nodes):
+				for j, node_B in enumerate(col_nodes):
+					values = self.get_values(node_A, node_B)
+					if values: 
+						general_block_matrix[i, j] = method(values, n_kernel)
+
 
 		return row_start, row_end, col_start, col_end, general_block_matrix
 
@@ -120,6 +119,7 @@ class Kernels:
 		return max(values)
 
 	def geometric_mean(self, values, n_kernel):
+		# TODO: Talk about the possibility of improving execution time with a non-log formula.
 		# log to avoid overflows
 		return np.exp(np.log(values).mean())
 

@@ -1,27 +1,44 @@
 import unittest
 import os
+import timeit
 from NetAnalyzer import Kernels
 import numpy as np
 ROOT_PATH=os.path.dirname(__file__)
 DATA_TEST_PATH = os.path.join(ROOT_PATH, 'data/data_integrate')
 
+def profiler(funcion, method, cores):
+	start = timeit.default_timer()
+	funcion(method, n_workers = cores)
+	stop = timeit.default_timer()
+	return (stop - start)
+
 class KernelTestCase(unittest.TestCase):
 	def setUp(self):
 
 		self.kernels = Kernels()
+		self.asym_kernels = Kernels()
 		matrixes_path = [os.path.join(DATA_TEST_PATH, "kernel1.npy"),os.path.join(DATA_TEST_PATH, "kernel2.npy")]
+		asym_matrixes_path = [os.path.join(DATA_TEST_PATH, "asym_kernel1.npy"),os.path.join(DATA_TEST_PATH, "asym_kernel2.npy")]
 		nodes_path = [os.path.join(DATA_TEST_PATH, "kernel1.lst"),os.path.join(DATA_TEST_PATH, "kernel2.lst")]
 		self.kernels.load_kernels_by_bin_matrixes(matrixes_path, nodes_path, ["1", "2"])
+		self.asym_kernels.load_kernels_by_bin_matrixes(asym_matrixes_path, nodes_path, ["1", "2"])
 	
-
 	def test_load_kernels_by_bin_matrixes(self):
+		#Testing loading symmetric kernels
 		self.assertTrue((np.array([[1, 1, 1], [1, 3, 0],[1, 0, 0]]) == self.kernels.kernels_raw[0]).all())
 		self.assertTrue((np.array([[0, 5],[5, 7]]) == self.kernels.kernels_raw[1]).all())
 		self.assertEqual([{'Node1': 0, 'Node2': 1, 'Node3': 2}, {'Node3': 1, 'Node4': 0}], self.kernels.local_indexes)
+		#Testing loading asymmetrical kernels
+		self.assertTrue((np.array([[1, 2, 3], [1, 3, 0],[1, 0, 0]]) == self.asym_kernels.kernels_raw[0]).all())
+		self.assertTrue((np.array([[0, 4],[5, 7]]) == self.asym_kernels.kernels_raw[1]).all())
+		self.assertEqual([{'Node1': 0, 'Node2': 1, 'Node3': 2}, {'Node3': 1, 'Node4': 0}], self.asym_kernels.local_indexes)
 
 	def test_create_general_index(self):
+		#Testing creation of general index for symmetric and asymmetric kernels
 		self.kernels.create_general_index()
 		self.assertEqual({'Node1': [0, None], 'Node2': [1, None], 'Node3': [2, 1], 'Node4': [None, 0]}, self.kernels.kernels_position_index)
+		self.asym_kernels.create_general_index()
+		self.assertEqual({'Node1': [0, None], 'Node2': [1, None], 'Node3': [2, 1], 'Node4': [None, 0]}, self.asym_kernels.kernels_position_index)
 
 	def test_get_values(self):
 		self.kernels.create_general_index()
@@ -31,7 +48,13 @@ class KernelTestCase(unittest.TestCase):
 		self.assertEqual([], self.kernels.get_values("Node2","Node4"))
 		self.assertEqual([], self.kernels.get_values("Node1","Node4"))
 
-	def test_integrate(self):
+		self.asym_kernels.create_general_index()
+		self.assertEqual([4], self.asym_kernels.get_values("Node4","Node3"))
+		self.assertEqual([5], self.asym_kernels.get_values("Node3","Node4"))
+		self.assertEqual([3], self.asym_kernels.get_values("Node1","Node3"))
+		self.assertEqual([1], self.asym_kernels.get_values("Node3","Node1"))
+
+	def test_integrate_symettric(self):
 		self.kernels.create_general_index()
 		self.kernels.integrate_matrix("mean")
 		self.assertTrue((np.array([[0.5, 0.5, 0.5, 0], [0.5, 1.5, 0, 0], [0.5, 0, 3.5, 2.5], [0, 0, 2.5, 0]]) == self.kernels.integrated_kernel[0]).all())
@@ -40,3 +63,37 @@ class KernelTestCase(unittest.TestCase):
 		self.kernels.integrate_matrix("integration_mean_by_presence")
 		self.assertTrue((np.array([[1, 1, 1, 0], [1, 3, 0, 0], [1, 0, 3.5, 5], [0, 0, 5, 0]]) == self.kernels.integrated_kernel[0]).all())
 		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.kernels.integrated_kernel[1])
+
+		self.kernels.integrate_matrix("median")
+		print(self.kernels.integrated_kernel[0])
+		self.assertTrue((np.array([[1, 1, 1, 0], [1, 3, 0, 0], [1, 0, 3.5, 5], [0, 0, 5, 0]]) == self.kernels.integrated_kernel[0]).all())
+		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.kernels.integrated_kernel[1])
+
+	def test_integrate_asymettric(self):
+		#Testing integration mean with asymmetrical matrixes
+		self.asym_kernels.create_general_index()
+		self.asym_kernels.integrate_matrix("mean", symmetry=False)
+		self.assertTrue((np.array([[0.5, 1, 1.5, 0], [0.5, 1.5, 0, 0], [0.5, 0, 3.5, 2.5], [0, 0, 2, 0]]) == self.asym_kernels.integrated_kernel[0]).all())
+		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.asym_kernels.integrated_kernel[1])
+
+		self.asym_kernels.integrate_matrix("integration_mean_by_presence", symmetry=False)
+		self.assertTrue((np.array([[1, 2, 3, 0], [1, 3, 0, 0], [1, 0, 3.5, 5], [0, 0, 4, 0]]) == self.asym_kernels.integrated_kernel[0]).all())
+		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.asym_kernels.integrated_kernel[1])
+
+	def test_integrate_speed(self):
+		big_kernels = Kernels()
+		nodes = [f"M{n}" for n in range(3000)]
+		nodes_kernel1 = {node: i for i, node in enumerate(np.random.choice(nodes, 1300, replace=False))}
+		nodes_kernel2 = {node: i for i, node in enumerate(np.random.choice(nodes, 400, replace=False))}
+		nodes_kernel3 = {node: i for i, node in enumerate(np.random.choice(nodes, 150, replace=False))}
+		kernel1 = np.random.randint(0, 10, (len(nodes_kernel1), len(nodes_kernel1)))
+		kernel2 = np.random.randint(0, 10, (len(nodes_kernel2), len(nodes_kernel2)))
+		kernel3 = np.random.randint(0, 10, (len(nodes_kernel3), len(nodes_kernel3)))
+		big_kernels.kernels_raw = [kernel1, kernel2, kernel3]
+		big_kernels.local_indexes = [nodes_kernel1, nodes_kernel2, nodes_kernel3] 
+
+		#Testing speed of integration mean with symmetrical matrixes
+		big_kernels.create_general_index()
+		time1cpu = profiler(big_kernels.integrate_matrix, "mean", 1)
+		time16cpu  = profiler(big_kernels.integrate_matrix, "mean", 16)
+		self.assertLessEqual(time16cpu, time1cpu)

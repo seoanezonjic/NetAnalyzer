@@ -565,6 +565,7 @@ class NetAnalyzer:
     def compute_summarized_group_metrics(self, output_filename, metrics = ['size', 'avg_transitivity', 'internal_edge_density',
      'conductance', 'triangle_participation_ratio', 'max_odf', 'avg_odf', 'avg_embeddedness', 'average_internal_degree','cut_ratio',
      'fraction_over_median_degree', 'scaled_density']):
+            # HAS NOT SUMMARY: 'surprise', 'significance', 'comparative_degree', 'avg_sht_path', 'node_com_assoc'
         communities = NodeClustering(list(self.group_nodes.values()), self.graph, "external", overlap=True)
         results = []
         for metric in metrics:

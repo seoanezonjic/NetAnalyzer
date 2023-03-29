@@ -90,17 +90,14 @@ parser.add_argument("-T","--threads", dest="threads", default=0, type= based_0,
 					help="Number of threads to use in computation, one thread will be reserved as manager.")
 parser.add_argument("-r","--reference_nodes", dest="reference_nodes", default=[], type= lambda x: x.split(","),
 					help="Node ids comma separared")
-
 parser.add_argument("-R","--compare_clusters_reference", dest="compare_clusters_reference", default=None, type= group_nodes_parse,
 					help="File path or groups separated by ';' and group node ids comma separared")
 parser.add_argument("-G","--group_nodes", dest="group_nodes", default={}, type= group_nodes_parse,
 					help="File path or groups separated by ';' and group node ids comma separared")
-
 parser.add_argument("-b", "--build_clusters_alg", dest="build_cluster_alg", default=None,
 					help="Type of cluster algorithm")
 parser.add_argument("-B", "--build_clusters_add_options", dest="build_clusters_add_options", default="",
 					help="Additional options for clustering methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...'")
-
 parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lambda x: x.split(";"),
 					help="Remove nodes from file. If PATH;r then nodes not included in file are removed")
 parser.add_argument("-x","--expand_clusters", dest="expand_clusters", default=None,
@@ -113,11 +110,6 @@ parser.add_argument("--seed", dest="seed", default=None, type = lambda x: x,
 					help="sepecify seed for clusterin processes")
 
 options = parser.parse_args()
-
-#if options.seed is not None:
-#	random.seed(options.seed)
-# TODO: Talk with PSZ this section.
-
 ########## MAIN ##########
 ##########################
 print("Loading network data")

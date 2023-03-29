@@ -6,9 +6,9 @@ import numpy as np
 ROOT_PATH=os.path.dirname(__file__)
 DATA_TEST_PATH = os.path.join(ROOT_PATH, 'data/data_integrate')
 
-def profiler(funcion, method, cores):
+def profiler(funcion, method, cores, symmetry):
 	start = timeit.default_timer()
-	funcion(method, n_workers = cores)
+	funcion(method, n_workers = cores, symmetry = symmetry)
 	stop = timeit.default_timer()
 	return (stop - start)
 
@@ -73,9 +73,10 @@ class KernelTestCase(unittest.TestCase):
 		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.kernels.integrated_kernel[1])
 
 		self.kernels.integrate_matrix("geometric_mean")
+		np.save("test.npy", self.kernels.integrated_kernel[0])
 		#Weird behaviour of the boolean matrix, some values are not equal, probably by numpy numeric representation precision
 		#So in this test we are asserting with numpy isclose method instead of ==
-		self.assertTrue(np.isclose(np.array([[1, 1, 1, 0], [1, 3, 0, 0], [1, 0, 0, 5], [0, 0, 5, 0]]), np.float64(self.kernels.integrated_kernel[0])).all())
+		self.assertTrue(np.isclose(np.array([[1, 1, 1, 0], [1, 3, 0, 0], [1, 0, 0, 5], [0, 0, 5, 0]]), self.kernels.integrated_kernel[0]).all())
 		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.kernels.integrated_kernel[1])
 		
 	def test_integrate_asymettric(self):
@@ -104,12 +105,12 @@ class KernelTestCase(unittest.TestCase):
 
 		#Testing speed of mean integration with symmetrical matrixes
 		big_kernels.create_general_index()
-		time1cpu = profiler(big_kernels.integrate_matrix, "mean", 1)
-		time16cpu  = profiler(big_kernels.integrate_matrix, "mean", 16)
+		time1cpu = profiler(big_kernels.integrate_matrix, "mean", 1, True)
+		time16cpu  = profiler(big_kernels.integrate_matrix, "mean", 16, True)
 		self.assertLessEqual(time16cpu, time1cpu)
 
 """
-	def test_geometric_speed(self):
+	def test_speed_all_combinations(self):
 		big_kernels = Kernels()
 		nodes = [f"M{n}" for n in range(3000)]
 		nodes_kernel1 = {node: i for i, node in enumerate(np.random.choice(nodes, 1300, replace=False))}
@@ -120,15 +121,39 @@ class KernelTestCase(unittest.TestCase):
 		kernel3 = np.random.randint(0, 4, (len(nodes_kernel3), len(nodes_kernel3)))
 		big_kernels.kernels_raw = [kernel1, kernel2, kernel3]
 		big_kernels.local_indexes = [nodes_kernel1, nodes_kernel2, nodes_kernel3] 
-
-		#Testing speed of integration mean with symmetrical matrixes
 		big_kernels.create_general_index()
-		#timeMean = profiler(big_kernels.integrate_matrix, "mean", n_workers=1)
-		#timeGeo  = profiler(big_kernels.integrate_matrix, "geometric_mean", n_workers=1)
-		timeMean = profiler(big_kernels.integrate_matrix, "mean", n_workers=16) 
-		timeGeo  = profiler(big_kernels.integrate_matrix, "geometric_mean", n_workers=16)
-		
-		print("Time mean: ", timeMean)
-		print("Time geometric: ", timeGeo)
 
+		###Testing speed of mean integration with symmetrical matrixes
+		big_kernels.create_general_index()
+		time1cpu = profiler(big_kernels.integrate_matrix, "mean", 1, True)
+		time16cpu  = profiler(big_kernels.integrate_matrix, "mean", 16, True)
+		self.assertLessEqual(time16cpu, time1cpu)
+
+		#Testing speed of mean integration with assymmetrical matrixes
+		asymtime1cpu = profiler(big_kernels.integrate_matrix, "mean", 1, False)
+		asymtime16cpu  = profiler(big_kernels.integrate_matrix, "mean", 16, False)
+
+		print()
+		print(f"Time 1 CPU: {time1cpu}")
+		print(f"Time 16 CPU: {time16cpu}")
+		print(f"Time 1 CPU asym: {asymtime1cpu}")
+		print(f"Time 16 CPU asym: {asymtime16cpu}")
+		print()
+
+		###Testing speed of geometric mean integration with symmetrical matrixes
+		big_kernels.create_general_index()
+		time1cpu = profiler(big_kernels.integrate_matrix, "geometric_mean", 1, True)
+		time16cpu  = profiler(big_kernels.integrate_matrix, "geometric_mean", 16, True)
+		self.assertLessEqual(time16cpu, time1cpu)
+
+		#Testing speed of geometric mean integration with assymmetrical matrixes
+		asymtime1cpu = profiler(big_kernels.integrate_matrix, "geometric_mean", 1, False)
+		asymtime16cpu  = profiler(big_kernels.integrate_matrix, "geometric_mean", 16, False)
+
+		print()
+		print(f"Time 1 CPU: {time1cpu}")
+		print(f"Time 16 CPU: {time16cpu}")
+		print(f"Time 1 CPU asym: {asymtime1cpu}")
+		print(f"Time 16 CPU asym: {asymtime16cpu}")
+		print()
 """

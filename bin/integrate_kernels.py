@@ -27,7 +27,7 @@ parser.add_argument("-i","--integration_type",dest= "integration_type", default=
 					help= "It specifies how to integrate the kernels")
 parser.add_argument("--cpu",dest= "n_workers", default=8,  type = lambda x: int(x),
 					help= "It specifies the number of cpus available for the process parallelization")
-parser.add_argument("--sym",dest= "symmetric", default=True, action='store_false',
+parser.add_argument("--asym",dest= "symmetric", default=True, action='store_false',
 					help= "It specifies if the kernel matrixes are or not symmetric")
 parser.add_argument("-o","--output_matrix",dest= "output_matrix_file", default="general_matrix", 
 					help= "The name of the matrix output")

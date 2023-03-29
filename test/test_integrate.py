@@ -65,10 +65,19 @@ class KernelTestCase(unittest.TestCase):
 		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.kernels.integrated_kernel[1])
 
 		self.kernels.integrate_matrix("median")
-		print(self.kernels.integrated_kernel[0])
 		self.assertTrue((np.array([[1, 1, 1, 0], [1, 3, 0, 0], [1, 0, 3.5, 5], [0, 0, 5, 0]]) == self.kernels.integrated_kernel[0]).all())
 		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.kernels.integrated_kernel[1])
 
+		self.kernels.integrate_matrix("max")
+		self.assertTrue((np.array([[1, 1, 1, 0], [1, 3, 0, 0], [1, 0, 7, 5], [0, 0, 5, 0]]) == self.kernels.integrated_kernel[0]).all())
+		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.kernels.integrated_kernel[1])
+
+		self.kernels.integrate_matrix("geometric_mean")
+		#Weird behaviour of the boolean matrix, some values are not equal, probably by numpy numeric representation precision
+		#So in this test we are asserting with numpy isclose method instead of ==
+		self.assertTrue(np.isclose(np.array([[1, 1, 1, 0], [1, 3, 0, 0], [1, 0, 0, 5], [0, 0, 5, 0]]), np.float64(self.kernels.integrated_kernel[0])).all())
+		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.kernels.integrated_kernel[1])
+		
 	def test_integrate_asymettric(self):
 		#Testing integration mean with asymmetrical matrixes
 		self.asym_kernels.create_general_index()
@@ -81,6 +90,7 @@ class KernelTestCase(unittest.TestCase):
 		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.asym_kernels.integrated_kernel[1])
 
 	def test_integrate_speed(self):
+		#Checking that mean integration performs faster with parallelization
 		big_kernels = Kernels()
 		nodes = [f"M{n}" for n in range(3000)]
 		nodes_kernel1 = {node: i for i, node in enumerate(np.random.choice(nodes, 1300, replace=False))}
@@ -92,8 +102,33 @@ class KernelTestCase(unittest.TestCase):
 		big_kernels.kernels_raw = [kernel1, kernel2, kernel3]
 		big_kernels.local_indexes = [nodes_kernel1, nodes_kernel2, nodes_kernel3] 
 
-		#Testing speed of integration mean with symmetrical matrixes
+		#Testing speed of mean integration with symmetrical matrixes
 		big_kernels.create_general_index()
 		time1cpu = profiler(big_kernels.integrate_matrix, "mean", 1)
 		time16cpu  = profiler(big_kernels.integrate_matrix, "mean", 16)
 		self.assertLessEqual(time16cpu, time1cpu)
+
+"""
+	def test_geometric_speed(self):
+		big_kernels = Kernels()
+		nodes = [f"M{n}" for n in range(3000)]
+		nodes_kernel1 = {node: i for i, node in enumerate(np.random.choice(nodes, 1300, replace=False))}
+		nodes_kernel2 = {node: i for i, node in enumerate(np.random.choice(nodes, 400, replace=False))}
+		nodes_kernel3 = {node: i for i, node in enumerate(np.random.choice(nodes, 150, replace=False))}
+		kernel1 = np.random.randint(0, 4, (len(nodes_kernel1), len(nodes_kernel1)))
+		kernel2 = np.random.randint(0, 4, (len(nodes_kernel2), len(nodes_kernel2)))
+		kernel3 = np.random.randint(0, 4, (len(nodes_kernel3), len(nodes_kernel3)))
+		big_kernels.kernels_raw = [kernel1, kernel2, kernel3]
+		big_kernels.local_indexes = [nodes_kernel1, nodes_kernel2, nodes_kernel3] 
+
+		#Testing speed of integration mean with symmetrical matrixes
+		big_kernels.create_general_index()
+		#timeMean = profiler(big_kernels.integrate_matrix, "mean", n_workers=1)
+		#timeGeo  = profiler(big_kernels.integrate_matrix, "geometric_mean", n_workers=1)
+		timeMean = profiler(big_kernels.integrate_matrix, "mean", n_workers=16) 
+		timeGeo  = profiler(big_kernels.integrate_matrix, "geometric_mean", n_workers=16)
+		
+		print("Time mean: ", timeMean)
+		print("Time geometric: ", timeGeo)
+
+"""

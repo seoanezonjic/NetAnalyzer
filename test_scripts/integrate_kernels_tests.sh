@@ -4,6 +4,11 @@ source ~soft_bio_267/initializes/init_python
 export PATH=../bin/:$PATH
 out=output_test_scripts/integrate_kernels
 data_to_test=data_test_scripts/integrate_kernels
+
+#Delete integrate kernels output folder if already exist
+if [ -d $out ]; then
+	rm -r $out
+fi
 mkdir -p $out
 
 integrate_kernels.py -i "mean" -t "$data_to_test/kernel1.npy;$data_to_test/kernel2.npy" -n " $data_to_test/kernel1.lst;$data_to_test/kernel2.lst " -o $out/int_mean
@@ -19,7 +24,6 @@ integrate_kernels.py --asym -i "integration_mean_by_presence" -t "$data_to_test/
 for file_to_test in `ls $out`; do
 	echo $file_to_test
 	diff $out/$file_to_test $data_to_test/$file_to_test
-	rm $out/$file_to_test
 done
 
 # Testing integration speed with 1 and 12 CPUs

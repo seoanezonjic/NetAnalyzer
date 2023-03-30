@@ -4,6 +4,11 @@ source ~soft_bio_267/initializes/init_python
 export PATH=../bin/:$PATH
 out=output_test_scripts/text2binary_matrix
 data_to_test=data_test_scripts/text2binary_matrix
+
+# Deleting text2binary output files folder if already exists
+if [ -d $out ]; then
+	rm -r $out
+fi
 mkdir -p $out
 
 source ~soft_bio_267/initializes/init_ruby

@@ -10,6 +10,9 @@ data_test_scripts=data_test_scripts
 mkdir -p $out
 mkdir -p $out/random
 mkdir -p $out/plots
+mkdir -p $out/projections
+mkdir -p $out/kernels
+mkdir -p $out_cluster
 
 
 # Projections  -----------------------------------------------------------------------------------------------------------------------------------------------

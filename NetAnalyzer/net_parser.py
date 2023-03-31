@@ -14,6 +14,14 @@ class Net_parser:
 		  net = Net_parser.load_network_by_plain_matrix(options['input_file'], options['node_file'], options['layers'], options['splitChar'])
 		else:
 		  raise("ERROR: The format " + options['input_format'] + " is not defined")
+
+		if options.get('load_both'): # TODO: Not tested Yet.
+			if not net.graph:
+				layerA = list(net.adjacency_matrices.keys())[0][0]
+				net.adjMat2netObj(layerA,layerA)				
+			if net.adjacency_matrices == {}:
+				net.generate_all_biadjs()
+
 		return net
 
 	def load_network_by_pairs(file, layers, split_character="\t"):

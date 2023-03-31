@@ -81,7 +81,7 @@ class NetAnalyzer:
     def load_group_nx(self):
         self.group_nx = {id: self.graph.subgraph(nodes) for id, nodes in self.group_nodes.items()}
 
-    def generate_adjacency_matrix(self, layerA, layerB):
+    def generate_adjacency_matrix(self, layerA, layerB): # TODO Talk with PSZ to change the name of the method.
         layerAidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerA]
         layerBidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerB]
         matrix = numpy.zeros((len(layerAidNodes), len(layerBidNodes)))
@@ -101,6 +101,24 @@ class NetAnalyzer:
             self.adjacency_matrices[(layerA, layerB)] = all_info_matrix
 
         return all_info_matrix
+
+    def generate_all_biadjs(self):
+        for layerA, layerB in itertools.product(self.layers):
+            self.generate_adjacency_matrix(layerA, layerB)
+
+    def adjMat2netObj(self, layerA, layerB):
+        if layerA == layerB:
+            matrix, rowIds, colIds = self.adjacency_matrices[(layerA,)] 
+        else:
+            matrix, rowIds, colIds = self.adjacency_matrices[(layerA, layerB)] 
+
+        G = nx.Graph()
+        for rowPos, rowId in enumerate(rowIds):
+                for colPos, colId in enumerate(rowIds):
+                        associationValue = matrix[rowPos, colPos]
+                        if associationValue > 0: G.add_edge(rowId, colId, weight=associationValue)
+        self.graph = G
+        return G
 
     def delete_nodes(self, node_list, mode='d'):
         if mode == 'd':

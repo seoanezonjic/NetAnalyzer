@@ -58,6 +58,8 @@ parser.add_argument("-s","--split_char", dest="split_char", default='\t',
 					help = "Character for splitting input file. Default: tab")
 parser.add_argument("-f","--input_format", dest="input_format", default='pair',
 					help="Input file format: pair (default), bin, matrix")
+parser.add_argument("--both_repre_formats", dest="load_both", default=False, action='store_true',
+					help="If we need to load the adjacency matrixes and the graph object")
 parser.add_argument("-o","--output_file", dest="output_file", default='output_file',
 					help="Output file name")
 parser.add_argument("-P","--use_pairs", dest="use_pairs", default='conn',
@@ -68,7 +70,7 @@ parser.add_argument("-K","--kernel_file", dest="kernel_file", default='kernel_fi
 					help="Output file name for kernel values")
 parser.add_argument("-p","--performance_file", dest="performance_file", default='perf_values.txt',
 					help="Output file name for performance values")
-parser.add_argument("-l","--layers", dest="layers", default=['layer', '-'], type= layer_parse,
+parser.add_argument("-l","--layers", dest="layers", default=[['layer', '-']], type= layer_parse,
 					help="Layer definition on network: layer1name,regexp1;layer2name,regexp2...")
 parser.add_argument("-u","--use_layers", dest="use_layers", default=[], type= layer_parse,
 					help="Set which layers must be used on association methods: layer1,layer2;layerA,layerB")
@@ -128,8 +130,11 @@ if options.delete_nodes:
 if options.meth is not None:
 	print(f"Performing association method {options.meth} on network \n")
 	if options.meth == "transference":
-		fullNet.generate_adjacency_matrix(options.use_layers[0][0], options.use_layers[1][0])
-		fullNet.generate_adjacency_matrix(options.use_layers[1][0], options.use_layers[0][1])
+		if not (options.use_layers[0][0], options.use_layers[1][0]) in fullNet.adjacency_matrices:
+			fullNet.generate_adjacency_matrix(options.use_layers[0][0], options.use_layers[1][0])
+		if not (options.use_layers[1][0], options.use_layers[0][1]) in fullNet.adjacency_matrices:
+			fullNet.generate_adjacency_matrix(options.use_layers[1][0], options.use_layers[0][1])
+
 		fullNet.get_association_values(
 			(options.use_layers[0][0], options.use_layers[1][0]), 
 			(options.use_layers[1][0],options.use_layers[0][1]),

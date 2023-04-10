@@ -73,7 +73,6 @@ class KernelTestCase(unittest.TestCase):
 		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.kernels.integrated_kernel[1])
 
 		self.kernels.integrate_matrix("geometric_mean")
-		np.save("test.npy", self.kernels.integrated_kernel[0])
 		#Weird behaviour of the boolean matrix, some values are not equal, probably by numpy numeric representation precision
 		#So in this test we are asserting with numpy isclose method instead of ==
 		self.assertTrue(np.isclose(np.array([[1, 1, 1, 0], [1, 3, 0, 0], [1, 0, 0, 5], [0, 0, 5, 0]]), self.kernels.integrated_kernel[0]).all())

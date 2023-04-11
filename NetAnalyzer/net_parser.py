@@ -17,8 +17,8 @@ class Net_parser:
 
 		if options.get('load_both'): # TODO: Not tested Yet.
 			if not net.graph:
-				layerA = list(net.adjacency_matrices.keys())[0][0]
-				net.adjMat2netObj(layerA,layerA)				
+				layerA, layerB = list(net.adjacency_matrices.keys())[0]
+				net.adjMat2netObj(layerA,layerB)				
 			if net.adjacency_matrices == {}:
 				net.generate_all_biadjs()
 
@@ -46,14 +46,20 @@ class Net_parser:
 		tag_layers = tuple([layer[0] for layer in layers])
 		net = NetAnalyzer(tag_layers)
 		node_names = Net_parser.load_input_list(node_file)
-		net.adjacency_matrices[tag_layers] = [numpy.load(input_file), node_names, node_names]
+		if len(tag_layers) == 1:
+			net.adjacency_matrices[(tag_layers[0],tag_layers[0])] = [numpy.load(input_file), node_names, node_names]
+		else:
+			net.adjacency_matrices[tag_layers] = [numpy.load(input_file), node_names, node_names]
 		return net
 
 	def load_network_by_plain_matrix(input_file, node_file, layers, splitChar="\t"):
 		tag_layers = tuple([layer[0] for layer in layers])
 		net = NetAnalyzer(tag_layers)
 		node_names = Net_parser.load_input_list(node_file)
-		net.adjacency_matrices[tag_layers] = [numpy.loadtxt(input_file, delimiter=splitChar), node_names, node_names]
+		if len(tag_layers) == 1:
+			net.adjacency_matrices[(tag_layers[0],tag_layers[0])] = [numpy.loadtxt(input_file, delimiter=splitChar), node_names, node_names]
+		else:
+			net.adjacency_matrices[tag_layers] = [numpy.loadtxt(input_file, delimiter=splitChar), node_names, node_names]
 		return net
 
 	def load_input_list(input_path):

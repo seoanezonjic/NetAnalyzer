@@ -28,47 +28,47 @@ class KernelTestCase(unittest.TestCase):
 		
 
 	def test_get_kernel_ct(self):
-		self.monopartite_network.get_kernel(layer2kernel = self.monopartite_layers, kernel = "ct")
+		self.monopartite_network.get_kernel(layers2kernel = self.monopartite_layers, method = "ct")
 		ct_kernel = self.monopartite_network.kernels[self.monopartite_layers]
 		self.assertTrue((ct_kernel == self.ct_kernel_to_test).all())
 
 	def test_get_kernel_el(self):
-		self.monopartite_network.get_kernel(layer2kernel = self.monopartite_layers, kernel = "el")
+		self.monopartite_network.get_kernel(layers2kernel = self.monopartite_layers, method = "el")
 		el_kernel = self.monopartite_network.kernels[self.monopartite_layers]
 		self.assertTrue((el_kernel == self.el_kernel_to_test).all())
 
 	def test_get_kernel_md1(self):
-		self.monopartite_network.get_kernel(layer2kernel = self.monopartite_layers, kernel = "md1")
+		self.monopartite_network.get_kernel(layers2kernel = self.monopartite_layers, method = "md1")
 		md1_kernel = self.monopartite_network.kernels[self.monopartite_layers]
 		self.assertTrue((md1_kernel == self.md1_kernel_to_test).all())
 
 	
 	def test_get_kernel_me(self):
-		self.monopartite_network.get_kernel(layer2kernel = self.monopartite_layers, kernel = "me")
+		self.monopartite_network.get_kernel(layers2kernel = self.monopartite_layers, method = "me")
 		me_kernel = self.monopartite_network.kernels[self.monopartite_layers]
 		self.assertTrue((me_kernel == self.me_kernel_to_test).all())
 	
 	def test_get_kernel_rf(self):
-		self.monopartite_network.get_kernel(layer2kernel = self.monopartite_layers, kernel = "rf")
+		self.monopartite_network.get_kernel(layers2kernel = self.monopartite_layers, method = "rf")
 		rf_kernel = self.monopartite_network.kernels[self.monopartite_layers]
 		self.assertTrue((rf_kernel == self.rf_kernel_to_test).all())
 	
 	def test_get_kernel_rl0_5(self):
-		self.monopartite_network.get_kernel(layer2kernel = self.monopartite_layers, kernel = "rl0.5")
+		self.monopartite_network.get_kernel(layers2kernel = self.monopartite_layers, method = "rl0.5")
 		rl0_5_kernel = self.monopartite_network.kernels[self.monopartite_layers]
 		self.assertTrue((rl0_5_kernel == self.rl0_5_kernel_to_test).all())
 
 	
 	
 	def test_get_kernel_vn0_5(self):
-		self.monopartite_network.get_kernel(layer2kernel = self.monopartite_layers, kernel = "vn0.5")
+		self.monopartite_network.get_kernel(layers2kernel = self.monopartite_layers, method = "vn0.5")
 		vn0_5_kernel = self.monopartite_network.kernels[self.monopartite_layers]
 		self.assertTrue((vn0_5_kernel == self.vn0_5_kernel_to_test).all())
 
 	
 	
 	def test_get_kernel_ka_norm(self):
-		self.monopartite_network.get_kernel(layer2kernel = self.monopartite_layers, kernel = "ka", normalization = True)
+		self.monopartite_network.get_kernel(layers2kernel = self.monopartite_layers, method = "ka", normalization = True)
 		ka_norm_kernel = self.monopartite_network.kernels[self.monopartite_layers]
 		self.assertTrue((ka_norm_kernel == self.ka_norm_kernel_to_test).all())
 	# def test_get_kernel_ka_norm(self)

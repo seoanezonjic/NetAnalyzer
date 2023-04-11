@@ -80,6 +80,8 @@ parser.add_argument("-m","--association_method", dest="meth", default=None,
 					help="Control file name")
 parser.add_argument("-k","--kernel_method", dest="kernel", default=None,
 					help="Kernel operation to perform with the adjacency matrix")
+parser.add_argument("--embedding_add_options", dest="embedding_add_options", default="",
+					help="Additional options for embedding kernel methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...' ")
 parser.add_argument("-N","--no_autorelations", dest="no_autorelations", default=False, action='store_true',
 					help="Kernel operation to perform with the adjacency matrix")
 parser.add_argument("-z","--normalize_kernel_values", dest="normalize_kernel", default=False, action='store_true',
@@ -164,9 +166,14 @@ if options.meth is not None:
 				f.write("\t".join(item) + "\n")
 
 if options.kernel is not None:
-  layer2kernel = options.use_layers[0] # we use only a layer to perform the kernel, so only one item it is selected.
-  fullNet.get_kernel(tuple(layer2kernel), options.kernel, options.normalize_kernel)
-  fullNet.write_kernel(tuple(layer2kernel), options.kernel_file)
+	exec('embedding_kwargs = {' + options.embedding_add_options +'}') # This allows inject custom arguments for each embedding method
+	if len(options.use_layers) == 1:
+		layers2kernel = (options.use_layers[0][0], options.use_layers[0][0]) # we use only a layer to perform the kernel, so only one item it is selected.
+	else:
+		layers2kernel = tuple(options.use_layers[0])
+
+	fullNet.get_kernel(layers2kernel, options.kernel, options.normalize_kernel, embedding_kwargs)
+	fullNet.write_kernel(layers2kernel, options.kernel_file)
 
 if options.graph_file is not None:
   options.graph_options['output_file'] = options.graph_file

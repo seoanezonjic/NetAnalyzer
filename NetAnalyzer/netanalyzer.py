@@ -13,6 +13,7 @@ from cdlib import algorithms, viz, evaluation
 from cdlib import NodeClustering
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 from NetAnalyzer.net_plotter import Net_plotter
+from NetAnalyzer.graph2sim import Graph2sim
 # https://stackoverflow.com/questions/60392940/multi-layer-graph-in-networkx
 # http://mkivela.com/pymnet
 class NetAnalyzer:
@@ -84,8 +85,8 @@ class NetAnalyzer:
     #def load_group_nx(self):
     #    self.group_nx = {id: self.graph.subgraph(nodes) for id, nodes in self.group_nodes.items()}
 
-    def generate_adjacency_matrix(self, layerA, layerB): # TODO Talk with PSZ to change the name of the method.
-        layerAidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerA]
+    def generate_adjacency_matrix(self, layerA, layerB): 
+        layerAidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerA] 
         layerBidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerB]
         matrix = numpy.zeros((len(layerAidNodes), len(layerBidNodes)))
 
@@ -99,7 +100,7 @@ class NetAnalyzer:
         all_info_matrix = [matrix, layerAidNodes, layerBidNodes]
 
         if layerA == layerB:
-            self.adjacency_matrices[(layerA)] = all_info_matrix
+            self.adjacency_matrices[(layerA, layerA)] = all_info_matrix
         else:
             self.adjacency_matrices[(layerA, layerB)] = all_info_matrix
 
@@ -111,17 +112,19 @@ class NetAnalyzer:
 
     def adjMat2netObj(self, layerA, layerB):
         if layerA == layerB:
-            matrix, rowIds, colIds = self.adjacency_matrices[(layerA,)] 
+            matrix, rowIds, colIds = self.adjacency_matrices[(layerA, layerA)] 
         else:
             matrix, rowIds, colIds = self.adjacency_matrices[(layerA, layerB)] 
 
-        G = nx.Graph()
+        self.graph = nx.Graph()
+        for rowId in rowIds: self.add_node(rowId, layerA)
+        for colId in colIds: self.add_node(colId, layerB)
+
         for rowPos, rowId in enumerate(rowIds):
                 for colPos, colId in enumerate(rowIds):
                         associationValue = matrix[rowPos, colPos]
-                        if associationValue > 0: G.add_edge(rowId, colId, weight=associationValue)
-        self.graph = G
-        return G
+                        if associationValue > 0: self.graph.add_edge(rowId, colId, weight=associationValue)
+        return self.graph
 
     def delete_nodes(self, node_list, mode='d'):
         if mode == 'd':
@@ -410,29 +413,22 @@ class NetAnalyzer:
         for idx, adj_pval in enumerate(adj_pvals):
             associations[idx][2] = adj_pval
 
-    def get_kernel(self, layer2kernel, kernel, normalization=False):
-        matrix, node_names_x, node_names_y = self.adjacency_matrices[layer2kernel]
-        matrix_result = Adv_mat_calc.get_kernel(matrix, node_names_x, kernel, normalization=normalization)
-        self.kernels[layer2kernel] = matrix_result
+    def get_kernel(self, layers2kernel, method, normalization=False, embedding_kwargs={}):
+        #embedding_kwargs accept: dimensions, walk_length, num_walks, p, q, workers, window, min_count, seed, quiet
 
-    def write_kernel(self, layer2kernel, output_file):
-        numpy.save(output_file, self.kernels[layer2kernel])
+        if method in Graph2sim.allowed_embeddings:
+            embedding_nodes = [node for node, layer in self.graph.nodes('layer') if layer in list(layers2kernel)] 
+            subgraph2embed = self.graph.subgraph(embedding_nodes)
+            emb_coords = Graph2sim.get_embedding(subgraph2embed, embedding = method, **embedding_kwargs)
+            kernel = Graph2sim.emb_coords2kernel(emb_coords, normalization)
+        elif method[0:2] in Graph2sim.allowed_kernels:
+            adj_mat, node_names_x, node_names_y = self.adjacency_matrices[(layers2kernel[0],layers2kernel[0])]
+            kernel = Graph2sim.get_kernel(adj_mat, method, normalization=normalization)
 
-    def get_embedding(self, embedding, output_format = "coords"):
+        self.kernels[layers2kernel] = kernel
 
-        embedding_coords = Embedding.get_embedding(self.graph)
-
-        if output_format == "coords":
-            return embedding_coords
-        elif output_format == "kernel":
-            return Embedding.emb_coords2kernel(emb_coords)
-
-    def write_embeding(self, layer2embedding, output_file):
-        pass
-        #with open(output_file, "w") as f:
-        #    for coord in embedding_coords:
-        #        
-        #pass
+    def write_kernel(self, layers2kernel, output_file):
+        numpy.save(output_file, self.kernels[layers2kernel])
 
     def shortest_path(self, source, target):
         return nx.shortest_path(self.graph, source, target)

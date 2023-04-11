@@ -55,9 +55,9 @@ class BaseNetTestCase(unittest.TestCase):
 	def test_generate_adjacency_matrix_monopartite(self):
 		test_values = self.monopartite_network.adjacency_matrices
 		matrix_values = np.array([[0, 1, 1, 0, 0],[1, 0, 0, 0, 0], [1, 0, 0, 0, 1], [0, 0, 0, 0, 1], [0, 0, 1, 1, 0]],dtype='float')
-		expected_values = { ('main') : [matrix_values, ['A', 'C', 'E', 'B', 'D'], ['A', 'C', 'E', 'B', 'D']]} 
-		self.assertEqual(expected_values[('main')][0].tolist(), test_values[('main')][0].tolist())
-		self.assertEqual(expected_values[('main')][1], test_values[('main')][1])
+		expected_values = { ('main', 'main') : [matrix_values, ['A', 'C', 'E', 'B', 'D'], ['A', 'C', 'E', 'B', 'D']]} 
+		self.assertEqual(expected_values[('main', 'main')][0].tolist(), test_values[('main', 'main')][0].tolist())
+		self.assertEqual(expected_values[('main', 'main')][1], test_values[('main', 'main')][1])
 
 	def test_generate_adjacency_matrix_bipartite(self):
 		test_values = self.network_obj.adjacency_matrices

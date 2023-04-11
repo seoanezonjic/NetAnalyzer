@@ -25,8 +25,9 @@ class NetAnalyzer:
         self.compute_pairs = 'conn'
         self.adjacency_matrices = {}
         self.kernels = {}
+        self.embedding_coords = {} #
         self.group_nodes = {} # Communities are lists {community_id : [Node1, Node2,...]}
-        self.group_nx = {} # Communities are networkx objects {community_id : networkx obj}
+        #self.group_nx = {} # Communities are networkx objects {community_id : networkx obj}
         self.reference_nodes = []
 
     def __eq__(self, other): # https://igeorgiev.eu/python/tdd/python-unittest-assert-custom-objects-are-equal/
@@ -37,10 +38,11 @@ class NetAnalyzer:
             self.compute_pairs == other.compute_pairs and \
             self.adjacency_matrices == other.adjacency_matrices and \
             self.kernels == other.kernels and \
+            self.embedding_coords == other.embedding_coords and \
             self.group_nodes == other.group_nodes and \
-            self.group_nx == other.group_nx and \
             self.reference_nodes == other.reference_nodes
 
+            #self.group_nx == other.group_nx and 
     def clone(self):
         network_clone = NetAnalyzer(copy.copy(self.layers))
         network_clone.graph = copy.deepcopy(self.graph)
@@ -48,8 +50,9 @@ class NetAnalyzer:
         network_clone.set_compute_pairs(self.compute_pairs, self.compute_autorelations)
         network_clone.adjacency_matrices = self.adjacency_matrices.copy()
         network_clone.kernels = self.kernels.copy()
+        network_clone.embedding_coords = self.embedding_coords.copy()
         network_clone.group_nodes = copy.deepcopy(self.group_nodes)
-        network_clone.group_nx = copy.deepcopy(self.group_nx)
+        #network_clone.group_nx = copy.deepcopy(self.group_nx)
         network_clone.reference_nodes = self.reference_nodes.copy()
         return network_clone
 
@@ -78,8 +81,8 @@ class NetAnalyzer:
         if layer not in self.layers: self.layers.append(layer)
         return layer
 
-    def load_group_nx(self):
-        self.group_nx = {id: self.graph.subgraph(nodes) for id, nodes in self.group_nodes.items()}
+    #def load_group_nx(self):
+    #    self.group_nx = {id: self.graph.subgraph(nodes) for id, nodes in self.group_nodes.items()}
 
     def generate_adjacency_matrix(self, layerA, layerB): # TODO Talk with PSZ to change the name of the method.
         layerAidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerA]
@@ -414,6 +417,22 @@ class NetAnalyzer:
 
     def write_kernel(self, layer2kernel, output_file):
         numpy.save(output_file, self.kernels[layer2kernel])
+
+    def get_embedding(self, embedding, output_format = "coords"):
+
+        embedding_coords = Embedding.get_embedding(self.graph)
+
+        if output_format == "coords":
+            return embedding_coords
+        elif output_format == "kernel":
+            return Embedding.emb_coords2kernel(emb_coords)
+
+    def write_embeding(self, layer2embedding, output_file):
+        pass
+        #with open(output_file, "w") as f:
+        #    for coord in embedding_coords:
+        #        
+        #pass
 
     def shortest_path(self, source, target):
         return nx.shortest_path(self.graph, source, target)

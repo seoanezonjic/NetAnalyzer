@@ -23,6 +23,7 @@ def load_file(path):
 #############################################################
 
 def based_0(string): return int(string) - 1
+def string_list(string): return string.split(",")
 def layer_parse(string): return [sublst.split(",") for sublst in string.split(";")]
 def group_nodes_parse(string):
 	group_nodes = {}
@@ -112,6 +113,8 @@ parser.add_argument("-S", "--summarize_metrics", dest="summarize_metrics", defau
 					help="Summarize metrics from groups")
 parser.add_argument("--seed", dest="seed", default=None, type = lambda x: x,
 					help="sepecify seed for clusterin processes")
+parser.add_argument("-A", "--attributes", dest="get_attributes", default=[], type =string_list,
+					help="String separated by commas with the name of network attribute")
 
 options = parser.parse_args()
 ########## MAIN ##########
@@ -206,3 +209,8 @@ if options.expand_clusters is not None:
   with open(os.path.join(os.path.dirname(options.output_file), 'expand_clusters.txt'), 'w') as out_file:
     for cl_id, nodes in expanded_clusters.items():
       for node in nodes: out_file.write(f"{cl_id}\t{node}\n")
+
+if len(options.get_attributes) > 0:
+  node_attributes = fullNet.get_node_attributes(options.get_attributes)
+  with open(os.path.join(os.path.dirname(options.output_file), 'node_attributes.txt'), 'w' ) as f:
+    for attributes in node_attributes: f.write("\t".join([str(att) for att in attributes]) + "\n")

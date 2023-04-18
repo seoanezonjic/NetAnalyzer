@@ -11,7 +11,7 @@ class Graph2sim:
 	allowed_embeddings = ['node2vec', 'deepwalk']
 	allowed_kernels = ['el', 'ct', 'rf', 'me', 'vn', 'rl', 'ka', 'md']
 
-	def get_embedding(graph, embedding, dimensions = 128, walk_length=80, num_walks = 100, p = 1, q = 1, workers = 1, window = 5, min_count=0, seed = None, quiet=True):
+	def get_embedding(graph, embedding, dimensions = 64, walk_length=30, num_walks = 100, p = 1, q = 1, workers = 1, window = 10, min_count=1, seed = None, quiet=True, batch_words=4):
 		emb_coords = None
 		if embedding in ['node2vec', 'deepwalk']: # TODO 'metapath2vec',
 			if embedding == 'node2vec' or embedding == "deepwalk":
@@ -19,7 +19,7 @@ class Graph2sim:
 					p = 1
 					q = 1 
 				node2vec = Node2Vec(graph, dimensions=dimensions, walk_length=walk_length, num_walks=num_walks, p = p, q = q, workers = workers, seed = seed, quiet=quiet)
-				model = node2vec.fit(window=window, min_count= min_count, batch_words=4) # batch_words=10000
+				model = node2vec.fit(window=window, min_count= min_count, batch_words=batch_words) # batch_words=10000
 				# min_count: is the minimun number of counts a word must have.
 				# batch_words: are Target size (in words) for batches of examples
 				list_arrays=[model.wv.get_vector(str(n)) for n in graph.nodes()]

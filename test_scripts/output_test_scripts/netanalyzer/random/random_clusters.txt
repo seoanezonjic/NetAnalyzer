@@ -1,9 +1,9 @@
+0_random	P2
+0_random	P8
 0_random	P4
-0_random	P5
-0_random	P1
+1_random	P9
 1_random	P3
-1_random	P8
-1_random	P2
-2_random	P7
+1_random	P1
 2_random	P10
-2_random	P6
+2_random	P7
+2_random	P5

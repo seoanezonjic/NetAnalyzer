@@ -16,7 +16,7 @@ def load_file(path):
 	data = []
 	with open(path, 'r') as file:
 		for line in file:
-			data.append(line.rstrip.split("\t"))
+			data.append(line.rstrip().split("\t"))
 	return data
 
 ########################### OPTPARSE ########################
@@ -131,6 +131,7 @@ if options.delete_nodes:
   node_list = [item for sublist in node_list for item in sublist] 
   mode = options.delete_nodes[1] if len(options.delete_nodes) > 1 else 'd'
   fullNet.delete_nodes(node_list, mode)
+
 
 if options.meth is not None:
 	print(f"Performing association method {options.meth} on network \n")

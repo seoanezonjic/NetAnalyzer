@@ -37,7 +37,7 @@ class Net_plotter:
         palette = {}
         for layer in self.layers: palette[layer] = graphviz_colors.pop(0)
         graph = graphviz.Graph('graph')
-        graph.attr = {'overlap' : False}
+        graph.attr(overlap = 'false', outputorder='edgesfirst')
         for e in self.graph.edges:
             l0 = self.get_node_layer(e[0])
             graph.node(e[0], '', style = 'filled', fillcolor = palette[l0])

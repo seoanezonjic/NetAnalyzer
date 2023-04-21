@@ -81,9 +81,9 @@ class Ranker:
     self.seeds = new_seeds
     self.reference_nodes = genes2predict
 
-  def rank_by_seed(self, seed_indexes, seeds):
+  def rank_by_seed(self, seed_indexes, seed):
     ordered_gene_score = []
-    genes_pos = [seed_indexes.get(s) for s in seeds if seed_indexes.get(s) is not None]
+    genes_pos = [seed_indexes.get(s) for s in seed if seed_indexes.get(s) is not None]
     number_of_seed_genes = len(genes_pos)
     number_of_all_nodes = len(self.nodes)
 

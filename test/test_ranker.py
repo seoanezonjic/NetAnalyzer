@@ -76,6 +76,7 @@ class BaseNetTestCase(unittest.TestCase):
 	def test_rank_by_seed(self):
 		self.ranker.do_ranking()
 		test_ranked_genes = self.ranked_genes2array(self.ranker.ranking)
+		print(test_ranked_genes)
 		self.assertEqual(self.load_results('rank_by_seedgene_results'), test_ranked_genes)
 
 	def test_get_filtered(self):

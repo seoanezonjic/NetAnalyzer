@@ -662,16 +662,21 @@ class NetAnalyzer:
     # TODO: Add ranker evalutation for set of clusterings (This is told to be added in a posterior expansion phase of lib)
 
     # Cluster Expansions #
-    def expand_clusters(self, expand_method):
+    def expand_clusters(self, expand_method, one_sht_paths = False):
         clusters = {}
         for id, com in self.group_nodes.items():
             if expand_method == 'sht_path':
                 new_nodes = set(com) 
                 #Community nodes are included in the set above and then this set is expanded with shortest path nodes
                 # between community nodes and assigned as the new cluster nodes list, otherwise updating the current list 
-                # could potentially add original community nodes again if they are found in the shortest path between other community nodes.  
-                all_sht_paths = (nx.all_shortest_paths(self.graph, NodeA, NodeB) for NodeA, NodeB in itertools.combinations(com, 2) if NodeA in self.graph.nodes and NodeB in self.graph.nodes)
-                for node_pair_sht_paths in all_sht_paths:
+                # could potentially add original community nodes again if they are found in the shortest path between other community nodes. 
+                sht_paths = []
+                if one_sht_paths:
+                    sht_paths = ([nx.shortest_path(self.graph, NodeA, NodeB)] for NodeA, NodeB in itertools.combinations(com, 2) if NodeA in self.graph.nodes and NodeB in self.graph.nodes)
+                else:
+                    sht_paths = (nx.all_shortest_paths(self.graph, NodeA, NodeB) for NodeA, NodeB in itertools.combinations(com, 2) if NodeA in self.graph.nodes and NodeB in self.graph.nodes)
+
+                for node_pair_sht_paths in sht_paths:
                     for path in node_pair_sht_paths:
                         new_nodes = new_nodes.union(set(path))
                 self.group_nodes[id] = new_nodes #Originally it was modified inplace with "com.add_nodes_from(list(new_nodes))" because "com" were networkx objects

@@ -44,6 +44,9 @@ parser.add_argument("--output_top", dest="output_top", default=None,
   help="File to save Top N genes")
 parser.add_argument("-o", "--output_name", dest="output_name", default="ranked_genes",
  help="PATH to file with seed_name and genes to keep in output")
+parser.add_argument("--type_of_candidates", dest="type_of_candidates", default=False, action="store_true",
+ help="type of candidates to output in ranking list: all, new, seed.")
+
 # TODO: Add Threat section
 #parser.add_argument("-T", "--threads", dest="threads", default=0, type=threads_based_0,
 # help="Number of threads to use in computation, one thread will be reserved as manager.")
@@ -79,4 +82,15 @@ if options.filter is not None:
   rankings = ranker.get_reference_ranks()
 
 if rankings:
+  if options.type_of_candidates:
+    for seed_name, rankings_by_seed in rankings.items():
+      added_ranking_column = []
+      for ranking in rankings_by_seed:
+        if ranking[0] in ranker.seeds[seed_name]:
+          ranking.insert(5, "seed")
+        else:
+          ranking.insert(5, "new")
+        added_ranking_column.append(ranking)
+      rankings[seed_name] = added_ranking_column
+  
   write_ranking(f"{options.output_name}_all_candidates", rankings)

@@ -107,6 +107,8 @@ parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lamb
 					help="Remove nodes from file. If PATH;r then nodes not included in file are removed")
 parser.add_argument("-x","--expand_clusters", dest="expand_clusters", default=None,
 					help="Method to expand clusters Available methods: sht_path")
+parser.add_argument("--one_sht_pairs", dest="one_sht_pairs", default=False, action='store_true',
+					help="add this flag if expand cluster needed with just one of the shortest paths")
 parser.add_argument("-M", "--group_metrics", dest="group_metrics", default=None, type= lambda x: x.split(";"),
 					help="Perform group group_metrics")
 parser.add_argument("-S", "--summarize_metrics", dest="summarize_metrics", default=False, action='store_true',
@@ -206,7 +208,7 @@ if options.compare_clusters_reference is not None:
 
 # Group Expansion
 if options.expand_clusters is not None:
-  expanded_clusters = fullNet.expand_clusters(options.expand_clusters)
+  expanded_clusters = fullNet.expand_clusters(options.expand_clusters, options.one_sht_pairs)
   with open(os.path.join(os.path.dirname(options.output_file), 'expand_clusters.txt'), 'w') as out_file:
     for cl_id, nodes in expanded_clusters.items():
       for node in nodes: out_file.write(f"{cl_id}\t{node}\n")

@@ -672,9 +672,25 @@ class NetAnalyzer:
                 # could potentially add original community nodes again if they are found in the shortest path between other community nodes. 
                 sht_paths = []
                 if one_sht_paths:
-                    sht_paths = ([nx.shortest_path(self.graph, NodeA, NodeB)] for NodeA, NodeB in itertools.combinations(com, 2) if NodeA in self.graph.nodes and NodeB in self.graph.nodes)
+                    for NodeA, NodeB in itertools.combinations(com, 2):
+                        if NodeA in self.graph.nodes and NodeB in self.graph.nodes:
+                            sht_path = None
+                            try:
+                                sht_path = nx.shortest_path(self.graph, NodeA, NodeB)
+                            except nx.exception.NetworkXNoPath:
+                                continue 
+                            sht_paths.append([sht_path])
+                    #sht_paths = ([nx.shortest_path(self.graph, NodeA, NodeB)] for NodeA, NodeB in itertools.combinations(com, 2) if NodeA in self.graph.nodes and NodeB in self.graph.nodes)
                 else:
-                    sht_paths = (nx.all_shortest_paths(self.graph, NodeA, NodeB) for NodeA, NodeB in itertools.combinations(com, 2) if NodeA in self.graph.nodes and NodeB in self.graph.nodes)
+                    for NodeA, NodeB in itertools.combinations(com, 2):
+                        if NodeA in self.graph.nodes and NodeB in self.graph.nodes:
+                            sht_path = None
+                            try:
+                                sht_path = nx.all_shortest_paths(self.graph, NodeA, NodeB)
+                            except nx.exception.NetworkXNoPath:
+                                continue 
+                            sht_paths.append(sht_path)
+                    #sht_paths = (nx.all_shortest_paths(self.graph, NodeA, NodeB) for NodeA, NodeB in itertools.combinations(com, 2) if NodeA in self.graph.nodes and NodeB in self.graph.nodes)
 
                 for node_pair_sht_paths in sht_paths:
                     for path in node_pair_sht_paths:

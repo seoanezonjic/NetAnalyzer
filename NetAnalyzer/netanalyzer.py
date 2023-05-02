@@ -91,7 +91,7 @@ class NetAnalyzer:
                     else:
                         self.group_nodes[group_id].append(node)
                 else:
-                    warnings.warn("Group id:", group_id, " with member not in network:", node)
+                    warnings.warn("Group id:" + str(group_id) + " with member not in network:" + str(node))
 
     def generate_adjacency_matrix(self, layerA, layerB): 
         layerAidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerA] 

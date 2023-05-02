@@ -4,3 +4,4 @@ rber_pots_1	M3
 rber_pots_1	M4
 rber_pots_2	M5
 rber_pots_2	M6
+rber_pots_2	CRMPK2

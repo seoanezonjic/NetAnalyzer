@@ -1,0 +1,6 @@
+der_0	M1
+der_0	M2
+der_0	M4
+der_1	M3
+der_1	M5
+der_1	M6

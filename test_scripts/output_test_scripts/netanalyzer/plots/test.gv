@@ -1,4 +1,5 @@
 graph "graph" {
+	outputorder=edgesfirst overlap=false
 	M1 [label="" fillcolor=lightsteelblue1 style=filled]
 	P1 [label="" fillcolor=lightyellow1 style=filled]
 	M1 -- P1

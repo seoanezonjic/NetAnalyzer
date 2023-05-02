@@ -101,18 +101,22 @@ parser.add_argument("-G","--group_nodes", dest="group_nodes", default={}, type= 
 					help="File path or groups separated by ';' and group node ids comma separared")
 parser.add_argument("-b", "--build_clusters_alg", dest="build_cluster_alg", default=None,
 					help="Type of cluster algorithm")
+parser.add_argument("--output_build_clusters", dest="output_build_clusters", default=None, help= "output name for discovered clusters")
 parser.add_argument("-B", "--build_clusters_add_options", dest="build_clusters_add_options", default="",
 					help="Additional options for clustering methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...'")
 parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lambda x: x.split(";"),
 					help="Remove nodes from file. If PATH;r then nodes not included in file are removed")
 parser.add_argument("-x","--expand_clusters", dest="expand_clusters", default=None,
 					help="Method to expand clusters Available methods: sht_path")
+parser.add_argument("--output_expand_clusters", dest= "output_expand_clusters", default="expand_clusters.txt", help="outputname fopr expand clusters file")
 parser.add_argument("--one_sht_pairs", dest="one_sht_pairs", default=False, action='store_true',
 					help="add this flag if expand cluster needed with just one of the shortest paths")
 parser.add_argument("-M", "--group_metrics", dest="group_metrics", default=None, type= lambda x: x.split(";"),
 					help="Perform group group_metrics")
-parser.add_argument("-S", "--summarize_metrics", dest="summarize_metrics", default=False, action='store_true',
+parser.add_argument("--output_metrics_by_cluster", dest="output_metrics_by_cluster", default='group_metrics.txt', help= "output name for metrics by cluster file")
+parser.add_argument("-S", "--summarize_metrics", dest="summarize_metrics", default=None, type= lambda x: x.split(";"),
 					help="Summarize metrics from groups")
+parser.add_argument("--output_summarized_metrics", dest="output_summarized_metrics", default='group_metrics_summarized.txt', help= "output name for summarized metrics file")
 parser.add_argument("--seed", dest="seed", default=None, type = lambda x: x,
 					help="sepecify seed for clusterin processes")
 parser.add_argument("-A", "--attributes", dest="get_attributes", default=[], type =string_list,
@@ -189,17 +193,21 @@ if options.graph_file is not None:
 if options.build_cluster_alg is not None:
 	exec('clust_kwargs = {' + options.build_clusters_add_options +'}') # This allows inject custom arguments for each clustering method
 	fullNet.discover_clusters(options.build_cluster_alg, clust_kwargs, **{'seed': options.seed})
+
+	if options.output_build_clusters is None:
+		options.output_build_clusters = options.build_cluster_alg + '_' + 'discovered_clusters.txt'
   
-	with open(os.path.join(os.path.dirname(options.output_file), options.build_cluster_alg + '_' + 'discovered_clusters.txt'), 'w') as out_file:
+	with open(options.output_build_clusters, 'w') as out_file:
 		for cl_id, nodes in fullNet.group_nodes.items():
 			for node in nodes: out_file.write(f"{cl_id}\t{node}\n")
 
-# Group metrics 
+# Group metrics by cluster.
 if options.group_metrics:
-	if options.summarize_metrics:
-		fullNet.compute_summarized_group_metrics(output_filename=os.path.join(os.path.dirname(options.output_file), 'group_metrics_summarized.txt'), metrics = options.group_metrics)
-	else:
-		fullNet.compute_group_metrics(output_filename= os.path.join(os.path.dirname(options.output_file), 'group_metrics.txt'), metrics = options.group_metrics)
+	fullNet.compute_group_metrics(output_filename= options.output_metrics_by_cluster, metrics = options.group_metrics)
+	
+# Group metrics summarized.
+if options.summarize_metrics:
+	fullNet.compute_summarized_group_metrics(output_filename=options.output_summarized_metrics, metrics = options.summarize_metrics)
 
 # Comparing Group Families (Two by now)
 if options.compare_clusters_reference is not None:
@@ -209,7 +217,7 @@ if options.compare_clusters_reference is not None:
 # Group Expansion
 if options.expand_clusters is not None:
   expanded_clusters = fullNet.expand_clusters(options.expand_clusters, options.one_sht_pairs)
-  with open(os.path.join(os.path.dirname(options.output_file), 'expand_clusters.txt'), 'w') as out_file:
+  with open(options.output_expand_clusters, 'w') as out_file:
     for cl_id, nodes in expanded_clusters.items():
       for node in nodes: out_file.write(f"{cl_id}\t{node}\n")
 

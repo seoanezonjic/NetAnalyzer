@@ -67,21 +67,22 @@ diff $out/random/random_net_same_seed1.txt $out/random/random_net_same_seed2.txt
 
 # ---------------------------------- Comunities ----------------------------------------
 # Create Communities
-netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out/clustering/ -l 'genes' -b "rber_pots" #Deternimistic algorithm
-netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out/clustering/ -l 'genes' -b "der" --seed 1 #Non-deterministic algorithm
-mv ./$out/clustering/der_discovered_clusters.txt ./$out/clustering/der_discovered_clusters2.txt
-netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out/clustering/ -l 'genes' -b "der" --seed 1
+netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out/clustering/ -l 'genes' -b "rber_pots" --output_build_clusters ./$out/clustering/rber_pots_discovered_clusters.txt #Deternimistic algorithm
+netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out/clustering/ -l 'genes' -b "der" --seed 1 --output_build_clusters  ./$out/clustering/der_discovered_clusters.txt #Non-deterministic algorithm
+netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out/clustering/ -l 'genes' -b "der" --seed 1 --output_build_clusters ./$out/clustering/der_discovered_clusters2.txt
 diff ./$out/clustering/der_discovered_clusters.txt ./$out/clustering/der_discovered_clusters2.txt #We should expect no difference if the seed is the same
-rm ./$out/clustering/der_discovered_clusters.txt ./$out/clustering/der_discovered_clusters2.txt #We remove the files to avoid unexpected errors that could not overwrite the file
+rm ./$out/clustering/der_discovered_clusters2.txt #We remove the files to avoid unexpected errors that could not overwrite the file
 # Community Metrics
 ## Summ
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./$out/clustering/  -f pair -l 'genes' -M 'max_odf;avg_transitivity;conductance' -S
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_summarized_metrics ./$out/clustering/group_metrics_summarized.txt  -f pair -l 'genes' -S 'max_odf;avg_transitivity;conductance'
 ## Not Summ
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./$out/clustering/ -f pair -l 'genes' -M 'comparative_degree;max_odf'
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_metrics_by_cluster ./$out/clustering/group_metrics.txt -f pair -l 'genes' -M 'comparative_degree;max_odf'
+## Summ and Not Summ
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -f pair -l 'genes' --output_metrics_by_cluster ./$out/clustering/group_metrics2.txt -M 'comparative_degree;max_odf' --output_summarized_metrics ./$out/clustering/group_metrics_summarized2.txt -S 'max_odf;avg_transitivity;conductance'
 # Comparing group families
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -R $data_test_scripts/clustering/rber_pots_discovered_clusters.txt -f pair -l 'genes' | tail -n 1 > ./$out/clustering/comparing_clusters.txt
 # Group expansion
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -o ./$out/clustering/ -f pair -l 'genes' -x 'sht_path'
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_expand_clusters ./$out/clustering/expand_clusters.txt -f pair -l 'genes' -x 'sht_path'
 sort -k1 ./$out/clustering/expand_clusters.txt | sort -k2 > ./$out/clustering/tmp_expand_clusters.txt
 mv ./$out/clustering/tmp_expand_clusters.txt ./$out/clustering/expand_clusters.txt
 

@@ -129,7 +129,9 @@ print("Loading network data")
 fullNet = Net_parser.load(vars(options)) # FRED: Remove this part of vars and modify the loads methods (Tlk wth PSZ)
 fullNet.reference_nodes = options.reference_nodes
 #fullNet.threads = options.threads
-fullNet.group_nodes = options.group_nodes
+if options.group_nodes:
+	fullNet.set_groups(options.group_nodes)
+
 fullNet.set_compute_pairs(options.use_pairs, not options.no_autorelations)
 
 if options.delete_nodes:

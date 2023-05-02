@@ -82,8 +82,16 @@ class NetAnalyzer:
         if layer not in self.layers: self.layers.append(layer)
         return layer
 
-    #def load_group_nx(self):
-    #    self.group_nx = {id: self.graph.subgraph(nodes) for id, nodes in self.group_nodes.items()}
+    def set_groups(self, groups):
+        for group_id, nodes in groups.items():
+            for node in nodes:
+                if node in self.graph.nodes:
+                    if self.group_nodes.get(group_id) is None:
+                        self.group_nodes[group_id] = [node]
+                    else:
+                        self.group_nodes[group_id].append(node)
+                else:
+                    warnings.warn("Group id:", group_id, " with member not in network:", node)
 
     def generate_adjacency_matrix(self, layerA, layerB): 
         layerAidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerA] 

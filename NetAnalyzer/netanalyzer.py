@@ -595,7 +595,16 @@ class NetAnalyzer:
     # Evaluating all communities
 
     def communities_avg_sht_path(self, coms):
-        return [ self.average_shortest_path_length(com) for com_id, com in coms.items()]
+        asp_coms = []
+        for com_id, com in coms.items():
+            try:
+                asp_com = self.average_shortest_path_length(com) 
+            except nx.NetworkXError:
+                asp_com = None
+
+            asp_coms.append(asp_com)
+
+        return asp_coms
 
     def communities_comparative_degree(self, coms):
         return [ self.compute_comparative_degree(com) for com_id, com in coms.items()]

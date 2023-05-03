@@ -77,6 +77,8 @@ rm ./$out/clustering/der_discovered_clusters2.txt #We remove the files to avoid 
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_summarized_metrics ./$out/clustering/group_metrics_summarized.txt  -f pair -l 'genes' -S 'max_odf;avg_transitivity;conductance'
 ## Not Summ
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_metrics_by_cluster ./$out/clustering/group_metrics.txt -f pair -l 'genes' -M 'comparative_degree;max_odf'
+## Not Summ Not connected
+netanalyzer.py -i $data_test_scripts/clustering/non_connected_network.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_metrics_by_cluster ./$out/clustering/group_metrics_non_connected.txt -f pair -l 'genes' -M 'comparative_degree;max_odf;avg_sht_path'
 ## Summ and Not Summ
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -f pair -l 'genes' --output_metrics_by_cluster ./$out/clustering/group_metrics2.txt -M 'comparative_degree;max_odf' --output_summarized_metrics ./$out/clustering/group_metrics_summarized2.txt -S 'max_odf;avg_transitivity;conductance'
 # Comparing group families

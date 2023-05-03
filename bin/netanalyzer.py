@@ -132,6 +132,7 @@ fullNet.reference_nodes = options.reference_nodes
 if options.group_nodes:
 	fullNet.set_groups(options.group_nodes)
 
+
 fullNet.set_compute_pairs(options.use_pairs, not options.no_autorelations)
 
 if options.delete_nodes:

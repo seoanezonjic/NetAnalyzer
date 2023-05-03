@@ -91,7 +91,8 @@ class NetAnalyzer:
                     else:
                         self.group_nodes[group_id].append(node)
                 else:
-                    warnings.warn("Group id:" + str(group_id) + " with member not in network:" + str(node))
+                    print("Group id: " + str(group_id) + " with member not in network:" + str(node), file=sys.stderr)
+                    #warnings.warn("Group id:" + str(group_id) + " with member not in network:" + str(node))
 
     def generate_adjacency_matrix(self, layerA, layerB): 
         layerAidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerA] 
@@ -442,8 +443,11 @@ class NetAnalyzer:
         return nx.shortest_path(self.graph, source, target)
 
     def average_shortest_path_length(self, community):
-        return nx.average_shortest_path_length(self.graph.subgraph(community)) #TODO JPG: I made this temporal solution, but i dont know if is the best possible one
-        #return nx.average_shortest_path_length(community)  #Previous version, when community was a networkx object
+        try:
+            asp_com = nx.average_shortest_path_length(self.graph.subgraph(community))
+        except nx.NetworkXError:
+            asp_com = None
+        return asp_com 
 
     def shortest_paths(self, community):
         return nx.all_pairs_shortest_path(community)
@@ -597,13 +601,8 @@ class NetAnalyzer:
     def communities_avg_sht_path(self, coms):
         asp_coms = []
         for com_id, com in coms.items():
-            try:
-                asp_com = self.average_shortest_path_length(com) 
-            except nx.NetworkXError:
-                asp_com = None
-
+            asp_com = self.average_shortest_path_length(com)
             asp_coms.append(asp_com)
-
         return asp_coms
 
     def communities_comparative_degree(self, coms):

@@ -117,7 +117,7 @@ class NetAnalyzer:
         return all_info_matrix
 
     def generate_all_biadjs(self):
-        for layerA, layerB in itertools.product(self.layers):
+        for layerA, layerB in itertools.product(self.layers, self.layers):
             self.generate_adjacency_matrix(layerA, layerB)
 
     def adjMat2netObj(self, layerA, layerB):

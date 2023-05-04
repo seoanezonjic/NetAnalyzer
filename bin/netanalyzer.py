@@ -19,6 +19,28 @@ def load_file(path):
 			data.append(line.rstrip().split("\t"))
 	return data
 
+def get_args(dsl_args):
+	"""return args, kwargs"""
+	args = []
+	kwargs = {}
+	for dsl_arg in dsl_args:
+		if '=' in dsl_arg:
+			k, v = dsl_arg.split('=', 1)
+			kwargs[k] = eval(v)
+		else:
+			args.append(eval(dsl_arg))
+	return args, kwargs
+
+def execute_dsl_script(net_obj, dsl_path):
+	with open(dsl_path, 'r') as file:
+		for line in file:
+			line = line.strip()
+			if not line or line[0] == '#': continue
+			command = line.split()
+			func = getattr(net_obj, command.pop(0))
+			args, kwargs = get_args(command)
+			func(*args, **kwargs)
+
 ########################### OPTPARSE ########################
 #############################################################
 
@@ -121,6 +143,8 @@ parser.add_argument("--seed", dest="seed", default=None, type = lambda x: x,
 					help="sepecify seed for clusterin processes")
 parser.add_argument("-A", "--attributes", dest="get_attributes", default=[], type =string_list,
 					help="String separated by commas with the name of network attribute")
+parser.add_argument("--dsl_script", dest="dsl_script", default=None,
+					help="Path to dsl script to perform complex analysis")
 
 options = parser.parse_args()
 ########## MAIN ##########
@@ -141,6 +165,9 @@ if options.delete_nodes:
   mode = options.delete_nodes[1] if len(options.delete_nodes) > 1 else 'd'
   fullNet.delete_nodes(node_list, mode)
 
+if options.dsl_script is not None:
+	execute_dsl_script(fullNet, options.dsl_script)
+	sys.exit()
 
 if options.meth is not None:
 	print(f"Performing association method {options.meth} on network \n")

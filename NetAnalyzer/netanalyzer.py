@@ -9,6 +9,7 @@ import scipy.stats as stats
 import statsmodels
 import itertools
 import warnings
+import logging
 from cdlib import algorithms, viz, evaluation
 from cdlib import NodeClustering
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
@@ -91,8 +92,8 @@ class NetAnalyzer:
                     else:
                         self.group_nodes[group_id].append(node)
                 else:
-                    print("Group id: " + str(group_id) + " with member not in network:" + str(node), file=sys.stderr)
-                    #warnings.warn("Group id:" + str(group_id) + " with member not in network:" + str(node))
+                    #print("Group id: " + str(group_id) + " with member not in network:" + str(node), file=sys.stderr)
+                    logging.warning("Group id: " + str(group_id) + " with member not in network: " + str(node))
 
     def generate_adjacency_matrix(self, layerA, layerB): 
         layerAidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerA] 

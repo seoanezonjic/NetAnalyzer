@@ -255,7 +255,7 @@ class NetAnalyzer:
         for meth, values in self.association_values.items():
             self.association_values[meth] = [relation for relation in values if self.graph.nodes[relation[0]]["layer"] != self.graph.nodes[relation[1]]["layer"]]
 
-    def get_association_values(self, layers, base_layer, meth):
+    def get_association_values(self, layers, base_layer, meth, output_filename=None, outFormat='pair'):
         relations = [] #node A, node B, val
         if meth == 'counts':
             relations = self.get_counts_associations(layers, base_layer)
@@ -279,6 +279,7 @@ class NetAnalyzer:
             relations = self.get_csi_associations(layers, base_layer)
         elif meth == 'transference': #tripartite networks
             relations = self.get_association_by_transference_resources(layers, base_layer)
+        if output_filename != None: self.write_obj(relations, output_filename, inFormat='pair', outFormat=outFormat)
         return relations
 
     def get_association_by_transference_resources(self, firstPairLayers, secondPairLayers, lambda_value1 = 0.5, lambda_value2 = 0.5):
@@ -423,7 +424,7 @@ class NetAnalyzer:
         for idx, adj_pval in enumerate(adj_pvals):
             associations[idx][2] = adj_pval
 
-    def get_kernel(self, layers2kernel, method, normalization=False, embedding_kwargs={}):
+    def get_kernel(self, layers2kernel, method, normalization=False, embedding_kwargs={}, output_filename=None, outFormat='matrix'):
         #embedding_kwargs accept: dimensions, walk_length, num_walks, p, q, workers, window, min_count, seed, quiet, batch_words
 
         if method in Graph2sim.allowed_embeddings:
@@ -434,7 +435,8 @@ class NetAnalyzer:
         elif method[0:2] in Graph2sim.allowed_kernels:
             adj_mat, node_names_x, node_names_y = self.adjacency_matrices[(layers2kernel[0],layers2kernel[0])]
             kernel = Graph2sim.get_kernel(adj_mat, method, normalization=normalization)
-
+        # TODO: The next line needs to define rowIds and colIds to could use the pair output format
+        if output_filename != None: self.write_obj(kernel, output_filename, inFormat='matrix', outFormat=outFormat, rowIds=None, colIds=None)
         self.kernels[layers2kernel] = kernel
 
     def write_kernel(self, layers2kernel, output_file):
@@ -777,6 +779,13 @@ class NetAnalyzer:
         else:
             query.append(node2)
 
+    def add_nested_record(self, hash, node1, node2, val):
+        query_node1 = hash.get(node1)
+        if query_node1 is None:
+            hash[node1] = {node2: val}
+        else:
+            query_node1[node2] = val
+
     def matrix2relations(self,finalMatrix, rowIds, colIds):
         relations = []
         for rowPos, rowId in enumerate(rowIds):
@@ -785,16 +794,56 @@ class NetAnalyzer:
                 if associationValue >= 0: relations.append([rowId, colId, associationValue])
         return relations
 
-    def add_nested_record(self, hash, node1, node2, val):
-        query_node1 = hash.get(node1)
-        if query_node1 is None:
-            hash[node1] = {node2: val}
-        else:
-            query_node1[node2] = val
+    def matrix2pairs(self, matrix, rowIds, colIds):
+        relations = []
+        for rowPos, rowId in enumerate(rowIds):
+            for colPos, colId in enumerate(colIds):
+                relations.append([rowId, colId, matrix[rowPos, colPos]])
+        return relations
+
+    def pairs2matrix(pairs, symm= True):
+        count_A = 0
+        index_A = {}
+        count_B = 0
+        index_B = {}
+        for pair in pairs:
+            elementA, elementB, val = pair
+            if index_A.get(elementA) == None:
+                index_A[elementA] = count_A
+                count_A += 1
+            if index_B.get(elementB) == None:
+                index_B[elementB] = count_B
+                count_B += 1
+        elementA_names = list(index_A.keys())
+        elementB_names = list(index_B.keys())
+
+        matrix = np.zeros((len(elementA_names), len(elementB_names)))
+        for pair in pairs:
+            elementA, elementB, val = pair
+            i = index_A[pair[0]] 
+            j = index_B[pair[1]] 
+            matrix[i, j] = val
+            if symm: matrix[j, i] = val
+
+        return matrix, elementA_names, elementB_names
+    
+    def write_obj(self, obj, output_filename, inFormat=None, outFormat=None, rowIds=None, colIds=None):
+        if outFormat == 'pair':
+            if inFormat == 'matrix': obj = self.matrix2pairs(obj, rowIds=rowIds, colIds=colIds)
+            with open(output_filename, 'w') as f:
+                for pair in obj: f.write("\t".join([str(item) for item in pair]))
+        elif outFormat == 'matrix':
+            if inFormat == 'pair': obj, rowIds, colIds = self.pair2matrix(obj)
+            numpy.save(output_filename, obj)
+            if rowIds != None:
+                with open(output_filename + '_rowIds', 'w') as f:
+                    for item in rowIds: f.write(item)
+            if colIds != None:
+                with open(output_filename + '_colIds', 'w') as f:
+                    for item in colIds: f.write(item)
 
     def replace_none_vals(self, val):
         return 'NULL' if val == None else val
-
 
     def set_seed(self, seed):
         try: 

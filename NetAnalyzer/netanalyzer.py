@@ -12,6 +12,8 @@ import warnings
 import logging
 from cdlib import algorithms, viz, evaluation
 from cdlib import NodeClustering
+import py_semtools # For external_data
+from py_semtools import Ontology
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 from NetAnalyzer.net_plotter import Net_plotter
 from NetAnalyzer.graph2sim import Graph2sim
@@ -31,6 +33,9 @@ class NetAnalyzer:
         self.group_nodes = {} # Communities are lists {community_id : [Node1, Node2,...]}
         #self.group_nx = {} # Communities are networkx objects {community_id : networkx obj}
         self.reference_nodes = []
+        self.loaded_obos = []
+        self.ontologies = []
+        self.layer_ontologies = {}
 
     def __eq__(self, other): # https://igeorgiev.eu/python/tdd/python-unittest-assert-custom-objects-are-equal/
         return nx.utils.misc.graphs_equal(self.graph, other.graph) and \
@@ -42,9 +47,12 @@ class NetAnalyzer:
             self.kernels == other.kernels and \
             self.embedding_coords == other.embedding_coords and \
             self.group_nodes == other.group_nodes and \
-            self.reference_nodes == other.reference_nodes
-
+            self.reference_nodes == other.reference_nodes and \
+            self.loaded_obos == other.loaded_obos and \
+            self.ontologies == other.ontologies and \
+            self.layer_ontologies == other.layer_ontologies
             #self.group_nx == other.group_nx and 
+
     def clone(self):
         network_clone = NetAnalyzer(copy.copy(self.layers))
         network_clone.graph = copy.deepcopy(self.graph)
@@ -56,6 +64,9 @@ class NetAnalyzer:
         network_clone.group_nodes = copy.deepcopy(self.group_nodes)
         #network_clone.group_nx = copy.deepcopy(self.group_nx)
         network_clone.reference_nodes = self.reference_nodes.copy()
+        network_clone.loaded_obos = self.loaded_obos.copy()
+        network_clone.ontologies = self.ontologies.deepcopy()
+        network_clone.layer_ontologies = self.layer_ontologies.deepcopy()
         return network_clone
 
     # THE PREVIOUS METHODS NEED TO DEFINE/ACCESS THE VERY SAME ATTRIBUTES, WATCH OUT ABOUT THIS !!!!!!!!!!!!!
@@ -144,6 +155,23 @@ class NetAnalyzer:
 
     def get_connected_nodes(self, node_id, from_layer):
         return [n for n in self.graph.neighbors(node_id) if self.graph.nodes[n]['layer'] == from_layer ]
+
+    def get_layers_as_dict(self, from_layers, to_layer):
+        relations = {}
+        from_nodes = self.get_nodes_layer(from_layers)
+        for fr_node in from_nodes:
+            relations[fr_node] = self.get_connected_nodes(fr_node, to_layer)
+        return relations
+
+    def link_ontology(self, ontology_file_path, layer_name):
+        if ontology_file_path not in self.loaded_obos: #Load new ontology
+            ontology = Ontology(file = ontology_file_path, load_file = True)
+            ontology.precompute()
+            self.loaded_obos.append(ontology_file_path)
+            self.ontologies.append(ontology)
+        else: #Link loaded ontology to current layer
+            ontology = self.ontologies[self.loaded_obos.index(ontology_file_path)]
+        self.layer_ontologies[layer_name] = ontology
 
     def get_bipartite_subgraph(self, from_layer_node_ids, from_layer, to_layer):
         bipartite_subgraph = {}
@@ -441,6 +469,19 @@ class NetAnalyzer:
 
     def write_kernel(self, layers2kernel, output_file):
         numpy.save(output_file, self.kernels[layers2kernel])
+
+    def get_similarity(self, layers, base_layer, sim_type='lin', output_filename=None, outFormat='pair'):
+        ontology = self.layer_ontologies[base_layer]
+        relations = self.get_layers_as_dict(layers, base_layer)
+        ontology.load_profiles(relations)
+        ontology.clean_profiles(store = True)
+        similarity_pairs = ontology.compare_profiles(sim_type = sim_type)
+        if output_filename != None: 
+            pairs = []
+            for item_a, dat in similarity_pairs.items(): 
+                for item_b, val in dat.items(): pairs.append([item_a, item_b, val])
+            self.write_obj(pairs, output_filename, inFormat='pair', outFormat=outFormat, rowIds=None, colIds=None)
+        return similarity_pairs
 
     def shortest_path(self, source, target):
         return nx.shortest_path(self.graph, source, target)
@@ -801,7 +842,7 @@ class NetAnalyzer:
                 relations.append([rowId, colId, matrix[rowPos, colPos]])
         return relations
 
-    def pairs2matrix(pairs, symm= True):
+    def pairs2matrix(self, pairs, symm= True):
         count_A = 0
         index_A = {}
         count_B = 0
@@ -817,7 +858,7 @@ class NetAnalyzer:
         elementA_names = list(index_A.keys())
         elementB_names = list(index_B.keys())
 
-        matrix = np.zeros((len(elementA_names), len(elementB_names)))
+        matrix = numpy.zeros((len(elementA_names), len(elementB_names)))
         for pair in pairs:
             elementA, elementB, val = pair
             i = index_A[pair[0]] 
@@ -831,9 +872,9 @@ class NetAnalyzer:
         if outFormat == 'pair':
             if inFormat == 'matrix': obj = self.matrix2pairs(obj, rowIds=rowIds, colIds=colIds)
             with open(output_filename, 'w') as f:
-                for pair in obj: f.write("\t".join([str(item) for item in pair]))
+                for pair in obj: f.write("\t".join([str(item) for item in pair]) + "\n")
         elif outFormat == 'matrix':
-            if inFormat == 'pair': obj, rowIds, colIds = self.pair2matrix(obj)
+            if inFormat == 'pair': obj, rowIds, colIds = self.pairs2matrix(obj)
             numpy.save(output_filename, obj)
             if rowIds != None:
                 with open(output_filename + '_rowIds', 'w') as f:

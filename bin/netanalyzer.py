@@ -47,6 +47,7 @@ def execute_dsl_script(net_obj, dsl_path):
 def based_0(string): return int(string) - 1
 def string_list(string): return string.split(",")
 def layer_parse(string): return [sublst.split(",") for sublst in string.split(";")]
+def list_parse(string): return [sublst.split(":") for sublst in string.split(";")]
 def group_nodes_parse(string):
 	group_nodes = {}
 	if os.path.isfile(string):
@@ -145,19 +146,25 @@ parser.add_argument("-A", "--attributes", dest="get_attributes", default=[], typ
 					help="String separated by commas with the name of network attribute")
 parser.add_argument("--dsl_script", dest="dsl_script", default=None,
 					help="Path to dsl script to perform complex analysis")
-
+parser.add_argument("-O", "--ontology", dest="ontologies", default=[], type=list_parse,
+					help="String that define which ontologies must be used with each layer. String definition:'layer_name1:path_to_obo_file1;layer_name2:path_to_obo_file2'")
 options = parser.parse_args()
+
 ########## MAIN ##########
 ##########################
 print("Loading network data")
-fullNet = Net_parser.load(vars(options)) # FRED: Remove this part of vars and modify the loads methods (Tlk wth PSZ)
-fullNet.reference_nodes = options.reference_nodes
+opts = vars(options)
+fullNet = Net_parser.load(opts) # FRED: Remove this part of vars and modify the loads methods (Tlk wth PSZ)
+fullNet.set_compute_pairs(options.use_pairs, not options.no_autorelations)
 #fullNet.threads = options.threads
+
+fullNet.reference_nodes = options.reference_nodes
+for ont_data in opts['ontologies']:
+	layer_name, ontology_file_path = ont_data
+	fullNet.link_ontology(ontology_file_path, layer_name)
+
 if options.group_nodes:
 	fullNet.set_groups(options.group_nodes)
-
-
-fullNet.set_compute_pairs(options.use_pairs, not options.no_autorelations)
 
 if options.delete_nodes:
   node_list = load_file(options.delete_nodes[0])

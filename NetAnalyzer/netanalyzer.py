@@ -442,7 +442,7 @@ class NetAnalyzer:
             self.adjust_pval_association(relations, 'fdr_bh')
         else:
             meth = 'hypergeometric'
-        relations = [[assoc[0], assoc[1], -numpy.log10(assoc[2])] for assoc in relations]
+        relations = [[assoc[0], assoc[1], -numpy.log10(assoc[2])] for assoc in relations if assoc[2] > 0]
         self.association_values[meth] = relations
         return relations
 

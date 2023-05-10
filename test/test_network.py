@@ -26,6 +26,9 @@ class BaseNetTestCase(unittest.TestCase):
 		self.monopartite_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'monopartite_network_for_validating.txt'), self.monopartite_layers)
 		self.monopartite_network.generate_adjacency_matrix(self.monopartite_layers[0][0], self.monopartite_layers[0][0])
 
+		self.monopartite_network_weights = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'monopartite_network_weights_for_validating.txt'), self.monopartite_layers)
+		self.monopartite_network_weights.generate_adjacency_matrix(self.monopartite_layers[0][0], self.monopartite_layers[0][0])
+
 		self.comunities_network_layers = [['main', '\w'], ['main', '\w']]
 		self.comunities_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'comunities_network_for_validating.txt'), self.comunities_network_layers)
 		self.comunities_network_no_coms = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'comunities_network_for_validating.txt'), self.comunities_network_layers)
@@ -383,6 +386,12 @@ class BaseNetTestCase(unittest.TestCase):
 		
 		self.network_obj.adjust_pval_association(mock_hypergeo_assoc, "fdr_bh") # Same as benjamini in the test before
 		self.assertEqual(expected, mock_hypergeo_assoc)
+
+	def test_filter_cutoff(self):
+		test_value = self.monopartite_network_weights.filter(("main","main"), method="cutoff", options={"cutoff": 5})
+		expected = [['M3', 'M1', 7.0]]
+		self.assertEqual(expected, test_value)
+
 	
 
 	# Testing community discovery

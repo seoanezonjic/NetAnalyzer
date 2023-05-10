@@ -20,6 +20,7 @@ mkdir -p $out/plots
 mkdir -p $out/projections
 mkdir -p $out/kernels
 mkdir -p $out/clustering
+mkdir -p $out/dsl
 
 
 
@@ -32,6 +33,9 @@ netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -a $out/pro
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -a $out/projections/counts_results.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' -m "counts" -u 'gen;pathway'
 # Perform of transference method
 netanalyzer.py -i $data_to_test/tripartite_network_for_validating.txt -a $out/projections/transference_results.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+;salient,S[0-9]+' -m "transference" -u 'gen,salient;pathway'
+# dsl option
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --dsl_script $data_test_scripts/dsl/jaccard_dsl
+
 
 #  ---------------------------------- Obtaining kernels ----------------------------------------
 # Non normalized kernels.
@@ -40,6 +44,8 @@ netanalyzer.py -i $data_kernel/adj_mat.npy -f bin -l 'genes' -K $out/kernels/ct 
 netanalyzer.py -i $data_kernel/adj_mat.npy -f bin -l 'genes' -K $out/kernels/ka_normalized -n $data_kernel/adj_mat.lst -u 'genes' -k 'ka' -z
 # kernels with embedding Node2Vec
 netanalyzer.py -i $data_kernel/adj_mat.npy -f bin -l 'genes' --embedding_add_options "'window':10,'p':0.7,'seed':123" --both_repre_formats -K $out/kernels/node2vec -n $data_kernel/adj_mat.lst -u 'genes' -k 'node2vec'
+#dsl option
+netanalyzer.py -i $data_kernel/adj_mat.npy -f bin -l 'genes' -n $data_kernel/adj_mat.lst --dsl_script $data_test_scripts/dsl/kernel_dsl
 
 for file_to_test in `ls $out/projections`; do
  	echo $file_to_test

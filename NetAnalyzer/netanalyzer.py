@@ -106,15 +106,25 @@ class NetAnalyzer:
                     #print("Group id: " + str(group_id) + " with member not in network:" + str(node), file=sys.stderr)
                     logging.warning("Group id: " + str(group_id) + " with member not in network: " + str(node))
 
+    
+
     def generate_adjacency_matrix(self, layerA, layerB): 
         layerAidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerA] 
         layerBidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerB]
         matrix = numpy.zeros((len(layerAidNodes), len(layerBidNodes)))
 
+        has_weight = True if nx.get_edge_attributes(self.graph, 'weight') else False
+
+        # TODO: Check this method, too slow.
+        if has_weight:
+            fill_edge = lambda nodeA,nodeB: self.graph.edges[nodeA,nodeB]["weight"]
+        else:
+            fill_edge = lambda nodeA, nodeB: 1
+
         for i, nodeA in enumerate(layerAidNodes):
             for j, nodeB in enumerate(layerBidNodes):
                 if nodeA in self.graph.neighbors(nodeB):
-                    matrix[i, j] = 1
+                    matrix[i, j] = fill_edge(nodeA, nodeB)
                 else:
                     matrix[i, j] = 0
 
@@ -248,7 +258,7 @@ class NetAnalyzer:
         nodeIDsA, nodeIDsB = self.collect_nodes(layers = layers)
         if pair_operation != None:
             if self.compute_autorelations:
-                node_list = [ n for n in nodeIDsA]
+                node_list = [ n for n in nodeIDsA] # Is this conversion needed?
                 while len(node_list) > 0:
                     node1 = node_list.pop(0)
                     if self.compute_pairs == 'all':
@@ -452,6 +462,34 @@ class NetAnalyzer:
         for idx, adj_pval in enumerate(adj_pvals):
             associations[idx][2] = adj_pval
 
+    ## filter methods
+    #----------------
+
+    def filter(self, layers2filter, method="cutoff", options={}, output_filename=None, outFormat="pair"):
+        selected_edges = []
+        for (nodeA, nodeB, data) in self.graph.edges(data= True):
+            if self.graph.nodes[nodeA]['layer'] in layers2filter and self.graph.nodes[nodeB]['layer'] in layers2filter:
+                if layers2filter[0] == layers2filter[1]:
+                    selected_edges.append([nodeA, nodeB, data])
+                elif self.graph.nodes[nodeA]['layer'] != self.graph.nodes[nodeB]['layer']:
+                    selected_edges.append([nodeA, nodeB, data])
+                    
+        if method == "cutoff":
+           filtered_relations = self.filter_cutoff(selected_edges, cutoff= options["cutoff"])
+        if output_filename != None: self.write_obj(filtered_relations, output_filename, inFormat='pair', outFormat=outFormat)
+        return filtered_relations
+
+    def filter_cutoff(self, edges, cutoff=0.5):
+        filtered_relations = []
+        for nodeA, nodeB, data in edges:
+            if data["weight"] >= cutoff:
+                filtered_relations.append([nodeA, nodeB, data["weight"]])
+        return filtered_relations
+
+
+    ## Kernel and similarity methods
+    #------------------------------------
+
     def get_kernel(self, layers2kernel, method, normalization=False, embedding_kwargs={}, output_filename=None, outFormat='matrix'):
         #embedding_kwargs accept: dimensions, walk_length, num_walks, p, q, workers, window, min_count, seed, quiet, batch_words
 
@@ -510,6 +548,9 @@ class NetAnalyzer:
             node_attrs.append([n] + n_attrs)
         return node_attrs
 
+    ## Ploting method 
+    #----------------
+
     def plot_network(self, options = {}):
         net_data = {
             'group_nodes': self.group_nodes,
@@ -519,8 +560,8 @@ class NetAnalyzer:
         }
         Net_plotter(net_data, options)
 
-    # Community Methods #
-    #####################
+    ## Community Methods 
+    #-------------------
 
     # Cluster (community) dicovery #
 
@@ -724,6 +765,12 @@ class NetAnalyzer:
     # Cluster Expansions #
     def expand_clusters(self, expand_method, one_sht_paths = False):
         clusters = {}
+
+        if one_sht_paths:
+            get_sht_path = lambda G, nodeA, nodeB: [nx.shortest_path(G, NodeA, NodeB)]
+        else:
+            get_sht_path = lambda G, nodeA, nodeB: nx.all_shortest_paths(G, NodeA, NodeB)
+
         for id, com in self.group_nodes.items():
             if expand_method == 'sht_path':
                 new_nodes = set(com) 
@@ -731,26 +778,15 @@ class NetAnalyzer:
                 # between community nodes and assigned as the new cluster nodes list, otherwise updating the current list 
                 # could potentially add original community nodes again if they are found in the shortest path between other community nodes. 
                 sht_paths = []
-                if one_sht_paths:
-                    for NodeA, NodeB in itertools.combinations(com, 2):
-                        if NodeA in self.graph.nodes and NodeB in self.graph.nodes:
-                            sht_path = None
-                            try:
-                                sht_path = nx.shortest_path(self.graph, NodeA, NodeB)
-                            except nx.exception.NetworkXNoPath:
-                                continue 
-                            sht_paths.append([sht_path])
-                    #sht_paths = ([nx.shortest_path(self.graph, NodeA, NodeB)] for NodeA, NodeB in itertools.combinations(com, 2) if NodeA in self.graph.nodes and NodeB in self.graph.nodes)
-                else:
-                    for NodeA, NodeB in itertools.combinations(com, 2):
-                        if NodeA in self.graph.nodes and NodeB in self.graph.nodes:
-                            sht_path = None
-                            try:
-                                sht_path = nx.all_shortest_paths(self.graph, NodeA, NodeB)
-                            except nx.exception.NetworkXNoPath:
-                                continue 
-                            sht_paths.append(sht_path)
-                    #sht_paths = (nx.all_shortest_paths(self.graph, NodeA, NodeB) for NodeA, NodeB in itertools.combinations(com, 2) if NodeA in self.graph.nodes and NodeB in self.graph.nodes)
+
+                for NodeA, NodeB in itertools.combinations(com, 2):
+                    if NodeA in self.graph.nodes and NodeB in self.graph.nodes:
+                        sht_path = None
+                        try:
+                            sht_path = get_sht_path(self.graph, NodeA, NodeB)
+                        except nx.exception.NetworkXNoPath:
+                            continue 
+                        sht_paths.append(sht_path)
 
                 for node_pair_sht_paths in sht_paths:
                     for path in node_pair_sht_paths:

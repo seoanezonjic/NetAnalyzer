@@ -1,0 +1,1 @@
+get_similarity ['pat'] 'phen' sim_type='lin' output_filename='test.txt' outFormat='matrix'

@@ -526,7 +526,13 @@ class NetAnalyzer:
 
     def average_shortest_path_length(self, community):
         try:
-            asp_com = nx.average_shortest_path_length(self.graph.subgraph(community))
+            com = community.copy()
+            path_lens = []
+            while len(com) > 1:
+                source = com.pop()
+                for target in com:
+                    path_lens.append(nx.shortest_path_length(self.graph, source, target))
+            asp_com = numpy.mean(path_lens)
         except nx.exception.NetworkXNoPath:
             asp_com = None
         return asp_com 

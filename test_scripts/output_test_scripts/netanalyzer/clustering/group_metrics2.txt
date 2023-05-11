@@ -1,0 +1,4 @@
+group	comparative_degree	max_odf
+rber_pots_0	1.0	10
+rber_pots_1	1.0	8
+rber_pots_2	1.0	4

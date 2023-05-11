@@ -527,7 +527,7 @@ class NetAnalyzer:
     def average_shortest_path_length(self, community):
         try:
             asp_com = nx.average_shortest_path_length(self.graph.subgraph(community))
-        except nx.NetworkXError:
+        except nx.exception.NetworkXNoPath:
             asp_com = None
         return asp_com 
 

@@ -28,6 +28,7 @@ class NetAnalyzer:
         self.compute_autorelations = True
         self.compute_pairs = 'conn'
         self.adjacency_matrices = {}
+        #self.matrices = {"adjacency_matrices": {}, "kernels": {}, "associations": {}, "semantic_sims": {}}
         self.kernels = {}
         self.embedding_coords = {} #
         self.group_nodes = {} # Communities are lists {community_id : [Node1, Node2,...]}
@@ -65,8 +66,8 @@ class NetAnalyzer:
         #network_clone.group_nx = copy.deepcopy(self.group_nx)
         network_clone.reference_nodes = self.reference_nodes.copy()
         network_clone.loaded_obos = self.loaded_obos.copy()
-        network_clone.ontologies = self.ontologies.deepcopy()
-        network_clone.layer_ontologies = self.layer_ontologies.deepcopy()
+        network_clone.ontologies = self.ontologies.deepcopy() if self.ontologies != [] else []
+        network_clone.layer_ontologies = self.layer_ontologies.deepcopy() if self.layer_ontologies != {} else {}
         return network_clone
 
     # THE PREVIOUS METHODS NEED TO DEFINE/ACCESS THE VERY SAME ATTRIBUTES, WATCH OUT ABOUT THIS !!!!!!!!!!!!!
@@ -515,24 +516,26 @@ class NetAnalyzer:
         ontology.load_profiles(relations)
         ontology.clean_profiles(store = True,options=options)
         similarity_pairs = ontology.compare_profiles(sim_type = sim_type)
+        pairs = []
+        for item_a, dat in similarity_pairs.items(): 
+            for item_b, val in dat.items(): pairs.append([item_a, item_b, val])
         if output_filename != None: 
-            pairs = []
-            for item_a, dat in similarity_pairs.items(): 
-                for item_b, val in dat.items(): pairs.append([item_a, item_b, val])
             self.write_obj(pairs, output_filename, inFormat='pair', outFormat=outFormat, rowIds=None, colIds=None)
-        return similarity_pairs
+        #return similarity_pairs
+        self.semantic_sim[layers] = self.pairs2matrix(pairs)
 
     def shortest_path(self, source, target):
         return nx.shortest_path(self.graph, source, target)
 
     def average_shortest_path_length(self, community):
+        weight_attr_name = "weight" if nx.get_edge_attributes(self.graph, 'weight') else None
         try:
             com = community.copy()
             path_lens = []
             while len(com) > 1:
                 source = com.pop()
                 for target in com:
-                    path_lens.append(nx.shortest_path_length(self.graph, source, target))
+                    path_lens.append(nx.shortest_path_length(self.graph, source, target, weight= weight_attr_name))
             asp_com = numpy.mean(path_lens)
         except nx.exception.NetworkXNoPath:
             asp_com = None
@@ -910,6 +913,14 @@ class NetAnalyzer:
             if symm: matrix[j, i] = val
 
         return matrix, elementA_names, elementB_names
+
+    # def transform2obj(self, obj, inFormat=None, outFormat=None, rowIds= None, colIds= None):
+    #     if outFormat == 'pair':
+    #         if inFormat == 'matrix': obj = self.matrix2pairs(obj, rowIds=rowIds, colIds=colIds)
+    #     elif outFormat == 'matrix':
+    #         if inFormat == 'pair': obj, rowIds, colIds = self.pairs2matrix(obj)
+    #         numpy.save(output_filename, obj)
+
     
     def write_obj(self, obj, output_filename, inFormat=None, outFormat=None, rowIds=None, colIds=None):
         if outFormat == 'pair':

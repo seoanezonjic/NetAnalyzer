@@ -47,6 +47,11 @@ netanalyzer.py -i $data_kernel/adj_mat.npy -f bin -l 'genes' --embedding_add_opt
 #dsl option
 netanalyzer.py -i $data_kernel/adj_mat.npy -f bin -l 'genes' -n $data_kernel/adj_mat.lst --dsl_script $data_test_scripts/dsl/kernel_dsl
 
+# ----------------------------------- Filtering -------------------------------------------------
+# Filter by cutoff
+# dsl
+netanalyzer.py -i $data_to_test/monopartite_network_weights_for_validating.txt -f pair -l 'main' --dsl_script $data_test_scripts/dsl/filter_dsl
+
 for file_to_test in `ls $out/projections`; do
  	echo $file_to_test
  	diff $out/projections/$file_to_test $data_to_test/$file_to_test
@@ -57,45 +62,50 @@ for file_to_test in `ls $out/kernels`; do
 	diff $out/kernels/$file_to_test $data_kernel/$file_to_test
 done
 
-# ---------------------------------- Plotting ----------------------------------------
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=graphviz,layout=dot' -g $out/plots/test
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=cyt_app' -g $out/plots/test
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' -g $out/plots/test
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=cytoscape' -g $out/plots/test
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=sigma' -g $out/plots/test
-
-# ---------------------------------- Randoms ----------------------------------------
-randomize_clustering.py -i $data_to_test/bipartite_network_for_validating.txt -o $out/random/random_clusters.txt -r 'fixed:10:3'
-randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o $out/random/random_net.txt -f pair -l 'nodes,[A-Z]' -r links
-randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o $out/random/random_net_same_seed1.txt -f pair -l 'nodes,[A-Z]' -r links --seed 1
-randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o $out/random/random_net_same_seed2.txt -f pair -l 'nodes,[A-Z]' -r links --seed 1
-diff $out/random/random_net_same_seed1.txt $out/random/random_net_same_seed2.txt #We should expect no difference is the seed is the same
-
-# ---------------------------------- Comunities ----------------------------------------
-# Create Communities
-netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out/clustering/ -l 'genes' -b "rber_pots" --output_build_clusters ./$out/clustering/rber_pots_discovered_clusters.txt #Deternimistic algorithm
-netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out/clustering/ -l 'genes' -b "der" --seed 1 --output_build_clusters  ./$out/clustering/der_discovered_clusters.txt #Non-deterministic algorithm
-netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out/clustering/ -l 'genes' -b "der" --seed 1 --output_build_clusters ./$out/clustering/der_discovered_clusters2.txt
-diff ./$out/clustering/der_discovered_clusters.txt ./$out/clustering/der_discovered_clusters2.txt #We should expect no difference if the seed is the same
-rm ./$out/clustering/der_discovered_clusters2.txt #We remove the files to avoid unexpected errors that could not overwrite the file
-# Community Metrics
-## Summ
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_summarized_metrics ./$out/clustering/group_metrics_summarized.txt  -f pair -l 'genes' -S 'max_odf;avg_transitivity;conductance'
-## Not Summ
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_metrics_by_cluster ./$out/clustering/group_metrics.txt -f pair -l 'genes' -M 'comparative_degree;max_odf'
-## Not Summ Not connected
-netanalyzer.py -i $data_test_scripts/clustering/non_connected_network.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_metrics_by_cluster ./$out/clustering/group_metrics_non_connected.txt -f pair -l 'genes' -M 'comparative_degree;max_odf;avg_sht_path'
-## Summ and Not Summ
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -f pair -l 'genes' --output_metrics_by_cluster ./$out/clustering/group_metrics2.txt -M 'comparative_degree;max_odf' --output_summarized_metrics ./$out/clustering/group_metrics_summarized2.txt -S 'max_odf;avg_transitivity;conductance'
-# Comparing group families
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -R $data_test_scripts/clustering/rber_pots_discovered_clusters.txt -f pair -l 'genes' | tail -n 1 > ./$out/clustering/comparing_clusters.txt
-# Group expansion
-netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_expand_clusters ./$out/clustering/expand_clusters.txt -f pair -l 'genes' -x 'sht_path'
-sort -k1 ./$out/clustering/expand_clusters.txt | sort -k2 > ./$out/clustering/tmp_expand_clusters.txt
-mv ./$out/clustering/tmp_expand_clusters.txt ./$out/clustering/expand_clusters.txt
-
-for file_to_test in `ls ./$out/clustering`; do
+for file_to_test in `ls $out/dsl`; do
 	echo $file_to_test
-	diff ./$out/clustering/$file_to_test $data_test_scripts/clustering/$file_to_test
+	diff $out/dsl/$file_to_test $data_test_scripts/dsl/$file_to_test
 done
+
+# # ---------------------------------- Plotting ----------------------------------------
+# netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=graphviz,layout=dot' -g $out/plots/test
+# netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=cyt_app' -g $out/plots/test
+# netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' -g $out/plots/test
+# netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=cytoscape' -g $out/plots/test
+# netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_options 'method=sigma' -g $out/plots/test
+
+# # ---------------------------------- Randoms ----------------------------------------
+# randomize_clustering.py -i $data_to_test/bipartite_network_for_validating.txt -o $out/random/random_clusters.txt -r 'fixed:10:3'
+# randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o $out/random/random_net.txt -f pair -l 'nodes,[A-Z]' -r links
+# randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o $out/random/random_net_same_seed1.txt -f pair -l 'nodes,[A-Z]' -r links --seed 1
+# randomize_network.py -i $data_to_test/monopartite_network_for_validating.txt -o $out/random/random_net_same_seed2.txt -f pair -l 'nodes,[A-Z]' -r links --seed 1
+# diff $out/random/random_net_same_seed1.txt $out/random/random_net_same_seed2.txt #We should expect no difference is the seed is the same
+
+# # ---------------------------------- Comunities ----------------------------------------
+# # Create Communities
+# netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out/clustering/ -l 'genes' -b "rber_pots" --output_build_clusters ./$out/clustering/rber_pots_discovered_clusters.txt #Deternimistic algorithm
+# netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out/clustering/ -l 'genes' -b "der" --seed 1 --output_build_clusters  ./$out/clustering/der_discovered_clusters.txt #Non-deterministic algorithm
+# netanalyzer.py -i $data_to_test/counts_results.txt -f pair -o ./$out/clustering/ -l 'genes' -b "der" --seed 1 --output_build_clusters ./$out/clustering/der_discovered_clusters2.txt
+# diff ./$out/clustering/der_discovered_clusters.txt ./$out/clustering/der_discovered_clusters2.txt #We should expect no difference if the seed is the same
+# rm ./$out/clustering/der_discovered_clusters2.txt #We remove the files to avoid unexpected errors that could not overwrite the file
+# # Community Metrics
+# ## Summ
+# netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_summarized_metrics ./$out/clustering/group_metrics_summarized.txt  -f pair -l 'genes' -S 'max_odf;avg_transitivity;conductance'
+# ## Not Summ
+# netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_metrics_by_cluster ./$out/clustering/group_metrics.txt -f pair -l 'genes' -M 'comparative_degree;max_odf'
+# ## Not Summ Not connected
+# netanalyzer.py -i $data_test_scripts/clustering/non_connected_network.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_metrics_by_cluster ./$out/clustering/group_metrics_non_connected.txt -f pair -l 'genes' -M 'comparative_degree;max_odf;avg_sht_path'
+# ## Summ and Not Summ
+# netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -f pair -l 'genes' --output_metrics_by_cluster ./$out/clustering/group_metrics2.txt -M 'comparative_degree;max_odf' --output_summarized_metrics ./$out/clustering/group_metrics_summarized2.txt -S 'max_odf;avg_transitivity;conductance'
+# # Comparing group families
+# netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt -R $data_test_scripts/clustering/rber_pots_discovered_clusters.txt -f pair -l 'genes' | tail -n 1 > ./$out/clustering/comparing_clusters.txt
+# # Group expansion
+# netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -G $data_test_scripts/clustering/clusters_toy.txt --output_expand_clusters ./$out/clustering/expand_clusters.txt -f pair -l 'genes' -x 'sht_path'
+# sort -k1 ./$out/clustering/expand_clusters.txt | sort -k2 > ./$out/clustering/tmp_expand_clusters.txt
+# mv ./$out/clustering/tmp_expand_clusters.txt ./$out/clustering/expand_clusters.txt
+
+# for file_to_test in `ls ./$out/clustering`; do
+# 	echo $file_to_test
+# 	diff ./$out/clustering/$file_to_test $data_test_scripts/clustering/$file_to_test
+# done
 

@@ -465,7 +465,7 @@ class NetAnalyzer:
     ## filter methods
     #----------------
 
-    def filter(self, layers2filter, method="cutoff", options={}, output_filename=None, outFormat="pair"):
+    def get_filter(self, layers2filter, method="cutoff", options={}, output_filename=None, outFormat="pair"):
         selected_edges = []
         for (nodeA, nodeB, data) in self.graph.edges(data= True):
             if self.graph.nodes[nodeA]['layer'] in layers2filter and self.graph.nodes[nodeB]['layer'] in layers2filter:
@@ -508,11 +508,12 @@ class NetAnalyzer:
     def write_kernel(self, layers2kernel, output_file):
         numpy.save(output_file, self.kernels[layers2kernel])
 
-    def get_similarity(self, layers, base_layer, sim_type='lin', output_filename=None, outFormat='pair'):
+    def get_similarity(self, layers, base_layer, sim_type='lin', options={}, output_filename=None, outFormat='pair'):
+        # options--> options['term_filter'] = GO:00001
         ontology = self.layer_ontologies[base_layer]
         relations = self.get_layers_as_dict(layers, base_layer)
         ontology.load_profiles(relations)
-        ontology.clean_profiles(store = True)
+        ontology.clean_profiles(store = True,options=options)
         similarity_pairs = ontology.compare_profiles(sim_type = sim_type)
         if output_filename != None: 
             pairs = []

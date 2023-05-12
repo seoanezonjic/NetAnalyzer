@@ -388,12 +388,11 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertEqual(expected, mock_hypergeo_assoc)
 
 	def test_filter_cutoff(self):
-		test_value = self.monopartite_network_weights.filter(("main","main"), method="cutoff", options={"cutoff": 5})
+		test_value = self.monopartite_network_weights.get_filter(("main","main"), method="cutoff", options={"cutoff": 5})
 		expected = [['M3', 'M1', 7.0]]
 		self.assertEqual(expected, test_value)
 
 	
-
 	# Testing community discovery
 	def test_community_discovery(self):
 		self.comunities_network_no_coms.discover_clusters("louvain",{})

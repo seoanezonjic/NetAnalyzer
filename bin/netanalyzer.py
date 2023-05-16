@@ -179,9 +179,9 @@ if options.dsl_script is not None:
 if options.meth is not None:
 	print(f"Performing association method {options.meth} on network \n")
 	if options.meth == "transference":
-		if not (options.use_layers[0][0], options.use_layers[1][0]) in fullNet.adjacency_matrices:
+		if not (options.use_layers[0][0], options.use_layers[1][0]) in fullNet.matrices["adjacency_matrices"]:
 			fullNet.generate_adjacency_matrix(options.use_layers[0][0], options.use_layers[1][0])
-		if not (options.use_layers[1][0], options.use_layers[0][1]) in fullNet.adjacency_matrices:
+		if not (options.use_layers[1][0], options.use_layers[0][1]) in fullNet.matrices["adjacency_matrices"]:
 			fullNet.generate_adjacency_matrix(options.use_layers[1][0], options.use_layers[0][1])
 
 		fullNet.get_association_values(

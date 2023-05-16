@@ -19,6 +19,17 @@ from NetAnalyzer.net_plotter import Net_plotter
 from NetAnalyzer.graph2sim import Graph2sim
 # https://stackoverflow.com/questions/60392940/multi-layer-graph-in-networkx
 # http://mkivela.com/pymnet
+
+class NestedDict(dict):
+     def dig(self, *keys):
+        try:
+            for key in keys:
+                self = self[key]
+            return self
+        except KeyError:
+            return None
+
+
 class NetAnalyzer:
 
     def __init__(self, layers):
@@ -27,9 +38,8 @@ class NetAnalyzer:
         self.association_values = {}
         self.compute_autorelations = True
         self.compute_pairs = 'conn'
-        self.adjacency_matrices = {}
-        #self.matrices = {"adjacency_matrices": {}, "kernels": {}, "associations": {}, "semantic_sims": {}}
-        self.kernels = {}
+        self.matrices = NestedDict({"adjacency_matrices": {}, "kernels": {}, "associations": {}, "semantic_sims": {}}) # {matrix_type_key=>{layer_pairs_key=>{method_type_key(Not for adjacency)=>Value}}}
+        #self.kernels = {}
         self.embedding_coords = {} #
         self.group_nodes = {} # Communities are lists {community_id : [Node1, Node2,...]}
         #self.group_nx = {} # Communities are networkx objects {community_id : networkx obj}
@@ -44,14 +54,14 @@ class NetAnalyzer:
             self.association_values == other.association_values and \
             self.compute_autorelations == other.compute_autorelations and \
             self.compute_pairs == other.compute_pairs and \
-            self.adjacency_matrices == other.adjacency_matrices and \
-            self.kernels == other.kernels and \
             self.embedding_coords == other.embedding_coords and \
             self.group_nodes == other.group_nodes and \
             self.reference_nodes == other.reference_nodes and \
             self.loaded_obos == other.loaded_obos and \
             self.ontologies == other.ontologies and \
             self.layer_ontologies == other.layer_ontologies
+            #self.kernels == other.kernels and \
+            #self.adjacency_matrices == other.adjacency_matrices and \
             #self.group_nx == other.group_nx and 
 
     def clone(self):
@@ -59,8 +69,8 @@ class NetAnalyzer:
         network_clone.graph = copy.deepcopy(self.graph)
         network_clone.association_values = self.association_values.copy()
         network_clone.set_compute_pairs(self.compute_pairs, self.compute_autorelations)
-        network_clone.adjacency_matrices = self.adjacency_matrices.copy()
-        network_clone.kernels = self.kernels.copy()
+        #network_clone.adjacency_matrices = self.adjacency_matrices.copy()
+        #network_clone.kernels = self.kernels.copy()
         network_clone.embedding_coords = self.embedding_coords.copy()
         network_clone.group_nodes = copy.deepcopy(self.group_nodes)
         #network_clone.group_nx = copy.deepcopy(self.group_nx)
@@ -132,9 +142,9 @@ class NetAnalyzer:
         all_info_matrix = [matrix, layerAidNodes, layerBidNodes]
 
         if layerA == layerB:
-            self.adjacency_matrices[(layerA, layerA)] = all_info_matrix
+            self.matrices["adjacency_matrices"][(layerA, layerA)] = all_info_matrix
         else:
-            self.adjacency_matrices[(layerA, layerB)] = all_info_matrix
+            self.matrices["adjacency_matrices"][(layerA, layerB)] = all_info_matrix
 
         return all_info_matrix
 
@@ -144,9 +154,9 @@ class NetAnalyzer:
 
     def adjMat2netObj(self, layerA, layerB):
         if layerA == layerB:
-            matrix, rowIds, colIds = self.adjacency_matrices[(layerA, layerA)] 
+            matrix, rowIds, colIds = self.matrices["adjacency_matrices"][(layerA, layerA)] 
         else:
-            matrix, rowIds, colIds = self.adjacency_matrices[(layerA, layerB)] 
+            matrix, rowIds, colIds = self.matrices["adjacency_matrices"][(layerA, layerB)] 
 
         self.graph = nx.Graph()
         for rowId in rowIds: self.add_node(rowId, layerA)
@@ -254,7 +264,7 @@ class NetAnalyzer:
             res = True
         return res
     
-    def get_all_pairs(self, pair_operation = None , layers = 'all'):
+    def get_all_pairs(self, pair_operation = None , layers = 'all', include_directed_conn = False):
         all_pairs = []
         nodeIDsA, nodeIDsB = self.collect_nodes(layers = layers)
         if pair_operation != None:
@@ -287,6 +297,8 @@ class NetAnalyzer:
 
         return all_pairs
 
+
+
     ## association methods adjacency matrix based
     #---------------------------------------------------------
 
@@ -294,7 +306,7 @@ class NetAnalyzer:
         for meth, values in self.association_values.items():
             self.association_values[meth] = [relation for relation in values if self.graph.nodes[relation[0]]["layer"] != self.graph.nodes[relation[1]]["layer"]]
 
-    def get_association_values(self, layers, base_layer, meth, output_filename=None, outFormat='pair'):
+    def get_association_values(self, layers, base_layer, meth, output_filename=None, outFormat='pair', add_to_object= False):
         relations = [] #node A, node B, val
         if meth == 'counts':
             relations = self.get_counts_associations(layers, base_layer)
@@ -318,16 +330,17 @@ class NetAnalyzer:
             relations = self.get_csi_associations(layers, base_layer)
         elif meth == 'transference': #tripartite networks
             relations = self.get_association_by_transference_resources(layers, base_layer)
+            
         if output_filename != None: self.write_obj(relations, output_filename, inFormat='pair', outFormat=outFormat)
         return relations
 
     def get_association_by_transference_resources(self, firstPairLayers, secondPairLayers, lambda_value1 = 0.5, lambda_value2 = 0.5):
         relations = []
-        matrix1 = self.adjacency_matrices[firstPairLayers][0]
-        matrix2 = self.adjacency_matrices[secondPairLayers][0]
+        matrix1 = self.matrices["adjacency_matrices"][firstPairLayers][0]
+        matrix2 = self.matrices["adjacency_matrices"][secondPairLayers][0]
         finalMatrix = Adv_mat_calc.tranference_resources(matrix1, matrix2, lambda_value1 = lambda_value1, lambda_value2 = lambda_value2)
-        rowIds = self.adjacency_matrices[firstPairLayers][1]
-        colIds =  self.adjacency_matrices[secondPairLayers][2]
+        rowIds = self.matrices["adjacency_matrices"][firstPairLayers][1]
+        colIds =  self.matrices["adjacency_matrices"][secondPairLayers][2]
         relations = self.matrix2relations(finalMatrix, rowIds, colIds)
         self.association_values['transference'] = relations
         return relations
@@ -465,26 +478,47 @@ class NetAnalyzer:
 
     ## filter methods
     #----------------
-
-    def get_filter(self, layers2filter, method="cutoff", options={}, output_filename=None, outFormat="pair"):
-        selected_edges = []
-        for (nodeA, nodeB, data) in self.graph.edges(data= True):
-            if self.graph.nodes[nodeA]['layer'] in layers2filter and self.graph.nodes[nodeB]['layer'] in layers2filter:
-                if layers2filter[0] == layers2filter[1]:
-                    selected_edges.append([nodeA, nodeB, data])
-                elif self.graph.nodes[nodeA]['layer'] != self.graph.nodes[nodeB]['layer']:
-                    selected_edges.append([nodeA, nodeB, data])
-                    
+    def get_filter(self, layers2filter, method="cutoff", options={}):
+       
         if method == "cutoff":
-           filtered_relations = self.filter_cutoff(selected_edges, cutoff= options["cutoff"])
-        if output_filename != None: self.write_obj(filtered_relations, output_filename, inFormat='pair', outFormat=outFormat)
-        return filtered_relations
+           filtered_relations = self.filter_cutoff(layers2filter, cutoff= options["cutoff"])
 
-    def filter_cutoff(self, edges, cutoff=0.5):
+        self.update_edges_with(filtered_relations)
+
+    def get_directed_conns(self, pair_operation = None, layers = None): # TODO: Talk with PSZ
+        directed_edges = []
+        if layers[0] == layers[1]:
+            nodeIDsA = self.collect_nodes(layers = [layers[0]])[0]
+            nodeIDsB = nodeIDsA
+        else:
+            nodeIDsA, nodeIDsB = self.collect_nodes(layers = layers)
+
+        for nodeA in nodeIDsA:
+            for nodeB in nodeIDsB:
+                if self.graph.has_edge(nodeA, nodeB):
+                    res = pair_operation(nodeA, nodeB)
+                    directed_edges.append(res)
+        return directed_edges
+
+    def update_edges_with(self, relations):
+        for nodeA, nodeB, weight in relations:
+            if weight > 0:
+                self.graph.add_edge(nodeA, nodeB, weight=weight)
+            elif self.graph.has_edge(nodeA, nodeB): # TODO: Talk with PSZ
+                self.graph.remove_edge(nodeA, nodeB)
+
+    def filter_cutoff(self, layers2filter, cutoff=0.5): 
         filtered_relations = []
-        for nodeA, nodeB, data in edges:
-            if data["weight"] >= cutoff:
-                filtered_relations.append([nodeA, nodeB, data["weight"]])
+
+        def _(node1, node2):
+            edges_attr = self.graph.edges()[node1,node2]
+            weight = edges_attr["weight"] if edges_attr.get("weight") else 1
+            if weight < cutoff:
+                weight = 0
+            return [node1, node2, weight]
+
+        filtered_relations = self.get_directed_conns(_, layers = layers2filter)
+
         return filtered_relations
 
 
@@ -500,14 +534,14 @@ class NetAnalyzer:
             emb_coords = Graph2sim.get_embedding(subgraph2embed, embedding = method, **embedding_kwargs)
             kernel = Graph2sim.emb_coords2kernel(emb_coords, normalization)
         elif method[0:2] in Graph2sim.allowed_kernels:
-            adj_mat, node_names_x, node_names_y = self.adjacency_matrices[(layers2kernel[0],layers2kernel[0])]
+            adj_mat, node_names_x, node_names_y = self.matrices["adjacency_matrices"][(layers2kernel[0],layers2kernel[0])]
             kernel = Graph2sim.get_kernel(adj_mat, method, normalization=normalization)
         # TODO: The next line needs to define rowIds and colIds to could use the pair output format
         if output_filename != None: self.write_obj(kernel, output_filename, inFormat='matrix', outFormat=outFormat, rowIds=None, colIds=None)
-        self.kernels[layers2kernel] = kernel
+        self.matrices["kernels"][layers2kernel] = kernel
 
     def write_kernel(self, layers2kernel, output_file):
-        numpy.save(output_file, self.kernels[layers2kernel])
+        numpy.save(output_file, self.matrices["kernels"][layers2kernel])
 
     def get_similarity(self, layers, base_layer, sim_type='lin', options={}, output_filename=None, outFormat='pair'):
         # options--> options['term_filter'] = GO:00001
@@ -516,13 +550,13 @@ class NetAnalyzer:
         ontology.load_profiles(relations)
         ontology.clean_profiles(store = True,options=options)
         similarity_pairs = ontology.compare_profiles(sim_type = sim_type)
-        pairs = []
-        for item_a, dat in similarity_pairs.items(): 
-            for item_b, val in dat.items(): pairs.append([item_a, item_b, val])
         if output_filename != None: 
+            pairs = []
+            for item_a, dat in similarity_pairs.items(): 
+                for item_b, val in dat.items(): pairs.append([item_a, item_b, val])
             self.write_obj(pairs, output_filename, inFormat='pair', outFormat=outFormat, rowIds=None, colIds=None)
-        #return similarity_pairs
-        self.semantic_sim[layers] = self.pairs2matrix(pairs)
+        #self.semantic_sim[layers] = self.pairs2matrix(pairs)
+        return similarity_pairs
 
     def shortest_path(self, source, target):
         return nx.shortest_path(self.graph, source, target)
@@ -914,14 +948,17 @@ class NetAnalyzer:
 
         return matrix, elementA_names, elementB_names
 
-    # def transform2obj(self, obj, inFormat=None, outFormat=None, rowIds= None, colIds= None):
-    #     if outFormat == 'pair':
-    #         if inFormat == 'matrix': obj = self.matrix2pairs(obj, rowIds=rowIds, colIds=colIds)
-    #     elif outFormat == 'matrix':
-    #         if inFormat == 'pair': obj, rowIds, colIds = self.pairs2matrix(obj)
-    #         numpy.save(output_filename, obj)
+    def transform2obj(self, obj, inFormat=None, outFormat=None, rowIds= None, colIds= None):
+        if outFormat == 'pair':
+            if inFormat == 'matrix': 
+                obj = self.matrix2pairs(obj, rowIds=rowIds, colIds=colIds)
+                return obj
+        elif outFormat == 'matrix':
+            if inFormat == 'pair': 
+                obj, rowIds, colIds = self.pairs2matrix(obj)
+                return obj, rowIds, colIds
 
-    
+
     def write_obj(self, obj, output_filename, inFormat=None, outFormat=None, rowIds=None, colIds=None):
         if outFormat == 'pair':
             if inFormat == 'matrix': obj = self.matrix2pairs(obj, rowIds=rowIds, colIds=colIds)
@@ -936,6 +973,20 @@ class NetAnalyzer:
             if colIds != None:
                 with open(output_filename + '_colIds', 'w') as f:
                     for item in colIds: f.write(item)
+
+    
+    # def write_obj(self, obj, output_filename, rowIds=None, colIds=None):
+    #     if type(:
+    #         with open(output_filename, 'w') as f:
+    #             for pair in obj: f.write("\t".join([str(item) for item in pair]) + "\n")
+    #     elif Format == 'matrix':
+    #         numpy.save(output_filename, obj)
+    #         if rowIds != None:
+    #             with open(output_filename + '_rowIds', 'w') as f:
+    #                 for item in rowIds: f.write(item)
+    #         if colIds != None:
+    #             with open(output_filename + '_colIds', 'w') as f:
+    #                 for item in colIds: f.write(item)
 
     def replace_none_vals(self, val):
         return 'NULL' if val == None else val

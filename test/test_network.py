@@ -56,14 +56,14 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertNotEqual(self.network_obj, network_clone	)
 	
 	def test_generate_adjacency_matrix_monopartite(self):
-		test_values = self.monopartite_network.adjacency_matrices
+		test_values = self.monopartite_network.matrices["adjacency_matrices"]
 		matrix_values = np.array([[0, 1, 1, 0, 0],[1, 0, 0, 0, 0], [1, 0, 0, 0, 1], [0, 0, 0, 0, 1], [0, 0, 1, 1, 0]],dtype='float')
 		expected_values = { ('main', 'main') : [matrix_values, ['A', 'C', 'E', 'B', 'D'], ['A', 'C', 'E', 'B', 'D']]} 
 		self.assertEqual(expected_values[('main', 'main')][0].tolist(), test_values[('main', 'main')][0].tolist())
 		self.assertEqual(expected_values[('main', 'main')][1], test_values[('main', 'main')][1])
 
 	def test_generate_adjacency_matrix_bipartite(self):
-		test_values = self.network_obj.adjacency_matrices
+		test_values = self.network_obj.matrices["adjacency_matrices"]
 		matrix_values = np.array([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 			[1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 
 			[1, 1, 1, 1, 1, 1, 1, 1, 0, 0], 
@@ -388,9 +388,11 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertEqual(expected, mock_hypergeo_assoc)
 
 	def test_filter_cutoff(self):
-		test_value = self.monopartite_network_weights.get_filter(("main","main"), method="cutoff", options={"cutoff": 5})
-		expected = [['M3', 'M1', 7.0]]
-		self.assertEqual(expected, test_value)
+		test_value = self.monopartite_network_weights.graph.edges(data=True)
+		self.monopartite_network_weights.get_filter(("main","main"), method="cutoff", options={"cutoff": 5})
+		test_value = self.monopartite_network_weights.graph.edges(data=True)
+		expected = [('M3', 'M1', {'weight': 7.0})]
+		self.assertEqual(expected, list(test_value))
 
 	
 	# Testing community discovery

@@ -264,7 +264,7 @@ class NetAnalyzer:
             res = True
         return res
     
-    def get_all_pairs(self, pair_operation = None , layers = 'all', include_directed_conn = False):
+    def get_all_pairs(self, pair_operation = None , layers = 'all'):
         all_pairs = []
         nodeIDsA, nodeIDsB = self.collect_nodes(layers = layers)
         if pair_operation != None:

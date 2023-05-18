@@ -1,1 +1,2 @@
-get_filter ('main','main') method="cutoff" options={"cutoff":3} output_filename='output_test_scripts/netanalyzer/dsl/filter_cutoff'
+get_filter ('main','main') method="cutoff" options={"cutoff":3} 
+write_subgraph ('main','main') output_filename='output_test_scripts/netanalyzer/dsl/filter_cutoff'

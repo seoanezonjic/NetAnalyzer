@@ -1,4 +1,4 @@
-A	E
+A	C
 A	D
-E	D
-B	C
+D	E
+E	B

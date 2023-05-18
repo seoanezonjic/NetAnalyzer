@@ -116,3 +116,73 @@ class Adv_mat_calc:
 	 	kx_inv_lamb_mat = None #free memory
 	 	weigth = weigth * nx
 	 	return weigth
+
+
+	def get_primary_stats(matrix):
+	    stats = {}
+	    max = matrix[0, 0] # Initialize max value
+	    min = matrix[0, 0] # Initialize min value
+	    min_non_zero = matrix[0, 0] # Initialize min value
+	
+	    values = matrix.flatten()
+	
+	    stats["count"] = 0
+	    stats["countNonZero"] = 0 
+	    stats["sum"] = 0
+	    for value in values:
+	        stats["count"] += 1
+	        stats["countNonZero"] += 1 if value != 0 else 0
+	        stats["sum"] += value
+	        max = value if value > max else max
+	        min = value if value < min else min
+	        if value != 0 and value < min:
+	            min_non_zero = value
+	    
+	    stats["max"] = max
+	    stats["min"] = min
+	    stats["minNonZero"] = min_non_zero
+	
+	    quartile_stats = self.get_quartiles(values, stats["count"])
+	    stats.update(quartile_stats)
+	    non_zero_values = [v for v in values if v != 0]
+	    quartile_stats_non_zero = self.get_quartiles(non_zero_values, stats["countNonZero"])
+	    stats.update(transform_keys(quartile_stats_non_zero, lambda x: x + "NonZero"))
+	    self.get_composed_stats(stats, values)
+	    return stats
+
+	def get_connection_number(matrix):
+	    rows, cols = matrix.shape
+	    connections = np.zeros((1, cols))
+	    for i in range(cols):
+	        column = matrix[:, i] 
+	        count = 0
+	        for value in column:
+	            count += 1 if value != 0 else 0
+	
+	        connections[0, i] = count - 1 # the connection with self is removed
+	
+	    return connections
+	
+	def get_quartiles(self, values, n_items):
+	    stats = {}
+	    stats['q1'] = np.percentile(values,25)
+	    stats['median'] = np.percentile(values,50)
+	    stats['q3'] = np.percentile(values,75)
+	    return stats
+	
+	def get_composed_stats(self, stats, values):
+	    average = stats["sum"]/stats["count"]
+	    average_non_zero = stats["sum"]/stats["countNonZero"]
+	    stats["average"] = average
+	    stats["averageNonZero"] = average_non_zero
+	
+	    stats["sumDevs"] = 0
+	    stats["sumDevsNonZero"] = 0
+	    for value in values:
+	        stats["sumDevs"] += (value - average) ** 2
+	        stats["sumDevsNonZero"] += (value - average_non_zero) ** 2 if value != 0 else 0
+	
+	    stats["variance"] = stats["sumDevs"]/stats["count"]
+	    stats["varianceNonZero"] = stats["sumDevsNonZero"]/stats["countNonZero"]
+	    stats["standardDeviation"] = stats["variance"] ** 0.5
+	    stats["standardDeviationNonZero"] = stats["varianceNonZero"] ** 0.5

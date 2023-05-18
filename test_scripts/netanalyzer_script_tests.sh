@@ -47,9 +47,9 @@ netanalyzer.py -i $data_kernel/adj_mat.npy -f bin -l 'genes' --embedding_add_opt
 #dsl option
 netanalyzer.py -i $data_kernel/adj_mat.npy -f bin -l 'genes' -n $data_kernel/adj_mat.lst --dsl_script $data_test_scripts/dsl/kernel_dsl
 
-# ----------------------------------- Filtering -------------------------------------------------
-# Filter by cutoff
-# dsl
+#----------------------------------- Filtering -------------------------------------------------
+#Filter by cutoff
+#dsl
 netanalyzer.py -i $data_to_test/monopartite_network_weights_for_validating.txt -f pair -l 'main' --dsl_script $data_test_scripts/dsl/filter_dsl
 
 for file_to_test in `ls $out/projections`; do

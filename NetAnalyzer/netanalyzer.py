@@ -21,13 +21,14 @@ from NetAnalyzer.graph2sim import Graph2sim
 # http://mkivela.com/pymnet
 
 class NestedDict(dict):
-     def dig(self, *keys):
+    def dig(self, *keys):
         try:
             for key in keys:
                 self = self[key]
             return self
         except KeyError:
             return None
+
 
 
 class NetAnalyzer:
@@ -330,8 +331,19 @@ class NetAnalyzer:
             relations = self.get_csi_associations(layers, base_layer)
         elif meth == 'transference': #tripartite networks
             relations = self.get_association_by_transference_resources(layers, base_layer)
-            
-        if output_filename != None: self.write_obj(relations, output_filename, inFormat='pair', outFormat=outFormat)
+
+        if add_to_object and output_filename == None: # Talk with PSZ the decorator posssibility
+            # TODO: Maybe dig here not necessary.
+            matrix, rowIds, colIds = self.transform2obj(relations, inFormat= 'pair', outFormat= "matrix") 
+            result_dic = self.matrices.dig("projections", layers)
+            if result_dic is not None:
+                result_dic[method] = [matrix, rowIds, colIds]
+            else:
+                self.matrices["projections"][layers] = {method: [matrix, rowIds, colIds]}
+        elif output_filename != None: 
+            obj, rowIds, colIds = self.transform2obj(relations, inFormat= 'pair', outFormat= outFormat)
+            self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
+
         return relations
 
     def get_association_by_transference_resources(self, firstPairLayers, secondPairLayers, lambda_value1 = 0.5, lambda_value2 = 0.5):
@@ -485,6 +497,33 @@ class NetAnalyzer:
 
         self.update_edges_with(filtered_relations)
 
+
+    def filter_cutoff(self, layers2filter, cutoff=0.5):  
+        filtered_relations = []
+
+        def _(node1, node2):
+            edges_attr = self.graph.edges()[node1,node2]
+            weight = edges_attr["weight"] if edges_attr.get("weight") else 1
+            if weight < cutoff:
+                weight = 0
+            return [node1, node2, weight]
+
+        filtered_relations = self.get_directed_conns(_, layers = layers2filter)
+
+        return filtered_relations
+
+    def write_subgraph(self, layers, output_filename): # TODO: Test
+        nodes = [node for node, data in self.graph.nodes(data=True) if data.get("layer") in layers]
+        subgraph = self.graph.subgraph(nodes)
+        with open(output_filename, "w") as f:
+            for nodeA, nodeB, data in subgraph.edges(data=True):
+                weight = data.get("weight")
+                if weight is not None:
+                    f.write(f"{nodeA}\t{nodeB}\t{str(weight)}" + "\n")
+                else:
+                    f.write(f"{nodeA}\t{nodeB}" + "\n")
+
+
     def get_directed_conns(self, pair_operation = None, layers = None): # TODO: Talk with PSZ
         directed_edges = []
         if layers[0] == layers[1]:
@@ -500,6 +539,7 @@ class NetAnalyzer:
                     directed_edges.append(res)
         return directed_edges
 
+
     def update_edges_with(self, relations):
         for nodeA, nodeB, weight in relations:
             if weight > 0:
@@ -507,56 +547,69 @@ class NetAnalyzer:
             elif self.graph.has_edge(nodeA, nodeB): # TODO: Talk with PSZ
                 self.graph.remove_edge(nodeA, nodeB)
 
-    def filter_cutoff(self, layers2filter, cutoff=0.5): 
-        filtered_relations = []
-
-        def _(node1, node2):
-            edges_attr = self.graph.edges()[node1,node2]
-            weight = edges_attr["weight"] if edges_attr.get("weight") else 1
-            if weight < cutoff:
-                weight = 0
-            return [node1, node2, weight]
-
-        filtered_relations = self.get_directed_conns(_, layers = layers2filter)
-
-        return filtered_relations
-
 
     ## Kernel and similarity methods
     #------------------------------------
 
-    def get_kernel(self, layers2kernel, method, normalization=False, embedding_kwargs={}, output_filename=None, outFormat='matrix'):
+    def get_kernel(self, layers2kernel, method, normalization=False, embedding_kwargs={}, output_filename=None, outFormat='matrix', add_to_object= False):
         #embedding_kwargs accept: dimensions, walk_length, num_walks, p, q, workers, window, min_count, seed, quiet, batch_words
 
         if method in Graph2sim.allowed_embeddings:
             embedding_nodes = [node for node, layer in self.graph.nodes('layer') if layer in list(layers2kernel)] 
             subgraph2embed = self.graph.subgraph(embedding_nodes)
             emb_coords = Graph2sim.get_embedding(subgraph2embed, embedding = method, **embedding_kwargs)
+            
             kernel = Graph2sim.emb_coords2kernel(emb_coords, normalization)
+            rowIds = list(subgraph2embed.nodes())
+            colIds = rowIds
         elif method[0:2] in Graph2sim.allowed_kernels:
-            adj_mat, node_names_x, node_names_y = self.matrices["adjacency_matrices"][(layers2kernel[0],layers2kernel[0])]
+            adj_mat, rowIds, colIds = self.matrices["adjacency_matrices"][(layers2kernel[0],layers2kernel[0])]
             kernel = Graph2sim.get_kernel(adj_mat, method, normalization=normalization)
-        # TODO: The next line needs to define rowIds and colIds to could use the pair output format
-        if output_filename != None: self.write_obj(kernel, output_filename, inFormat='matrix', outFormat=outFormat, rowIds=None, colIds=None)
+
+
+        if add_to_object and output_filename == None: # Talk with PSZ the decorator posssibility
+            result_dic = self.matrices.dig("kernels", layers2kernel)
+            if result_dic is not None:
+                result_dic[method] = [kernel, rowIds, colIds]
+            else:
+                self.matrices["kernels"][layers] = {method: [kernel, rowIds, colIds]}
+        elif output_filename != None: 
+            obj, rowIds, colIds = self.transform2obj(kernel, inFormat= 'matrix', outFormat= outFormat, rowIds=rowIds, colIds=colIds)
+            self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
+        
+
         self.matrices["kernels"][layers2kernel] = kernel
 
     def write_kernel(self, layers2kernel, output_file):
         numpy.save(output_file, self.matrices["kernels"][layers2kernel])
 
-    def get_similarity(self, layers, base_layer, sim_type='lin', options={}, output_filename=None, outFormat='pair'):
+    def get_similarity(self, layers, base_layer, sim_type='lin', options={}, output_filename=None, outFormat='pair', add_to_object= False):
         # options--> options['term_filter'] = GO:00001
         ontology = self.layer_ontologies[base_layer]
         relations = self.get_layers_as_dict(layers, base_layer)
         ontology.load_profiles(relations)
         ontology.clean_profiles(store = True,options=options)
         similarity_pairs = ontology.compare_profiles(sim_type = sim_type)
-        if output_filename != None: 
-            pairs = []
-            for item_a, dat in similarity_pairs.items(): 
-                for item_b, val in dat.items(): pairs.append([item_a, item_b, val])
-            self.write_obj(pairs, output_filename, inFormat='pair', outFormat=outFormat, rowIds=None, colIds=None)
-        #self.semantic_sim[layers] = self.pairs2matrix(pairs)
+
+        if add_to_object and output_filename == None: # Talk with PSZ the decorator posssibility
+            matrix, rowIds, colIds = self.transform2obj(self.semsim_dic2pairs(similarity_pairs), inFormat= 'pair', outFormat= "matrix") 
+            result_dic = self.matrices.dig("projections", layers)
+            if result_dic is not None:
+                result_dic[sim_type] = [matrix, rowIds, colIds]
+            else:
+                self.matrices["projections"][layers] = {sim_type : [matrix, rowIds, colIds]}
+        elif output_filename != None: 
+            obj, rowIds, colIds = self.transform2obj(self.semsim_dic2pairs(similarity_pairs), inFormat= 'pair', outFormat= outFormat)
+            self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
+
+
         return similarity_pairs
+
+    def semsim_dic2pairs(self, semsim_dic):
+        pairs = []
+        for item_a, dat in semsim_dic.items(): 
+            for item_b, val in dat.items(): pairs.append([item_a, item_b, val])
+        return pairs
 
     def shortest_path(self, source, target):
         return nx.shortest_path(self.graph, source, target)
@@ -603,6 +656,62 @@ class NetAnalyzer:
             'layers': self.layers
         }
         Net_plotter(net_data, options)
+
+    ## Statistical method
+    #--------------------
+
+    def get_stats_from_matrix(self, matrix_keys): # TODO: this should be on adv_mat class
+        matrix_data = self.matrices.dig(matrix_keys)
+        if matrix_data == None: return None
+        matrix, _, _ = matrix_data
+
+        stats = []
+        primary_stats = Adv_mat_calc.get_primary_stats(matrix)
+        #stats << ['Matrix - Symmetric?', matrix.symmetric?]
+        stats.append(['Matrix - Dimensions', 'x'.join(map(str, matrix.shape))])
+        stats.append(['Matrix - Elements', primary_stats["count"]])
+        stats.append(['Matrix - Elements Non Zero', primary_stats["countNonZero"]])
+        stats.append(['Matrix - Non Zero Density', primary_stats["countNonZero"]/primary_stats["count"]])
+        stats.append(['Weigth - Max', primary_stats["max"]])
+        stats.append(['Weigth - Min', primary_stats["min"]])
+        stats.append(['Weigth - Average', primary_stats["average"]])
+        stats.append(['Weigth - Variance', primary_stats["variance"]])
+        stats.append(['Weigth - Standard Deviation', primary_stats["standardDeviation"]])
+        stats.append(['Weigth - Q1', primary_stats["q1"]])
+        stats.append(['Weigth - Median', primary_stats["median"]])
+        stats.append(['Weigth - Q3', primary_stats["q3"]])
+        stats.append(['Weigth - Min Non Zero', primary_stats["minNonZero"]])
+        stats.append(['Weigth - Average Non Zero', primary_stats["averageNonZero"]])
+        stats.append(['Weigth - Variance Non Zero', primary_stats["varianceNonZero"]])
+        stats.append(['Weigth - Standard Deviation Non Zero', primary_stats["standardDeviationNonZero"]])
+        stats.append(['Weigth - Q1 Non Zero', primary_stats["q1NonZero"]])
+        stats.append(['Weigth - Median Non Zero', primary_stats["medianNonZero"]])
+        stats.append(['Weigth - Q3 Non Zero', primary_stats["q3NonZero"]])
+        connections = Adv_mat_calc.get_connection_number(matrix)
+        connection_stats = Adv_mat_calc.get_primary_stats(connections)
+        stats.append(['Node - Elements', connection_stats["count"]])
+        stats.append(['Node - Elements Non Zero', connection_stats["countNonZero"]])
+        stats.append(['Node - Non Zero Density', connection_stats["countNonZero"]/connection_stats["count"]])
+        stats.append(['Edges - Max', connection_stats["max"]])
+        stats.append(['Edges - Min', connection_stats["min"]])
+        stats.append(['Edges - Average', connection_stats["average"]])
+        stats.append(['Edges - Variance', connection_stats["variance"]])
+        stats.append(['Edges - Standard Deviation', connection_stats["standardDeviation"]])
+        stats.append(['Edges - Q1', connection_stats["q1"]])
+        stats.append(['Edges - Median', connection_stats["median"]])
+        stats.append(['Edges - Q3', connection_stats["q3"]])
+        stats.append(['Edges - Min Non Zero', connection_stats["minNonZero"]])
+        stats.append(['Edges - Average Non Zero', connection_stats["averageNonZero"]])
+        stats.append(['Edges - Variance Non Zero', connection_stats["varianceNonZero"]])
+        stats.append(['Edges - Standard Deviation Non Zero', connection_stats["standardDeviationNonZero"]])
+        stats.append(['Edges - Q1 Non Zero', connection_stats["q1NonZero"]])
+        stats.append(['Edges - Median Non Zero', connection_stats["medianNonZero"]])
+        stats.append(['Edges - Q3 Non Zero', connection_stats["q3NonZero"]])
+    
+        stats = map(lambda x: [x[0],str(x[1])],stats)
+    
+        return stats
+
 
     ## Community Methods 
     #-------------------
@@ -952,20 +1061,17 @@ class NetAnalyzer:
         if outFormat == 'pair':
             if inFormat == 'matrix': 
                 obj = self.matrix2pairs(obj, rowIds=rowIds, colIds=colIds)
-                return obj
         elif outFormat == 'matrix':
             if inFormat == 'pair': 
                 obj, rowIds, colIds = self.pairs2matrix(obj)
-                return obj, rowIds, colIds
+        return obj, rowIds, colIds
 
 
-    def write_obj(self, obj, output_filename, inFormat=None, outFormat=None, rowIds=None, colIds=None):
-        if outFormat == 'pair':
-            if inFormat == 'matrix': obj = self.matrix2pairs(obj, rowIds=rowIds, colIds=colIds)
+    def write_obj(self, obj, output_filename, Format=None, rowIds=None, colIds=None):
+        if Format == 'pair':
             with open(output_filename, 'w') as f:
                 for pair in obj: f.write("\t".join([str(item) for item in pair]) + "\n")
-        elif outFormat == 'matrix':
-            if inFormat == 'pair': obj, rowIds, colIds = self.pairs2matrix(obj)
+        elif Format == 'matrix':
             numpy.save(output_filename, obj)
             if rowIds != None:
                 with open(output_filename + '_rowIds', 'w') as f:
@@ -973,20 +1079,6 @@ class NetAnalyzer:
             if colIds != None:
                 with open(output_filename + '_colIds', 'w') as f:
                     for item in colIds: f.write(item)
-
-    
-    # def write_obj(self, obj, output_filename, rowIds=None, colIds=None):
-    #     if type(:
-    #         with open(output_filename, 'w') as f:
-    #             for pair in obj: f.write("\t".join([str(item) for item in pair]) + "\n")
-    #     elif Format == 'matrix':
-    #         numpy.save(output_filename, obj)
-    #         if rowIds != None:
-    #             with open(output_filename + '_rowIds', 'w') as f:
-    #                 for item in rowIds: f.write(item)
-    #         if colIds != None:
-    #             with open(output_filename + '_colIds', 'w') as f:
-    #                 for item in colIds: f.write(item)
 
     def replace_none_vals(self, val):
         return 'NULL' if val == None else val

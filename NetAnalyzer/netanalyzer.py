@@ -726,8 +726,21 @@ class NetAnalyzer:
     def discover_clusters(self, cluster_method, clust_kwargs, **user_options):
         if user_options.get("seed") != None: self.set_seed(user_options.get("seed"))
         communities = self.get_clusters_by_algorithm(cluster_method, clust_kwargs)
-        communities = { cluster_method + "_" + str(idx): community for idx, community in enumerate(communities)}
+        if cluster_method in ['hlc']: communities = self.link_to_node_communities(communities)
+        communities = { str(idx): community for idx, community in enumerate(communities)}
         self.group_nodes.update(communities) # If external coms added, thay will not be removed!
+
+    def link_to_node_communities(self, communities):
+        comm_nodes = []
+        for com in communities:
+            if len(com) > 1 :
+                nodes = []
+                for e in com:
+                    a, b = e
+                    if not a in nodes: nodes.append(a)
+                    if not b in nodes: nodes.append(b)
+                if len(nodes) > 2: comm_nodes.append(nodes)
+        return comm_nodes
 
     def get_clusters_by_algorithm(self, cluster_method, clust_kwargs={}):
         if(cluster_method == 'leiden'):
@@ -784,7 +797,7 @@ class NetAnalyzer:
             communities = algorithms.wCommunity(self.graph, **clust_kwargs)
         elif(cluster_method == 'kclique'):
             communities = algorithms.kclique(self.graph, **clust_kwargs)
-        elif(cluster_method == 'hierarchical_link_community'):
+        elif(cluster_method == 'hlc'):
             communities = algorithms.hierarchical_link_community(self.graph, **clust_kwargs)
         elif(cluster_method == 'aslpaw'):
             with warnings.catch_warnings():

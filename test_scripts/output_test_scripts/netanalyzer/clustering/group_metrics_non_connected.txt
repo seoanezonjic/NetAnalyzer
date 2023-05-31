@@ -1,4 +1,4 @@
 group	comparative_degree	max_odf	avg_sht_path
-rber_pots_0	0.3333333333333333	1	1.0
-rber_pots_1	1.0	1	NULL
-rber_pots_2	0.3333333333333333	1	1.0
+0	0.3333333333333333	1	1.0
+1	1.0	1	NULL
+2	0.3333333333333333	1	1.0

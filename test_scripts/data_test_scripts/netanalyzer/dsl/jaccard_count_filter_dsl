@@ -1,0 +1,3 @@
+get_association_values ['gen'] 'pathway' 'jaccard' add_to_object=True
+get_association_values ['gen'] 'pathway' 'counts' add_to_object=True
+mat_vs_mat_operation ("associations",('gen','gen'),"jaccard") ("associations",('gen','gen'),"counts") operation="filter" options={"cutoff":3} output_filename='output_test_scripts/netanalyzer/dsl/filter_with_count' outFormat='matrix'

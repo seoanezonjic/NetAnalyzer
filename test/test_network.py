@@ -394,12 +394,27 @@ class BaseNetTestCase(unittest.TestCase):
 		expected = [('M3', 'M1', {'weight': 7.0})]
 		self.assertEqual(expected, list(test_value))
 
+	def test_get_directed_conns(self):
+		# No autorelations
+		test_value = self.network_obj.get_directed_conns(pair_operation = lambda x,y: (x,y), layers = ('main','projection'), compute_autorelations = False)
+		test_value = sorted([sorted(set(pair)) for pair in test_value])
+		expected = list(self.network_obj.graph.edges())
+		expected = sorted([sorted(set(pair)) for pair in expected])
+		self.assertEqual(expected, test_value)
+		# With autorelations
+		self.network_obj.graph.add_edge("M1", "M2")
+		test_value = self.network_obj.get_directed_conns(pair_operation = lambda x,y: (x,y), layers = ('main','projection'), compute_autorelations = True)
+		test_value = sorted(set([tuple(sorted(set(pair))) for pair in test_value]))
+		expected = list(self.network_obj.graph.edges())
+		expected = sorted(set([tuple(sorted(set(pair))) for pair in expected]))
+		self.assertEqual(expected, test_value)
+
 	
 	# Testing community discovery
 	def test_community_discovery(self):
 		self.comunities_network_no_coms.discover_clusters("louvain",{})
 		returned = list(self.comunities_network_no_coms.group_nodes.items())
-		expected = [('louvain_0', ['A', 'B', 'C', 'D', 'E', 'F']), ('louvain_1', ['X', 'Y', 'V', 'W']), ('louvain_2', ['Z', 'L', 'M', 'N'])]
+		expected = [('0', ['A', 'B', 'C', 'D', 'E', 'F']), ('1', ['X', 'Y', 'V', 'W']), ('2', ['Z', 'L', 'M', 'N'])]
 		self.assertEqual(expected, returned)
 
 

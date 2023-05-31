@@ -51,6 +51,8 @@ netanalyzer.py -i $data_kernel/adj_mat.npy -f bin -l 'genes' -n $data_kernel/adj
 #Filter by cutoff
 #dsl
 netanalyzer.py -i $data_to_test/monopartite_network_weights_for_validating.txt -f pair -l 'main' --dsl_script $data_test_scripts/dsl/filter_dsl
+# dsl between projections.
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --dsl_script $data_test_scripts/dsl/jaccard_count_filter_dsl
 
 for file_to_test in `ls $out/projections`; do
  	echo $file_to_test

@@ -219,8 +219,8 @@ if options.kernel is not None:
 	else:
 		layers2kernel = tuple(options.use_layers[0])
 
-	fullNet.get_kernel(layers2kernel, options.kernel, options.normalize_kernel, embedding_kwargs)
-	fullNet.write_kernel(layers2kernel, options.kernel_file)
+	fullNet.get_kernel(layers2kernel, options.kernel, options.normalize_kernel, embedding_kwargs, add_to_object= True)
+	fullNet.write_kernel(layers2kernel, options.kernel, options.kernel_file)
 
 if options.graph_file is not None:
   options.graph_options['output_file'] = options.graph_file

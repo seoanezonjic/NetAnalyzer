@@ -39,11 +39,14 @@ class NetAnalyzer:
         self.association_values = {}
         self.compute_autorelations = True
         self.compute_pairs = 'conn'
-        self.matrices = NestedDict({"adjacency_matrices": {}, "kernels": {}, "associations": {}, "semantic_sims": {}}) # {matrix_type_key=>{layer_pairs_key=>{method_type_key(Not for adjacency)=>Value}}}
-        #self.kernels = {}
-        self.embedding_coords = {} #
+        self.matrices = NestedDict(
+        {"adjacency_matrices": {}, # {layers => Mat, rowIds, colIds}
+         "kernels": {},            # {layers => {method_type => Mat, rowIds, colIds}}
+         "associations": {},       # {layers => {method_type => Mat, rowIds, colIds}}
+         "semantic_sims": {},      # {layers => {method_type => Mat, rowIds, colIds}}
+         "mixed_mats": {}})        # {name => Mat, rowIds, colIds}
+        self.embedding_coords = {} 
         self.group_nodes = {} # Communities are lists {community_id : [Node1, Node2,...]}
-        #self.group_nx = {} # Communities are networkx objects {community_id : networkx obj}
         self.reference_nodes = []
         self.loaded_obos = []
         self.ontologies = []
@@ -61,20 +64,14 @@ class NetAnalyzer:
             self.loaded_obos == other.loaded_obos and \
             self.ontologies == other.ontologies and \
             self.layer_ontologies == other.layer_ontologies
-            #self.kernels == other.kernels and \
-            #self.adjacency_matrices == other.adjacency_matrices and \
-            #self.group_nx == other.group_nx and 
 
     def clone(self):
         network_clone = NetAnalyzer(copy.copy(self.layers))
         network_clone.graph = copy.deepcopy(self.graph)
         network_clone.association_values = self.association_values.copy()
         network_clone.set_compute_pairs(self.compute_pairs, self.compute_autorelations)
-        #network_clone.adjacency_matrices = self.adjacency_matrices.copy()
-        #network_clone.kernels = self.kernels.copy()
         network_clone.embedding_coords = self.embedding_coords.copy()
         network_clone.group_nodes = copy.deepcopy(self.group_nodes)
-        #network_clone.group_nx = copy.deepcopy(self.group_nx)
         network_clone.reference_nodes = self.reference_nodes.copy()
         network_clone.loaded_obos = self.loaded_obos.copy()
         network_clone.ontologies = self.ontologies.deepcopy() if self.ontologies != [] else []
@@ -237,7 +234,7 @@ class NetAnalyzer:
     def collect_nodes(self, layers = 'all'):
         nodeIDsA = []
         nodeIDsB = []
-        if self.compute_autorelations:
+        if self.compute_autorelations: # TODO: remove the compute_autorrelations attrib.
             if layers == 'all':
                 nodeIDsA = self.graph.nodes
             else:
@@ -332,14 +329,14 @@ class NetAnalyzer:
         elif meth == 'transference': #tripartite networks
             relations = self.get_association_by_transference_resources(layers, base_layer)
 
-        if add_to_object and output_filename == None: # Talk with PSZ the decorator posssibility
-            # TODO: Maybe dig here not necessary.
+        if add_to_object and output_filename == None: 
+            if len(layers) == 1: layers = (layers[0], layers[0])
             matrix, rowIds, colIds = self.transform2obj(relations, inFormat= 'pair', outFormat= "matrix") 
-            result_dic = self.matrices.dig("projections", layers)
+            result_dic = self.matrices.dig("associations", layers)
             if result_dic is not None:
-                result_dic[method] = [matrix, rowIds, colIds]
+                result_dic[meth] = [matrix, rowIds, colIds]
             else:
-                self.matrices["projections"][layers] = {method: [matrix, rowIds, colIds]}
+                self.matrices["associations"][layers] = {meth: [matrix, rowIds, colIds]}
         elif output_filename != None: 
             obj, rowIds, colIds = self.transform2obj(relations, inFormat= 'pair', outFormat= outFormat)
             self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
@@ -491,14 +488,16 @@ class NetAnalyzer:
     ## filter methods
     #----------------
     def get_filter(self, layers2filter, method="cutoff", options={}):
+        default_options = {"cutoff": None, "compute_autorelations": False}
+        default_options.update(options)
        
         if method == "cutoff":
-           filtered_relations = self.filter_cutoff(layers2filter, cutoff= options["cutoff"])
+           filtered_relations = self.filter_cutoff(layers2filter, cutoff= default_options["cutoff"], compute_autorelations = default_options["compute_autorelations"])
 
         self.update_edges_with(filtered_relations)
 
 
-    def filter_cutoff(self, layers2filter, cutoff=0.5):  
+    def filter_cutoff(self, layers2filter, cutoff=0.5, compute_autorelations= False):  
         filtered_relations = []
 
         def _(node1, node2):
@@ -508,7 +507,7 @@ class NetAnalyzer:
                 weight = 0
             return [node1, node2, weight]
 
-        filtered_relations = self.get_directed_conns(_, layers = layers2filter)
+        filtered_relations = self.get_directed_conns(_, layers = layers2filter, compute_autorelations= compute_autorelations)
 
         return filtered_relations
 
@@ -524,19 +523,30 @@ class NetAnalyzer:
                     f.write(f"{nodeA}\t{nodeB}" + "\n")
 
 
-    def get_directed_conns(self, pair_operation = None, layers = None): # TODO: Talk with PSZ
+    def get_directed_conns(self, pair_operation = None, layers = None, compute_autorelations = False): 
         directed_edges = []
         if layers[0] == layers[1]:
             nodeIDsA = self.collect_nodes(layers = [layers[0]])[0]
             nodeIDsB = nodeIDsA
         else:
-            nodeIDsA, nodeIDsB = self.collect_nodes(layers = layers)
+            nodeIDsA = self.get_nodes_layer([layers[0]])
+            nodeIDsB = self.get_nodes_layer([layers[1]])
 
-        for nodeA in nodeIDsA:
-            for nodeB in nodeIDsB:
-                if self.graph.has_edge(nodeA, nodeB):
-                    res = pair_operation(nodeA, nodeB)
-                    directed_edges.append(res)
+
+        if compute_autorelations:
+            all_nodes = list(set(nodeIDsA).union(set(nodeIDsB)))
+            for nodeA in all_nodes:
+                for nodeB in all_nodes: 
+                    if self.graph.has_edge(nodeA, nodeB):
+                        res = pair_operation(nodeA, nodeB)
+                        directed_edges.append(res)
+        else:
+            for nodeA in nodeIDsA:
+                for nodeB in nodeIDsB:
+                    if self.graph.has_edge(nodeA, nodeB):
+                        res = pair_operation(nodeA, nodeB)
+                        directed_edges.append(res)
+
         return directed_edges
 
 
@@ -544,7 +554,7 @@ class NetAnalyzer:
         for nodeA, nodeB, weight in relations:
             if weight > 0:
                 self.graph.add_edge(nodeA, nodeB, weight=weight)
-            elif self.graph.has_edge(nodeA, nodeB): # TODO: Talk with PSZ
+            elif self.graph.has_edge(nodeA, nodeB):
                 self.graph.remove_edge(nodeA, nodeB)
 
 
@@ -567,21 +577,25 @@ class NetAnalyzer:
             kernel = Graph2sim.get_kernel(adj_mat, method, normalization=normalization)
 
 
-        if add_to_object and output_filename == None: # Talk with PSZ the decorator posssibility
+        if add_to_object and output_filename == None: 
             result_dic = self.matrices.dig("kernels", layers2kernel)
             if result_dic is not None:
                 result_dic[method] = [kernel, rowIds, colIds]
             else:
-                self.matrices["kernels"][layers] = {method: [kernel, rowIds, colIds]}
+                self.matrices["kernels"][layers2kernel] = {method: [kernel, rowIds, colIds]}
         elif output_filename != None: 
             obj, rowIds, colIds = self.transform2obj(kernel, inFormat= 'matrix', outFormat= outFormat, rowIds=rowIds, colIds=colIds)
             self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
         
 
-        self.matrices["kernels"][layers2kernel] = kernel
+        #self.matrices["kernels"][layers2kernel] = kernel
+        return kernel, rowIds, colIds
 
-    def write_kernel(self, layers2kernel, output_file):
-        numpy.save(output_file, self.matrices["kernels"][layers2kernel])
+    def write_kernel(self, layers2kernel, kernel_type, output_file):
+        kernel, rowIds, colIds = self.matrices["kernels"][layers2kernel][kernel_type]
+        numpy.save(output_file, kernel)
+        self.write_nodelist(rowIds, output_file + "_rowIds")
+        self.write_nodelist(rowIds, output_file + "_colIds")
 
     def get_similarity(self, layers, base_layer, sim_type='lin', options={}, output_filename=None, outFormat='pair', add_to_object= False):
         # options--> options['term_filter'] = GO:00001
@@ -591,8 +605,8 @@ class NetAnalyzer:
         ontology.clean_profiles(store = True,options=options)
         similarity_pairs = ontology.compare_profiles(sim_type = sim_type)
 
-        if add_to_object and output_filename == None: # Talk with PSZ the decorator posssibility
-            matrix, rowIds, colIds = self.transform2obj(self.semsim_dic2pairs(similarity_pairs), inFormat= 'pair', outFormat= "matrix") 
+        if add_to_object and output_filename == None: 
+            matrix, rowIds, colIds = self.transform2obj(similarity_pairs, inFormat= 'nested_pairs', outFormat= "matrix") 
             result_dic = self.matrices.dig("projections", layers)
             if result_dic is not None:
                 result_dic[sim_type] = [matrix, rowIds, colIds]
@@ -604,12 +618,6 @@ class NetAnalyzer:
 
 
         return similarity_pairs
-
-    def semsim_dic2pairs(self, semsim_dic):
-        pairs = []
-        for item_a, dat in semsim_dic.items(): 
-            for item_b, val in dat.items(): pairs.append([item_a, item_b, val])
-        return pairs
 
     def shortest_path(self, source, target):
         return nx.shortest_path(self.graph, source, target)
@@ -657,10 +665,41 @@ class NetAnalyzer:
         }
         Net_plotter(net_data, options)
 
-    ## Statistical method
-    #--------------------
+    ## Matrix information and manipulation
+    #-------------------------------------
 
-    def get_stats_from_matrix(self, matrix_keys): # TODO: this should be on adv_mat class
+    def mat_vs_mat_operation(self, mat1_keys, mat2_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False, add_to_object_name = None):
+        result = (None, None, None)
+        if add_to_object and add_to_object_name is None:
+            add_to_object_name = operation
+
+        mat1 = self.matrices.dig(*mat1_keys)
+        mat2 = self.matrices.dig(*mat2_keys)
+
+        if mat1 is None or mat2 is None:                                                                                                     
+            logging.warning("keys for matrices which dont exist yet")
+            sys.exit(0)
+        else:
+            mat1, rows1, cols1 = mat1
+            mat2, rows2, cols2 = mat2
+
+        if operation == "filter":
+            mat2 = mat2 >= options["cutoff"]
+            mat_result = mat1 * mat2
+            rows_result, cols_result = rows1, cols1
+            
+
+        if add_to_object and output_filename == None:
+            self.matrices["mixed_mats"][add_to_object_name] = [mat_result, rows_result, cols_result]
+        elif output_filename != None: 
+            obj, rowIds, colIds = self.transform2obj(mat_result, inFormat= 'matrix', outFormat= outFormat, rowIds=rows_result, colIds=cols_result)
+            self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
+        
+
+        return mat_result, rowIds, colIds
+
+
+    def get_stats_from_matrix(self, matrix_keys): 
         matrix_data = self.matrices.dig(matrix_keys)
         if matrix_data == None: return None
         matrix, _, _ = matrix_data
@@ -1048,19 +1087,29 @@ class NetAnalyzer:
                 relations.append([rowId, colId, matrix[rowPos, colPos]])
         return relations
 
+    def update_index(self, index, element, count):
+        if index.get(element) is None:
+            index[element] = count
+            count += 1
+        return count
+
     def pairs2matrix(self, pairs, symm= True):
         count_A = 0
         index_A = {}
         count_B = 0
         index_B = {}
-        for pair in pairs:
-            elementA, elementB, val = pair
-            if index_A.get(elementA) == None:
-                index_A[elementA] = count_A
-                count_A += 1
-            if index_B.get(elementB) == None:
-                index_B[elementB] = count_B
-                count_B += 1
+        if symm:
+            for pair in pairs:
+                elementA, elementB, val = pair
+                count_A = self.update_index(index_A, elementA, count_A)
+                count_A = self.update_index(index_A, elementB, count_A)
+            index_B = index_A
+        else:
+            for pair in pairs:
+                elementA, elementB, val = pair
+                count_A = self.update_index(index_A, elementA, count_A)
+                count_B = self.update_index(index_B, elementB, count_B)
+
         elementA_names = list(index_A.keys())
         elementB_names = list(index_B.keys())
 
@@ -1078,11 +1127,20 @@ class NetAnalyzer:
         if outFormat == 'pair':
             if inFormat == 'matrix': 
                 obj = self.matrix2pairs(obj, rowIds=rowIds, colIds=colIds)
+            if inFormat == 'nested_pairs':
+                obj = self.nested_pairs2pairs(obj)
         elif outFormat == 'matrix':
             if inFormat == 'pair': 
                 obj, rowIds, colIds = self.pairs2matrix(obj)
+            if inFormat == 'nested_pairs':
+                obj = self.pairs2matrix(self.nested_pairs2pairs(obj)) # Talk with PSZ about the trade-off combinatorial vs optimization
         return obj, rowIds, colIds
 
+    def nested_pairs2pairs(self, nested_dic_pairs):
+        pairs = []
+        for item_a, dat in nested_dic_pairs.items(): 
+            for item_b, val in dat.items(): pairs.append([item_a, item_b, val])
+        return pairs
 
     def write_obj(self, obj, output_filename, Format=None, rowIds=None, colIds=None):
         if Format == 'pair':
@@ -1092,10 +1150,16 @@ class NetAnalyzer:
             numpy.save(output_filename, obj)
             if rowIds != None:
                 with open(output_filename + '_rowIds', 'w') as f:
-                    for item in rowIds: f.write(item)
+                    for item in rowIds: f.write(item + "\n")
             if colIds != None:
                 with open(output_filename + '_colIds', 'w') as f:
-                    for item in colIds: f.write(item)
+                    for item in colIds: f.write(item + "\n")  
+        
+
+    def write_nodelist(self, nodes, file_name):
+        with open(file_name, "w") as f:
+            for node in nodes:
+                f.write(node + "\n")
 
     def replace_none_vals(self, val):
         return 'NULL' if val == None else val

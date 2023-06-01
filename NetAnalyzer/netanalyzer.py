@@ -838,6 +838,8 @@ class NetAnalyzer:
             communities = algorithms.kclique(self.graph, **clust_kwargs)
         elif(cluster_method == 'hlc'):
             communities = algorithms.hierarchical_link_community(self.graph, **clust_kwargs)
+        elif(cluster_method == 'hlc_w'):
+            communities = algorithms.hierarchical_link_community_w(self.graph, **clust_kwargs)
         elif(cluster_method == 'aslpaw'):
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore")

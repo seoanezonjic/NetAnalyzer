@@ -511,16 +511,22 @@ class NetAnalyzer:
 
         return filtered_relations
 
-    def write_subgraph(self, layers, output_filename): # TODO: Test
-        nodes = [node for node, data in self.graph.nodes(data=True) if data.get("layer") in layers]
-        subgraph = self.graph.subgraph(nodes)
-        with open(output_filename, "w") as f:
-            for nodeA, nodeB, data in subgraph.edges(data=True):
-                weight = data.get("weight")
-                if weight is not None:
-                    f.write(f"{nodeA}\t{nodeB}\t{str(weight)}" + "\n")
-                else:
-                    f.write(f"{nodeA}\t{nodeB}" + "\n")
+    def write_subgraph(self, layers, output_filename, outFormat='pair'): # TODO: Test
+        if outFormat == "pair":
+            nodes = [node for node, data in self.graph.nodes(data=True) if data.get("layer") in layers]
+            subgraph = self.graph.subgraph(nodes)
+            with open(output_filename, "w") as f:
+                for nodeA, nodeB, data in subgraph.edges(data=True):
+                    weight = data.get("weight")
+                    if weight is not None:
+                        f.write(f"{nodeA}\t{nodeB}\t{str(weight)}" + "\n")
+                    else:
+                        f.write(f"{nodeA}\t{nodeB}" + "\n")
+        elif outFormat == "matrix":
+            if self.matrices["adjacency_matrices"].get(layers) is None:
+                self.generate_adjacency_matrix(layers[0], layers[1])
+            matrix, rowIds, colIds = self.matrices.dig("adjacency_matrices", layers)
+            self.write_obj(self.matrices.dig("adjacency_matrices", layers), output_filename=output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
 
 
     def get_directed_conns(self, pair_operation = None, layers = None, compute_autorelations = False): 
@@ -751,6 +757,12 @@ class NetAnalyzer:
     
         return stats
 
+    def binarize_mat(self, matrix_keys):
+        matrix_data = self.matrices.dig(matrix_keys)
+        matrix, rowIds, colIds = matrix_data
+        matrix = matrix >= 0
+        matrix = matrix.astype(float)
+        matrix_data = [matrix, rowIds, colIds] # Check this method
 
     ## Community Methods 
     #-------------------
@@ -1143,6 +1155,15 @@ class NetAnalyzer:
         for item_a, dat in nested_dic_pairs.items(): 
             for item_b, val in dat.items(): pairs.append([item_a, item_b, val])
         return pairs
+
+    def write_mat(self, mat_keys, output_filename):
+        matrix_row_col = self.matrices.dig(mat_keys)
+        if matrix_row_col is not None:
+            mat, rowIds, colIds = matrix_row_col
+            self.write_obj(mat, output_filename, Format= "matrix", rowIds=rowIds, colIds=colIds)
+        else:                                                                                         
+            logging.warning("keys for matrices which dont exist yet")
+            sys.exit(0)
 
     def write_obj(self, obj, output_filename, Format=None, rowIds=None, colIds=None):
         if Format == 'pair':

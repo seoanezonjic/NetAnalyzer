@@ -607,8 +607,14 @@ class NetAnalyzer:
         # options--> options['term_filter'] = GO:00001
         ontology = self.layer_ontologies[base_layer]
         relations = self.get_layers_as_dict(layers, base_layer)
+        print("the relations are:")
+        print(relations)
         ontology.load_profiles(relations)
+        print("the profiles are")
+        print(ontology.profiles)
         ontology.clean_profiles(store = True,options=options)
+        print("the profiles2 are")
+        print(ontology.profiles)
         similarity_pairs = ontology.compare_profiles(sim_type = sim_type)
 
         if add_to_object and output_filename == None: 
@@ -705,57 +711,15 @@ class NetAnalyzer:
         return mat_result, rowIds, colIds
 
 
-    def get_stats_from_matrix(self, matrix_keys): 
+    def write_stats_from_matrix(self, matrix_keys): 
         matrix_data = self.matrices.dig(matrix_keys)
         if matrix_data == None: return None
         matrix, _, _ = matrix_data
 
-        stats = []
-        primary_stats = Adv_mat_calc.get_primary_stats(matrix)
-        #stats << ['Matrix - Symmetric?', matrix.symmetric?]
-        stats.append(['Matrix - Dimensions', 'x'.join(map(str, matrix.shape))])
-        stats.append(['Matrix - Elements', primary_stats["count"]])
-        stats.append(['Matrix - Elements Non Zero', primary_stats["countNonZero"]])
-        stats.append(['Matrix - Non Zero Density', primary_stats["countNonZero"]/primary_stats["count"]])
-        stats.append(['Weigth - Max', primary_stats["max"]])
-        stats.append(['Weigth - Min', primary_stats["min"]])
-        stats.append(['Weigth - Average', primary_stats["average"]])
-        stats.append(['Weigth - Variance', primary_stats["variance"]])
-        stats.append(['Weigth - Standard Deviation', primary_stats["standardDeviation"]])
-        stats.append(['Weigth - Q1', primary_stats["q1"]])
-        stats.append(['Weigth - Median', primary_stats["median"]])
-        stats.append(['Weigth - Q3', primary_stats["q3"]])
-        stats.append(['Weigth - Min Non Zero', primary_stats["minNonZero"]])
-        stats.append(['Weigth - Average Non Zero', primary_stats["averageNonZero"]])
-        stats.append(['Weigth - Variance Non Zero', primary_stats["varianceNonZero"]])
-        stats.append(['Weigth - Standard Deviation Non Zero', primary_stats["standardDeviationNonZero"]])
-        stats.append(['Weigth - Q1 Non Zero', primary_stats["q1NonZero"]])
-        stats.append(['Weigth - Median Non Zero', primary_stats["medianNonZero"]])
-        stats.append(['Weigth - Q3 Non Zero', primary_stats["q3NonZero"]])
-        connections = Adv_mat_calc.get_connection_number(matrix)
-        connection_stats = Adv_mat_calc.get_primary_stats(connections)
-        stats.append(['Node - Elements', connection_stats["count"]])
-        stats.append(['Node - Elements Non Zero', connection_stats["countNonZero"]])
-        stats.append(['Node - Non Zero Density', connection_stats["countNonZero"]/connection_stats["count"]])
-        stats.append(['Edges - Max', connection_stats["max"]])
-        stats.append(['Edges - Min', connection_stats["min"]])
-        stats.append(['Edges - Average', connection_stats["average"]])
-        stats.append(['Edges - Variance', connection_stats["variance"]])
-        stats.append(['Edges - Standard Deviation', connection_stats["standardDeviation"]])
-        stats.append(['Edges - Q1', connection_stats["q1"]])
-        stats.append(['Edges - Median', connection_stats["median"]])
-        stats.append(['Edges - Q3', connection_stats["q3"]])
-        stats.append(['Edges - Min Non Zero', connection_stats["minNonZero"]])
-        stats.append(['Edges - Average Non Zero', connection_stats["averageNonZero"]])
-        stats.append(['Edges - Variance Non Zero', connection_stats["varianceNonZero"]])
-        stats.append(['Edges - Standard Deviation Non Zero', connection_stats["standardDeviationNonZero"]])
-        stats.append(['Edges - Q1 Non Zero', connection_stats["q1NonZero"]])
-        stats.append(['Edges - Median Non Zero', connection_stats["medianNonZero"]])
-        stats.append(['Edges - Q3 Non Zero', connection_stats["q3NonZero"]])
-    
-        stats = map(lambda x: [x[0],str(x[1])],stats)
-    
-        return stats
+        stats = Adv_mat_calc.get_stats_from_matrix(matrix)
+        for stat in stats:
+            print("\t".join(stat))
+
 
     def binarize_mat(self, matrix_keys):
         matrix_data = self.matrices.dig(matrix_keys)

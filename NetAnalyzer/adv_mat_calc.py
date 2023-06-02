@@ -118,6 +118,54 @@ class Adv_mat_calc:
 	 	return weigth
 
 
+	def get_stats_from_matrix(self, matrix): 
+		stats = []
+		primary_stats = Adv_mat_calc.get_primary_stats(matrix)
+		#stats << ['Matrix - Symmetric?', matrix.symmetric?]
+		stats.append(['Matrix - Dimensions', 'x'.join(map(str, matrix.shape))])
+		stats.append(['Matrix - Elements', primary_stats["count"]])
+		stats.append(['Matrix - Elements Non Zero', primary_stats["countNonZero"]])
+		stats.append(['Matrix - Non Zero Density', primary_stats["countNonZero"]/primary_stats["count"]])
+		stats.append(['Weigth - Max', primary_stats["max"]])
+		stats.append(['Weigth - Min', primary_stats["min"]])
+		stats.append(['Weigth - Average', primary_stats["average"]])
+		stats.append(['Weigth - Variance', primary_stats["variance"]])
+		stats.append(['Weigth - Standard Deviation', primary_stats["standardDeviation"]])
+		stats.append(['Weigth - Q1', primary_stats["q1"]])
+		stats.append(['Weigth - Median', primary_stats["median"]])
+		stats.append(['Weigth - Q3', primary_stats["q3"]])
+		stats.append(['Weigth - Min Non Zero', primary_stats["minNonZero"]])
+		stats.append(['Weigth - Average Non Zero', primary_stats["averageNonZero"]])
+		stats.append(['Weigth - Variance Non Zero', primary_stats["varianceNonZero"]])
+		stats.append(['Weigth - Standard Deviation Non Zero', primary_stats["standardDeviationNonZero"]])
+		stats.append(['Weigth - Q1 Non Zero', primary_stats["q1NonZero"]])
+		stats.append(['Weigth - Median Non Zero', primary_stats["medianNonZero"]])
+		stats.append(['Weigth - Q3 Non Zero', primary_stats["q3NonZero"]])
+		connections = Adv_mat_calc.get_connection_number(matrix)
+		connection_stats = Adv_mat_calc.get_primary_stats(connections)
+		stats.append(['Node - Elements', connection_stats["count"]])
+		stats.append(['Node - Elements Non Zero', connection_stats["countNonZero"]])
+		stats.append(['Node - Non Zero Density', connection_stats["countNonZero"]/connection_stats["count"]])
+		stats.append(['Edges - Max', connection_stats["max"]])
+		stats.append(['Edges - Min', connection_stats["min"]])
+		stats.append(['Edges - Average', connection_stats["average"]])
+		stats.append(['Edges - Variance', connection_stats["variance"]])
+		stats.append(['Edges - Standard Deviation', connection_stats["standardDeviation"]])
+		stats.append(['Edges - Q1', connection_stats["q1"]])
+		stats.append(['Edges - Median', connection_stats["median"]])
+		stats.append(['Edges - Q3', connection_stats["q3"]])
+		stats.append(['Edges - Min Non Zero', connection_stats["minNonZero"]])
+		stats.append(['Edges - Average Non Zero', connection_stats["averageNonZero"]])
+		stats.append(['Edges - Variance Non Zero', connection_stats["varianceNonZero"]])
+		stats.append(['Edges - Standard Deviation Non Zero', connection_stats["standardDeviationNonZero"]])
+		stats.append(['Edges - Q1 Non Zero', connection_stats["q1NonZero"]])
+		stats.append(['Edges - Median Non Zero', connection_stats["medianNonZero"]])
+		stats.append(['Edges - Q3 Non Zero', connection_stats["q3NonZero"]])
+    
+		stats = map(lambda x: [x[0],str(x[1])],stats)
+    
+		return stats
+
 	def get_primary_stats(matrix):
 	    stats = {}
 	    max = matrix[0, 0] # Initialize max value

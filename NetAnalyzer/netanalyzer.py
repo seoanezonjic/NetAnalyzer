@@ -707,8 +707,8 @@ class NetAnalyzer:
 
 
     def write_stats_from_matrix(self, matrix_keys): 
-        matrix_data = self.matrices.dig(matrix_keys)
-        if matrix_data == None: return None
+        matrix_data = self.matrices.dig(*matrix_keys)
+        if matrix_data == None: logging.warning("keys for matrices which dont exist yet")
         matrix, _, _ = matrix_data
 
         stats = Adv_mat_calc.get_stats_from_matrix(matrix)

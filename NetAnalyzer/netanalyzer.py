@@ -607,23 +607,18 @@ class NetAnalyzer:
         # options--> options['term_filter'] = GO:00001
         ontology = self.layer_ontologies[base_layer]
         relations = self.get_layers_as_dict(layers, base_layer)
-        print("the relations are:")
-        print(relations)
         ontology.load_profiles(relations)
-        print("the profiles are")
-        print(ontology.profiles)
         ontology.clean_profiles(store = True,options=options)
-        print("the profiles2 are")
-        print(ontology.profiles)
         similarity_pairs = ontology.compare_profiles(sim_type = sim_type)
 
         if add_to_object and output_filename == None: 
             matrix, rowIds, colIds = self.transform2obj(similarity_pairs, inFormat= 'nested_pairs', outFormat= "matrix") 
-            result_dic = self.matrices.dig("projections", layers)
+            if len(layers) == 1: layers = (layers[0],layers[0])
+            result_dic = self.matrices.dig("semantic_sims", layers)
             if result_dic is not None:
                 result_dic[sim_type] = [matrix, rowIds, colIds]
             else:
-                self.matrices["projections"][layers] = {sim_type : [matrix, rowIds, colIds]}
+                self.matrices["semantic_sims"][layers] = {sim_type : [matrix, rowIds, colIds]}
         elif output_filename != None: 
             obj, rowIds, colIds = self.transform2obj(self.semsim_dic2pairs(similarity_pairs), inFormat= 'pair', outFormat= outFormat)
             self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
@@ -1111,7 +1106,7 @@ class NetAnalyzer:
             if inFormat == 'pair': 
                 obj, rowIds, colIds = self.pairs2matrix(obj)
             if inFormat == 'nested_pairs':
-                obj = self.pairs2matrix(self.nested_pairs2pairs(obj)) # Talk with PSZ about the trade-off combinatorial vs optimization
+                obj, rowIds, colIds = self.pairs2matrix(self.nested_pairs2pairs(obj)) # Talk with PSZ about the trade-off combinatorial vs optimization
         return obj, rowIds, colIds
 
     def nested_pairs2pairs(self, nested_dic_pairs):
@@ -1121,7 +1116,7 @@ class NetAnalyzer:
         return pairs
 
     def write_mat(self, mat_keys, output_filename):
-        matrix_row_col = self.matrices.dig(mat_keys)
+        matrix_row_col = self.matrices.dig(*mat_keys)
         if matrix_row_col is not None:
             mat, rowIds, colIds = matrix_row_col
             self.write_obj(mat, output_filename, Format= "matrix", rowIds=rowIds, colIds=colIds)

@@ -118,7 +118,7 @@ class Adv_mat_calc:
 	 	return weigth
 
 
-	def get_stats_from_matrix(self, matrix): 
+	def get_stats_from_matrix(matrix): 
 		stats = []
 		primary_stats = Adv_mat_calc.get_primary_stats(matrix)
 		#stats << ['Matrix - Symmetric?', matrix.symmetric?]
@@ -171,7 +171,6 @@ class Adv_mat_calc:
 	    max = matrix[0, 0] # Initialize max value
 	    min = matrix[0, 0] # Initialize min value
 	    min_non_zero = matrix[0, 0] # Initialize min value
-	
 	    values = matrix.flatten()
 	
 	    stats["count"] = 0
@@ -190,12 +189,12 @@ class Adv_mat_calc:
 	    stats["min"] = min
 	    stats["minNonZero"] = min_non_zero
 	
-	    quartile_stats = self.get_quartiles(values, stats["count"])
+	    quartile_stats = Adv_mat_calc.get_quartiles(values, stats["count"])
 	    stats.update(quartile_stats)
 	    non_zero_values = [v for v in values if v != 0]
-	    quartile_stats_non_zero = self.get_quartiles(non_zero_values, stats["countNonZero"])
-	    stats.update(transform_keys(quartile_stats_non_zero, lambda x: x + "NonZero"))
-	    self.get_composed_stats(stats, values)
+	    quartile_stats_non_zero = Adv_mat_calc.get_quartiles(non_zero_values, stats["countNonZero"])
+	    stats.update(Adv_mat_calc.transform_keys(quartile_stats_non_zero, lambda x: x + "NonZero"))
+	    Adv_mat_calc.get_composed_stats(stats, values)
 	    return stats
 
 	def get_connection_number(matrix):
@@ -211,14 +210,14 @@ class Adv_mat_calc:
 	
 	    return connections
 	
-	def get_quartiles(self, values, n_items):
+	def get_quartiles(values, n_items):
 	    stats = {}
 	    stats['q1'] = np.percentile(values,25)
 	    stats['median'] = np.percentile(values,50)
 	    stats['q3'] = np.percentile(values,75)
 	    return stats
 	
-	def get_composed_stats(self, stats, values):
+	def get_composed_stats(stats, values):
 	    average = stats["sum"]/stats["count"]
 	    average_non_zero = stats["sum"]/stats["countNonZero"]
 	    stats["average"] = average
@@ -235,11 +234,14 @@ class Adv_mat_calc:
 	    stats["standardDeviation"] = stats["variance"] ** 0.5
 	    stats["standardDeviationNonZero"] = stats["varianceNonZero"] ** 0.
 
+	def binarize_mat(matrix):
+	    matrix = matrix >= 0
+	    matrix = matrix.astype(float)
+	    return matrix
 
-	def binarize(matrix):
-		pass 
-
-	def binarize_mat(self, matrix):
-        matrix = matrix >= 0
-        matrix = matrix.astype(float)
-        return matrix
+	def transform_keys(hash, function):
+	    new_hash = {}
+	    for key, val in hash.items():
+		    new_key = function(key)
+		    new_hash[new_key] = val
+	    return new_hash

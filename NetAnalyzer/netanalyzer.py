@@ -122,20 +122,10 @@ class NetAnalyzer:
         layerBidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerB]
         matrix = numpy.zeros((len(layerAidNodes), len(layerBidNodes)))
 
-        has_weight = True if nx.get_edge_attributes(self.graph, 'weight') else False
+        has_weight = 'weight' if nx.get_edge_attributes(self.graph, 'weight') else None
 
-        # TODO: Check this method, too slow.
-        if has_weight:
-            fill_edge = lambda nodeA,nodeB: self.graph.edges[nodeA,nodeB]["weight"]
-        else:
-            fill_edge = lambda nodeA, nodeB: 1
-
-        for i, nodeA in enumerate(layerAidNodes):
-            for j, nodeB in enumerate(layerBidNodes):
-                if nodeA in self.graph.neighbors(nodeB):
-                    matrix[i, j] = fill_edge(nodeA, nodeB)
-                else:
-                    matrix[i, j] = 0
+        csr_matrix = nx.bipartite.biadjacency_matrix(self.graph, row_order=layerAidNodes, column_order=layerBidNodes, weight=has_weight, format='csr')
+        matrix = numpy.array(csr_matrix.todense())
 
         all_info_matrix = [matrix, layerAidNodes, layerBidNodes]
 
@@ -716,16 +706,20 @@ class NetAnalyzer:
             mat2 = mat2 >= options["cutoff"]
             mat_result = mat1 * mat2
             rows_result, cols_result = rows1, cols1
+            layers = mat1_keys[1]
             
 
         if add_to_object and output_filename == None:
-            self.matrices["modified_mats"][add_to_object_name] = [mat_result, rows_result, cols_result]
+            if self.matrices.dig("modified_mats", layers) is not None:
+                self.matrices["modified_mats"][layers][add_to_object_name] = [mat_result, rows_result, cols_result]
+            else:
+                self.matrices["modified_mats"][layers] = {add_to_object_name: [mat_result, rows_result, cols_result]}
         elif output_filename != None: 
             obj, rowIds, colIds = self.transform2obj(mat_result, inFormat= 'matrix', outFormat= outFormat, rowIds=rows_result, colIds=cols_result)
             self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
         
 
-        return mat_result, rowIds, colIds
+        return mat_result, rows_result, cols_result
 
     def filter_mat(self, mat1_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False, add_to_object_name = None):
         result = (None, None, None)
@@ -739,6 +733,7 @@ class NetAnalyzer:
             sys.exit(0)
         else:
             mat1, rows1, cols1 = mat1
+            layers = mat1_keys[1]
 
         if operation == "filter_cutoff":
             filter_mat = mat1 >= options["cutoff"]
@@ -751,7 +746,10 @@ class NetAnalyzer:
             
 
         if add_to_object and output_filename == None:
-            self.matrices["modified_mats"][add_to_object_name] = [mat_result, rows_result, cols_result]
+            if self.matrices.dig("modified_mats", layers) is not None:
+                self.matrices["modified_mats"][layers][add_to_object_name] = [mat_result, rows_result, cols_result]
+            else:
+                self.matrices["modified_mats"][layers] = {add_to_object_name: [mat_result, rows_result, cols_result]}
         elif output_filename != None: 
             obj, rowIds, colIds = self.transform2obj(mat_result, inFormat= 'matrix', outFormat= outFormat, rowIds=rows_result, colIds=cols_result)
             self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
@@ -786,12 +784,12 @@ class NetAnalyzer:
     #     return mat_result, rowIds, colIds
 
 
-    def binarize_mat(self, matrix_keys):
-        matrix_data = self.matrices.dig(matrix_keys)
-        matrix, rowIds, colIds = matrix_data
-        matrix = matrix >= 0
-        matrix = matrix.astype(float)
-        matrix_data = [matrix, rowIds, colIds] # Check this method
+    # def binarize_mat(self, matrix_keys):
+    #     matrix_data = self.matrices.dig(matrix_keys)
+    #     matrix, rowIds, colIds = matrix_data
+    #     matrix = matrix >= 0
+    #     matrix = matrix.astype(float)
+    #     matrix_data = [matrix, rowIds, colIds] # Check this method
 
     ## Community Methods 
     #-------------------

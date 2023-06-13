@@ -233,4 +233,13 @@ class Adv_mat_calc:
 	    stats["variance"] = stats["sumDevs"]/stats["count"]
 	    stats["varianceNonZero"] = stats["sumDevsNonZero"]/stats["countNonZero"]
 	    stats["standardDeviation"] = stats["variance"] ** 0.5
-	    stats["standardDeviationNonZero"] = stats["varianceNonZero"] ** 0.5
+	    stats["standardDeviationNonZero"] = stats["varianceNonZero"] ** 0.
+
+
+	def binarize(matrix):
+		pass 
+
+	def binarize_mat(self, matrix):
+        matrix = matrix >= 0
+        matrix = matrix.astype(float)
+        return matrix

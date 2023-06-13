@@ -44,7 +44,7 @@ class NetAnalyzer:
          "kernels": {},            # {layers => {method_type => Mat, rowIds, colIds}}
          "associations": {},       # {layers => {method_type => Mat, rowIds, colIds}}
          "semantic_sims": {},      # {layers => {method_type => Mat, rowIds, colIds}}
-         "mixed_mats": {}})        # {name => Mat, rowIds, colIds}
+         "modified_mats": {}})        # {name => Mat, rowIds, colIds}
         self.embedding_coords = {} 
         self.group_nodes = {} # Communities are lists {community_id : [Node1, Node2,...]}
         self.reference_nodes = []
@@ -487,12 +487,16 @@ class NetAnalyzer:
 
     ## filter methods
     #----------------
+
     def get_filter(self, layers2filter, method="cutoff", options={}):
         default_options = {"cutoff": None, "compute_autorelations": False}
         default_options.update(options)
        
         if method == "cutoff":
            filtered_relations = self.filter_cutoff(layers2filter, cutoff= default_options["cutoff"], compute_autorelations = default_options["compute_autorelations"])
+
+        if options.get("binarize") == True:
+            filtered_relations = [[edge[0], edge[1]] for edge in filtered_relations if edge[2] > 0]
 
         self.update_edges_with(filtered_relations)
 
@@ -675,6 +679,24 @@ class NetAnalyzer:
     ## Matrix information and manipulation
     #-------------------------------------
 
+    def write_mat(self, mat_keys, output_filename):
+        matrix_row_col = self.matrices.dig(*mat_keys)
+        if matrix_row_col is not None:
+            mat, rowIds, colIds = matrix_row_col
+            self.write_obj(mat, output_filename, Format= "matrix", rowIds=rowIds, colIds=colIds)
+        else:                                                                                         
+            logging.warning("keys for matrices which dont exist yet")
+            sys.exit(0)
+
+    def write_stats_from_matrix(self, matrix_keys): 
+        matrix_data = self.matrices.dig(*matrix_keys)
+        if matrix_data == None: logging.warning("keys for matrices which dont exist yet")
+        matrix, _, _ = matrix_data
+
+        stats = Adv_mat_calc.get_stats_from_matrix(matrix)
+        for stat in stats:
+            print("\t".join(stat))
+
     def mat_vs_mat_operation(self, mat1_keys, mat2_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False, add_to_object_name = None):
         result = (None, None, None)
         if add_to_object and add_to_object_name is None:
@@ -697,7 +719,39 @@ class NetAnalyzer:
             
 
         if add_to_object and output_filename == None:
-            self.matrices["mixed_mats"][add_to_object_name] = [mat_result, rows_result, cols_result]
+            self.matrices["modified_mats"][add_to_object_name] = [mat_result, rows_result, cols_result]
+        elif output_filename != None: 
+            obj, rowIds, colIds = self.transform2obj(mat_result, inFormat= 'matrix', outFormat= outFormat, rowIds=rows_result, colIds=cols_result)
+            self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
+        
+
+        return mat_result, rowIds, colIds
+
+    def filter_mat(self, mat1_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False, add_to_object_name = None):
+        result = (None, None, None)
+        if add_to_object and add_to_object_name is None:
+            add_to_object_name = operation
+
+        mat1 = self.matrices.dig(*mat1_keys)
+
+        if mat1 is None:                                                                                                     
+            logging.warning("keys for matrices which dont exist yet")
+            sys.exit(0)
+        else:
+            mat1, rows1, cols1 = mat1
+
+        if operation == "filter_cutoff":
+            filter_mat = mat1 >= options["cutoff"]
+            mat_result = mat1 * filter_mat
+            rows_result, cols_result = rows1, cols1
+    
+
+        if options.get("binarize"):
+            mat_result = Adv_mat_calc.binarize_mat(mat_result)
+            
+
+        if add_to_object and output_filename == None:
+            self.matrices["modified_mats"][add_to_object_name] = [mat_result, rows_result, cols_result]
         elif output_filename != None: 
             obj, rowIds, colIds = self.transform2obj(mat_result, inFormat= 'matrix', outFormat= outFormat, rowIds=rows_result, colIds=cols_result)
             self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
@@ -706,14 +760,30 @@ class NetAnalyzer:
         return mat_result, rowIds, colIds
 
 
-    def write_stats_from_matrix(self, matrix_keys): 
-        matrix_data = self.matrices.dig(*matrix_keys)
-        if matrix_data == None: logging.warning("keys for matrices which dont exist yet")
-        matrix, _, _ = matrix_data
+    # def matrix_operation(self, mat_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False, add_to_object_name = None):
+    #     result = (None, None, None)
+    #     if add_to_object and add_to_object_name is None:
+    #         add_to_object_name = operation
 
-        stats = Adv_mat_calc.get_stats_from_matrix(matrix)
-        for stat in stats:
-            print("\t".join(stat))
+    #     mat = self.matrices.dig(*mat_keys)
+
+    #     if mat is None:                                                                                                   
+    #         logging.warning("keys for matrices which dont exist yet")
+    #         sys.exit(0)
+    #     else:
+    #         mat, rows, cols = mat
+
+    #     exec(f"mat_result, rows_result, cols_result = Adv_mat_calc.{operation}(**{options})")
+            
+
+    #     if add_to_object and output_filename == None:
+    #         self.matrices["modified_mats"][add_to_object_name] = [mat_result, rows_result, cols_result]
+    #     elif output_filename != None: 
+    #         obj, rowIds, colIds = self.transform2obj(mat_result, inFormat= 'matrix', outFormat= outFormat, rowIds=rows_result, colIds=cols_result)
+    #         self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
+        
+
+    #     return mat_result, rowIds, colIds
 
 
     def binarize_mat(self, matrix_keys):
@@ -1115,14 +1185,6 @@ class NetAnalyzer:
             for item_b, val in dat.items(): pairs.append([item_a, item_b, val])
         return pairs
 
-    def write_mat(self, mat_keys, output_filename):
-        matrix_row_col = self.matrices.dig(*mat_keys)
-        if matrix_row_col is not None:
-            mat, rowIds, colIds = matrix_row_col
-            self.write_obj(mat, output_filename, Format= "matrix", rowIds=rowIds, colIds=colIds)
-        else:                                                                                         
-            logging.warning("keys for matrices which dont exist yet")
-            sys.exit(0)
 
     def write_obj(self, obj, output_filename, Format=None, rowIds=None, colIds=None):
         if Format == 'pair':

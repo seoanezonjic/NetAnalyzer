@@ -678,14 +678,13 @@ class NetAnalyzer:
             logging.warning("keys for matrices which dont exist yet")
             sys.exit(0)
 
-    def write_stats_from_matrix(self, matrix_keys): 
+    def write_stats_from_matrix(self, matrix_keys, output_filename="stats_from_matrix"): 
         matrix_data = self.matrices.dig(*matrix_keys)
         if matrix_data == None: logging.warning("keys for matrices which dont exist yet")
         matrix, _, _ = matrix_data
 
         stats = Adv_mat_calc.get_stats_from_matrix(matrix)
-        for stat in stats:
-            print("\t".join(stat))
+        self.write_obj(stats, output_filename, Format="pair")
 
     def mat_vs_mat_operation(self, mat1_keys, mat2_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False, add_to_object_name = None):
         result = (None, None, None)
@@ -756,40 +755,6 @@ class NetAnalyzer:
         
 
         return mat_result, rowIds, colIds
-
-
-    # def matrix_operation(self, mat_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False, add_to_object_name = None):
-    #     result = (None, None, None)
-    #     if add_to_object and add_to_object_name is None:
-    #         add_to_object_name = operation
-
-    #     mat = self.matrices.dig(*mat_keys)
-
-    #     if mat is None:                                                                                                   
-    #         logging.warning("keys for matrices which dont exist yet")
-    #         sys.exit(0)
-    #     else:
-    #         mat, rows, cols = mat
-
-    #     exec(f"mat_result, rows_result, cols_result = Adv_mat_calc.{operation}(**{options})")
-            
-
-    #     if add_to_object and output_filename == None:
-    #         self.matrices["modified_mats"][add_to_object_name] = [mat_result, rows_result, cols_result]
-    #     elif output_filename != None: 
-    #         obj, rowIds, colIds = self.transform2obj(mat_result, inFormat= 'matrix', outFormat= outFormat, rowIds=rows_result, colIds=cols_result)
-    #         self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
-        
-
-    #     return mat_result, rowIds, colIds
-
-
-    # def binarize_mat(self, matrix_keys):
-    #     matrix_data = self.matrices.dig(matrix_keys)
-    #     matrix, rowIds, colIds = matrix_data
-    #     matrix = matrix >= 0
-    #     matrix = matrix.astype(float)
-    #     matrix_data = [matrix, rowIds, colIds] # Check this method
 
     ## Community Methods 
     #-------------------
@@ -877,7 +842,7 @@ class NetAnalyzer:
             communities = algorithms.kclique(self.graph, **clust_kwargs)
         elif(cluster_method == 'hlc'):
             communities = algorithms.hierarchical_link_community(self.graph, **clust_kwargs)
-        elif(cluster_method == 'hlc_w'):
+        elif(cluster_method == 'hlc_f'):
             communities = algorithms.hierarchical_link_community_w(self.graph, **clust_kwargs)
         elif(cluster_method == 'aslpaw'):
             with warnings.catch_warnings():

@@ -124,8 +124,10 @@ class NetAnalyzer:
 
         has_weight = 'weight' if nx.get_edge_attributes(self.graph, 'weight') else None
 
-        csr_matrix = nx.bipartite.biadjacency_matrix(self.graph, row_order=layerAidNodes, column_order=layerBidNodes, weight=has_weight, format='csr')
-        matrix = numpy.array(csr_matrix.todense())
+        matrix_triu = numpy.array(nx.bipartite.biadjacency_matrix(self.graph, row_order=layerAidNodes, column_order=layerBidNodes, weight=has_weight, format='csr').todense())
+        matrix_tril = numpy.array(nx.bipartite.biadjacency_matrix(self.graph, row_order=layerBidNodes, column_order=layerAidNodes, weight=has_weight, format='csr').todense())
+        #print(csr_matrix)
+        matrix = numpy.triu(matrix_triu) + numpy.tril(numpy.transpose(matrix_tril), k = -1)
 
         all_info_matrix = [matrix, layerAidNodes, layerBidNodes]
 

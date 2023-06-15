@@ -771,7 +771,7 @@ class NetAnalyzer:
     def discover_clusters(self, cluster_method, clust_kwargs, **user_options):
         if user_options.get("seed") != None: self.set_seed(user_options.get("seed"))
         communities = self.get_clusters_by_algorithm(cluster_method, clust_kwargs)
-        if cluster_method in ['hlc']: communities = self.link_to_node_communities(communities)
+        if cluster_method in ['hlc', 'hlc_f']: communities = self.link_to_node_communities(communities)
         communities = { str(idx): community for idx, community in enumerate(communities)}
         self.group_nodes.update(communities) # If external coms added, thay will not be removed!
 

@@ -722,23 +722,23 @@ class NetAnalyzer:
 
         return mat_result, rows_result, cols_result
 
-    def filter_mat(self, mat1_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False, add_to_object_name = None):
+    def filter_mat(self, mat_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False, add_to_object_name = None):
         result = (None, None, None)
         if add_to_object and add_to_object_name is None:
             add_to_object_name = operation
 
-        mat1 = self.matrices.dig(*mat1_keys)
+        mat1 = self.matrices.dig(*mat_keys)
 
         if mat1 is None:                                                                                                     
             logging.warning("keys for matrices which dont exist yet")
             sys.exit(0)
         else:
             mat1, rows1, cols1 = mat1
-            layers = mat1_keys[1]
+            layers = mat_keys[1]
 
         if operation == "filter_cutoff":
-            filter_mat = mat1 >= options["cutoff"]
-            mat_result = mat1 * filter_mat
+            filtered_mat = mat1 >= options["cutoff"]
+            mat_result = mat1 * filtered_mat
             rows_result, cols_result = rows1, cols1
     
 
@@ -845,7 +845,7 @@ class NetAnalyzer:
         elif(cluster_method == 'hlc'):
             communities = algorithms.hierarchical_link_community(self.graph, **clust_kwargs)
         elif(cluster_method == 'hlc_f'):
-            communities = algorithms.hierarchical_link_community_w(self.graph, **clust_kwargs)
+            communities = algorithms.hierarchical_link_community_full(self.graph, **clust_kwargs)
         elif(cluster_method == 'aslpaw'):
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore")

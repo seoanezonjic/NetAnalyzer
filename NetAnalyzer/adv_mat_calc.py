@@ -4,6 +4,7 @@ from scipy import linalg
 from warnings import warn
 class Adv_mat_calc:
 
+	@staticmethod
 	def get_kernel(matrix, node_names, kernel, normalization=False):
 		#I = identity matrix
 		#D = Diagonal matrix
@@ -67,6 +68,7 @@ class Adv_mat_calc:
 		if normalization: matrix_result = Adv_mat_calc.cosine_normalization(matrix_result)  #TODO: check implementation with Numo::array
 		return matrix_result
 
+	@staticmethod
 	def cosine_normalization(matrix):
 		dims = np.shape(matrix)
 		normalized_matrix =  np.zeros(dims)
@@ -77,6 +79,7 @@ class Adv_mat_calc:
 		return normalized_matrix
 
 	# Alaimo 2014, doi: 10.3389/fbioe.2014.00071
+	@staticmethod
 	def tranference_resources(matrix1, matrix2, lambda_value1 = 0.5, lambda_value2 = 0.5):
 		# TODO (Fede,19/12/22) An extension to n layers would be possible with an iterative process.
 		m1rowNumber, m1colNumber = matrix1.shape
@@ -87,6 +90,7 @@ class Adv_mat_calc:
 		finalMatrix = np.dot(matrix1, matrixWeightProduct)
 		return finalMatrix
 
+	@staticmethod
 	def graphWeights(rowsNumber, colsNumber, inputMatrix, lambdaValue = 0.5):
 	 	ky = np.diag((1.0 / inputMatrix.sum(0))) #sum cols
 	 	weigth = np.dot(inputMatrix, ky).T
@@ -117,7 +121,7 @@ class Adv_mat_calc:
 	 	weigth = weigth * nx
 	 	return weigth
 
-
+	@staticmethod
 	def get_stats_from_matrix(matrix): 
 		stats = []
 		primary_stats = Adv_mat_calc.get_primary_stats(matrix)
@@ -166,6 +170,7 @@ class Adv_mat_calc:
     
 		return stats
 
+	@staticmethod
 	def get_primary_stats(matrix):
 	    stats = {}
 	    max = matrix[0, 0] # Initialize max value
@@ -197,6 +202,7 @@ class Adv_mat_calc:
 	    Adv_mat_calc.get_composed_stats(stats, values)
 	    return stats
 
+	@staticmethod
 	def get_connection_number(matrix):
 	    rows, cols = matrix.shape
 	    connections = np.zeros((1, cols))
@@ -209,14 +215,16 @@ class Adv_mat_calc:
 	        connections[0, i] = count - 1 # the connection with self is removed
 	
 	    return connections
-	
+
+	@staticmethod
 	def get_quartiles(values, n_items):
 	    stats = {}
 	    stats['q1'] = np.percentile(values,25)
 	    stats['median'] = np.percentile(values,50)
 	    stats['q3'] = np.percentile(values,75)
 	    return stats
-	
+
+	@staticmethod
 	def get_composed_stats(stats, values):
 	    average = stats["sum"]/stats["count"]
 	    average_non_zero = stats["sum"]/stats["countNonZero"]
@@ -234,11 +242,13 @@ class Adv_mat_calc:
 	    stats["standardDeviation"] = stats["variance"] ** 0.5
 	    stats["standardDeviationNonZero"] = stats["varianceNonZero"] ** 0.
 
+	@staticmethod
 	def binarize_mat(matrix):
 	    matrix = matrix >= 0
 	    matrix = matrix.astype(float)
 	    return matrix
 
+	@staticmethod
 	def transform_keys(hash, function):
 	    new_hash = {}
 	    for key, val in hash.items():

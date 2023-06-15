@@ -671,7 +671,7 @@ class NetAnalyzer:
     ## Matrix information and manipulation
     #-------------------------------------
 
-    def write_mat(self, mat_keys, output_filename):
+    def write_matrix(self, mat_keys, output_filename):
         matrix_row_col = self.matrices.dig(*mat_keys)
         if matrix_row_col is not None:
             mat, rowIds, colIds = matrix_row_col
@@ -680,8 +680,8 @@ class NetAnalyzer:
             logging.warning("keys for matrices which dont exist yet")
             sys.exit(0)
 
-    def write_stats_from_matrix(self, matrix_keys, output_filename="stats_from_matrix"): 
-        matrix_data = self.matrices.dig(*matrix_keys)
+    def write_stats_from_matrix(self, mat_keys, output_filename="stats_from_matrix"): 
+        matrix_data = self.matrices.dig(*mat_keys)
         if matrix_data == None: logging.warning("keys for matrices which dont exist yet")
         matrix, _, _ = matrix_data
 
@@ -719,10 +719,10 @@ class NetAnalyzer:
             obj, rowIds, colIds = self.transform2obj(mat_result, inFormat= 'matrix', outFormat= outFormat, rowIds=rows_result, colIds=cols_result)
             self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
         
-
         return mat_result, rows_result, cols_result
 
-    def filter_mat(self, mat_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False, add_to_object_name = None):
+
+    def filter_matrix(self, mat_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False, add_to_object_name = None):
         result = (None, None, None)
         if add_to_object and add_to_object_name is None:
             add_to_object_name = operation
@@ -756,7 +756,7 @@ class NetAnalyzer:
             self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
         
 
-        return mat_result, rowIds, colIds
+        return mat_result, rows_result, cols_result
 
     ## Community Methods 
     #-------------------

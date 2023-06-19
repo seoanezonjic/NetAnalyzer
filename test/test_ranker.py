@@ -92,3 +92,4 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertEqual(self.load_results('top_results'),test_top_ranked_genes)
 
 
+

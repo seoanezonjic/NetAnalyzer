@@ -249,6 +249,35 @@ class Adv_mat_calc:
 	    return matrix
 
 	@staticmethod
+	def disparity_filter_mat(matrix, rowIds, colIds, pval_threshold = 0.05):
+	    pval_mat = Adv_mat_calc.get_disparity_backbone_pval(matrix)
+	    # Create edge list from that p value matrix
+	    result_mat = pval_mat < pval_threshold
+	    # adjacency matrix, obtained when both p[i,j] and p[j,i] match the criteria
+	    new_adj = result_mat.transpose()*result_mat
+
+	    # remove genes with no significance
+	    k = np.sum(new_adj, axis=0)
+	    final_adj_mat = matrix[:,k>0]
+	    final_adj_mat = final_adj_mat[k>0,:]
+	    final_rowIds = [node_id for node_id, is_good in zip(rowIds, list(k>0)) if is_good]
+	    final_colIds = [node_id for node_id, is_good in zip(colIds, list(k>0)) if is_good]
+
+	    return final_adj_mat, final_rowIds, final_colIds
+
+	@staticmethod
+	def get_disparity_backbone_pval(matrix):
+	    # by the moment, implementetion square (?)
+	    # TODO: Add a warning when not square matrix.
+	    pval_mat = matrix 
+	    W = np.sum(pval_mat, axis=0)
+	    k = (pval_mat > 0).sum(0)
+	    # operacion vectorizada.
+	    for i in range(0,pval_mat.shape[1]):
+	        pval_mat[:,i] = (1-(matrix[:,i]/W[i]))**(k[i]-1)
+	    return pval_mat
+
+	@staticmethod
 	def transform_keys(hash, function):
 	    new_hash = {}
 	    for key, val in hash.items():

@@ -11,7 +11,7 @@ class Graph2sim:
 	allowed_embeddings = ['node2vec', 'deepwalk']
 	allowed_kernels = ['el', 'ct', 'rf', 'me', 'vn', 'rl', 'ka', 'md']
 
-	def get_embedding(graph, embedding, dimensions = 64, walk_length=30, num_walks = 100, p = 1, q = 1, workers = 1, window = 10, min_count=1, seed = None, quiet=True, batch_words=4):
+	def get_embedding(graph, embedding, dimensions = 64, walk_length=30, num_walks = 200, p = 1, q = 1, workers = 1, window = 10, min_count=1, seed = None, quiet=False, batch_words=4):
 		emb_coords = None
 		if embedding in ['node2vec', 'deepwalk']: # TODO 'metapath2vec',
 			if embedding == 'node2vec' or embedding == "deepwalk":

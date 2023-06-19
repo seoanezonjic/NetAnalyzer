@@ -740,6 +740,8 @@ class NetAnalyzer:
             filtered_mat = mat1 >= options["cutoff"]
             mat_result = mat1 * filtered_mat
             rows_result, cols_result = rows1, cols1
+        elif operation == "filter_disparity":
+            mat_result, rows_result, cols_result = Adv_mat_calc.disparity_filter_mat(mat1, rows1, cols1, pval_threshold = options["pval_threshold"])
     
 
         if options.get("binarize"):
@@ -757,6 +759,7 @@ class NetAnalyzer:
         
 
         return mat_result, rows_result, cols_result
+
 
     ## Community Methods 
     #-------------------

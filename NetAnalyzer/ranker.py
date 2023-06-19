@@ -12,6 +12,17 @@ class Ranker:
     self.reference_nodes = {}
     self.ranking = {}  # ranked_genes
 
+
+  def normalize_matrix(self, mode = "by_column"):
+    degree_matrix = self.matrix.sum(0)
+    inv_degree_matrix = np.linalg.inv(degree_matrix)
+    if mode == "by_column":
+      self.matrix = self.matrix @ inv_degree_matrix 
+    elif mode == "by_row":
+      self.matrix = inv_degree_matrix  @ self.matrix
+    elif mode == "by_row_col":
+      self.matrix = np.sqrt(inv_degree_matrix) @ self.matrix @ np.sqrt(inv_degree_matrix)
+
   def load_seeds(self, node_groups, sep=',', uniq= True):
     self.seeds = self.load_nodes_by_group(node_groups, sep=sep)
     if uniq:
@@ -40,7 +51,7 @@ class Ranker:
       for line in f:
         self.nodes.append(line.rstrip())
 
-  def do_ranking(self, leave_one_out=False): #TODO: Add thread option
+  def do_ranking(self, leave_one_out=False, propagate = False, options = {"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}): #TODO: Add thread option
     if leave_one_out:
       self.get_seed_leave_one_out()
 
@@ -51,9 +62,9 @@ class Ranker:
     for seed_name, seed in self.seeds.items():
       # The code in this block CANNOT modify nothing outside
       if leave_one_out:
-         rank_list = self.get_individual_rank(seed, self.reference_nodes[seed_name][0])
+         rank_list = self.get_individual_rank(seed, self.reference_nodes[seed_name][0], propagate = propagate, options= options)
       else:
-         rank_list = self.rank_by_seed(seed_indexes, seed)  # Production mode
+         rank_list = self.rank_by_seed(seed_indexes, seed, propagate=propagate, options=options)  # Production mode
       ranked_lists.append([seed_name, rank_list])
 
     for seed_name, rank_list in ranked_lists:  # Transfer resuls to hash
@@ -81,16 +92,53 @@ class Ranker:
     self.seeds = new_seeds
     self.reference_nodes = genes2predict
 
-  def rank_by_seed(self, seed_indexes, seed):
+  def propagate_seed(self, matrix, seed_attr, tol=1e-6, n = 1000, restart_factor = 0):
+    seed_attr_old = seed_attr
+    error = tol + 1 # Now error is more than tol
+    k = 0
+    while error > tol or k < n:
+      if restart_factor > 0:
+        seed_attr_new = (1 - restart_factor)*matrix@seed_attr_old + restart_factor*seed_attr
+      else:
+        seed_attr_new = matrix @ seed_attr_old
+      # Normalization
+      seed_attr_new = seed_attr_new / seed_attr_new.sum(0) 
+      # Take error
+      error = np.norm(seed_attr_new - seed_attr_old, ord="inf")
+      seed_attr_old = seed_attr_new
+      k += 1
+
+    if k >= n: # TODO, let see the error.
+      print("Convergence not achieved")
+    else:
+      return seed_attr_old
+
+  def update_seed(self, genes_pos, propagate = False, options = {"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
+    number_of_seed_genes = len(genes_pos)
+    number_of_all_nodes = len(self.nodes)
+    if propagate:
+      seed_vector = zeros((number_of_all_nodes))
+      seed_vector[genes_pos] = 1
+      updated_seed = self.propagate_seed(self.matrix, seed_attr = seed, tol = options["tolerance"], n = options["iteration_limit"], with_restart = options["with_restart"])
+      gen_list = updated_seed
+    else:
+      subsets_gen_values = self.matrix[genes_pos, :]
+      integrated_gen_values = subsets_gen_values.sum(0)
+      gen_list = (1/number_of_seed_genes) * integrated_gen_values
+
+    return gen_list
+
+
+
+  def rank_by_seed(self, seed_indexes, seed, propagate = False, options = {"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
     ordered_gene_score = []
     genes_pos = [seed_indexes.get(s) for s in seed if seed_indexes.get(s) is not None]
     number_of_seed_genes = len(genes_pos)
     number_of_all_nodes = len(self.nodes)
 
     if number_of_seed_genes > 0:
-      subsets_gen_values = self.matrix[genes_pos, :]
-      integrated_gen_values = subsets_gen_values.sum(0)
-      gen_list = (1/number_of_seed_genes) * integrated_gen_values
+
+      gen_list = self.update_seed(genes_pos, propagate = propagate, options = options)
 
       ordered_indexes = np.argsort(gen_list)  # from smallest to largest
 
@@ -142,7 +190,7 @@ class Ranker:
         ranking_with_new_column.append(new_row)
     return ranking_with_new_column
 
-  def get_individual_rank(self, seed_genes, node_of_interest):
+  def get_individual_rank(self, seed_genes, node_of_interest, propagate, options = {"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
     genes_pos = self.get_nodes_indexes(seed_genes)
     if node_of_interest in self.nodes:
       node_of_interest_pos = self.nodes.index(node_of_interest)
@@ -151,9 +199,7 @@ class Ranker:
 
     ordered_gene_score = []
     if genes_pos and node_of_interest_pos is not None:
-      subsets_gen_values = self.matrix[genes_pos, :]
-      integrated_gen_values = subsets_gen_values.sum(0)
-      integrated_gen_values = (1/len(genes_pos)) * integrated_gen_values
+      integrated_gen_values = self.update_seed(genes_pos, propagate = propagate, options = options)
 
       ref_value = integrated_gen_values[node_of_interest_pos]
 

@@ -409,6 +409,35 @@ class BaseNetTestCase(unittest.TestCase):
 		expected = sorted(set([tuple(sorted(set(pair))) for pair in expected]))
 		self.assertEqual(expected, test_value)
 
+	# Testing matrix operations: Filters
+	def test_filter_matrix(self):
+		mat_keys = ("adjacency_matrices", ("main","main"))
+		# Checking cutoff filter.
+		operation = "filter_cutoff"
+		expected = [[0., 0., 2., 7.],
+		       		[0., 0., 0., 0.],
+		       		[2., 0., 0., 3.],
+		       		[7., 0., 3., 0.]]
+		options = {"cutoff": 2}
+		expected_cols = ['M3', 'M4', 'M2', 'M1']
+		expected_rows = ['M3', 'M4', 'M2', 'M1']
+		test_value, row_value, col_value = self.monopartite_network_weights.filter_matrix(mat_keys, operation, options)
+		self.assertEqual(expected, test_value.tolist())
+		self.assertListEqual(expected_cols, col_value)
+		self.assertListEqual(expected_rows, row_value)
+		# Checking disparity filter.
+		operation = "filter_disparity"
+		options = {"pval_threshold": 0.4}
+		expected = [[1.  , 0.3 ],
+       				[0.09, 1.  ]]
+		expected_rows = ['M3', 'M1']
+		expected_cols = ['M3', 'M1']
+		test_value, row_value, col_value = self.monopartite_network_weights.filter_matrix(mat_keys, operation, options)
+		self.assertEqual(expected, test_value.round(6).tolist())
+		self.assertListEqual(expected_cols, col_value)
+		self.assertListEqual(expected_rows, row_value)
+
+
 	
 	# Testing community discovery
 	def test_community_discovery(self):

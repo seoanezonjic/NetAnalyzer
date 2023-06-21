@@ -132,10 +132,7 @@ class NetAnalyzer:
 
         all_info_matrix = [matrix, layerAidNodes, layerBidNodes]
 
-        if layerA == layerB:
-            self.matrices["adjacency_matrices"][(layerA, layerA)] = all_info_matrix
-        else:
-            self.matrices["adjacency_matrices"][(layerA, layerB)] = all_info_matrix
+        self.matrices["adjacency_matrices"][(layerA, layerB)] = all_info_matrix
 
         return all_info_matrix
 
@@ -144,10 +141,7 @@ class NetAnalyzer:
             self.generate_adjacency_matrix(layerA, layerB)
 
     def adjMat2netObj(self, layerA, layerB):
-        if layerA == layerB:
-            matrix, rowIds, colIds = self.matrices["adjacency_matrices"][(layerA, layerA)] 
-        else:
-            matrix, rowIds, colIds = self.matrices["adjacency_matrices"][(layerA, layerB)] 
+        matrix, rowIds, colIds = self.matrices["adjacency_matrices"][(layerA, layerB)] 
 
         self.graph = nx.Graph()
         for rowId in rowIds: self.add_node(rowId, layerA)

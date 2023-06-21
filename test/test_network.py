@@ -17,6 +17,10 @@ class BaseNetTestCase(unittest.TestCase):
 		self.tripartite_network = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'tripartite_network_for_validating.txt'), self.tripartite_layers)
 		self.tripartite_network.generate_adjacency_matrix(self.tripartite_layers[0][0], self.tripartite_layers[1][0])
 		self.tripartite_network.generate_adjacency_matrix(self.tripartite_layers[1][0], self.tripartite_layers[2][0])
+
+		self.tripartite_network_weights = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'tripartite_network_weighted_for_validating.txt'), self.tripartite_layers)
+		self.tripartite_network_weights.generate_adjacency_matrix(self.tripartite_layers[0][0], self.tripartite_layers[1][0])
+		self.tripartite_network_weights.generate_adjacency_matrix(self.tripartite_layers[1][0], self.tripartite_layers[2][0])
 		
 		self.bipartite_layers = [['main', 'M[0-9]+'], ['projection', 'P[0-9]+']]
 		self.network_obj = Net_parser.load_network_by_pairs(os.path.join(DATA_TEST_PATH, 'bipartite_network_for_validating.txt'), self.bipartite_layers)
@@ -393,6 +397,12 @@ class BaseNetTestCase(unittest.TestCase):
 		test_value = self.monopartite_network_weights.graph.edges(data=True)
 		expected = [('M3', 'M1', {'weight': 7.0})]
 		self.assertEqual(expected, list(test_value))
+
+		self.tripartite_network_weights.get_filter(("main","projection","salient"), method="cutoff", options={"cutoff": 5})
+		expected = [('M1', 'P1', {'weight': 7.0}), ('P2', 'S1', {'weight': 5.0}), ('P2', 'S2', {'weight': 5.0}), ('S2', 'P3', {'weight': 6.0})]
+		test_value = self.tripartite_network_weights.graph.edges(data=True)
+		self.assertEqual(expected, list(test_value))
+
 
 	def test_write_subgraph(self):
 		output_filename = "subgraph.txt"

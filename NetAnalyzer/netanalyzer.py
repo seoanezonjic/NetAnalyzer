@@ -58,6 +58,7 @@ class NetAnalyzer:
             self.association_values == other.association_values and \
             self.compute_autorelations == other.compute_autorelations and \
             self.compute_pairs == other.compute_pairs and \
+            self.matrices == other.matrices and \
             self.embedding_coords == other.embedding_coords and \
             self.group_nodes == other.group_nodes and \
             self.reference_nodes == other.reference_nodes and \
@@ -71,6 +72,7 @@ class NetAnalyzer:
         network_clone.association_values = self.association_values.copy()
         network_clone.set_compute_pairs(self.compute_pairs, self.compute_autorelations)
         network_clone.embedding_coords = self.embedding_coords.copy()
+        network_clone.matrices = self.matrices.copy()
         network_clone.group_nodes = copy.deepcopy(self.group_nodes)
         network_clone.reference_nodes = self.reference_nodes.copy()
         network_clone.loaded_obos = self.loaded_obos.copy()
@@ -503,9 +505,17 @@ class NetAnalyzer:
     def get_filter(self, layers2filter, method="cutoff", options={}):
         default_options = {"cutoff": None, "compute_autorelations": False}
         default_options.update(options)
-       
+
         if method == "cutoff":
-           filtered_relations = self.filter_cutoff(layers2filter, cutoff= default_options["cutoff"], compute_autorelations = default_options["compute_autorelations"])
+            filtered_function = self.filter_cutoff
+        else:
+            print('Not defined method')                                                                                                      
+            sys.exit(0)
+
+        filtered_relations = []
+        for i in range(len(layers2filter)-1):
+            layers = layers2filter[i:i+2]
+            filtered_relations += filtered_function(layers, cutoff= default_options["cutoff"], compute_autorelations = default_options["compute_autorelations"])
 
         if options.get("binarize") == True:
             filtered_relations = [[edge[0], edge[1]] for edge in filtered_relations if edge[2] > 0]

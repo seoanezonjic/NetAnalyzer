@@ -126,13 +126,20 @@ class NetAnalyzer:
 
         has_weight = 'weight' if nx.get_edge_attributes(self.graph, 'weight') else None
 
-        matrix_triu = numpy.array(nx.bipartite.biadjacency_matrix(self.graph, row_order=layerAidNodes, column_order=layerBidNodes, weight=has_weight, format='csr').todense())
-        matrix_tril = numpy.array(nx.bipartite.biadjacency_matrix(self.graph, row_order=layerBidNodes, column_order=layerAidNodes, weight=has_weight, format='csr').todense())
-        matrix = numpy.triu(matrix_triu) + numpy.tril(numpy.transpose(matrix_tril), k = -1)
+        if layerA == layerB:
+            # The method biadjacency matrix for this cases, fill the triangular upper matrix.
+            matrix_triu = numpy.array(nx.bipartite.biadjacency_matrix(self.graph, row_order=layerAidNodes, column_order=layerBidNodes, weight=has_weight, format='csr').todense())
+            matrix_tril = numpy.array(nx.bipartite.biadjacency_matrix(self.graph, row_order=layerBidNodes, column_order=layerAidNodes, weight=has_weight, format='csr').todense())
+            matrix = numpy.triu(matrix_triu) + numpy.tril(numpy.transpose(matrix_tril), k = -1)
+        else:
+            matrix = numpy.array(nx.bipartite.biadjacency_matrix(self.graph, row_order=layerAidNodes, column_order=layerBidNodes, weight=has_weight, format='csr').todense())
 
         all_info_matrix = [matrix, layerAidNodes, layerBidNodes]
 
-        self.matrices["adjacency_matrices"][(layerA, layerB)] = all_info_matrix
+        if layerA == layerB:
+            self.matrices["adjacency_matrices"][(layerA, layerA)] = all_info_matrix
+        else:
+            self.matrices["adjacency_matrices"][(layerA, layerB)] = all_info_matrix
 
         return all_info_matrix
 
@@ -141,7 +148,10 @@ class NetAnalyzer:
             self.generate_adjacency_matrix(layerA, layerB)
 
     def adjMat2netObj(self, layerA, layerB):
-        matrix, rowIds, colIds = self.matrices["adjacency_matrices"][(layerA, layerB)] 
+        if layerA == layerB:
+            matrix, rowIds, colIds = self.matrices["adjacency_matrices"][(layerA, layerA)] 
+        else:
+            matrix, rowIds, colIds = self.matrices["adjacency_matrices"][(layerA, layerB)] 
 
         self.graph = nx.Graph()
         for rowId in rowIds: self.add_node(rowId, layerA)

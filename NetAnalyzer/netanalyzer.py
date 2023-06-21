@@ -44,7 +44,7 @@ class NetAnalyzer:
          "kernels": {},            # {layers => {method_type => Mat, rowIds, colIds}}
          "associations": {},       # {layers => {method_type => Mat, rowIds, colIds}}
          "semantic_sims": {},      # {layers => {method_type => Mat, rowIds, colIds}}
-         "modified_mats": {}})        # {name => Mat, rowIds, colIds}
+         })
         self.embedding_coords = {} 
         self.group_nodes = {} # Communities are lists {community_id : [Node1, Node2,...]}
         self.reference_nodes = []

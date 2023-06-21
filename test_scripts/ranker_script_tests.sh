@@ -31,6 +31,15 @@ ranker.py -k $test_data/kernel_for_validating -n $test_data/kernel_for_validatin
 ranker.py -k $test_data/kernel_for_validating -n $test_data/kernel_for_validating.lst -s $test_data/seed_genes_for_validating -t '2' --output_top $out/ranker_top_results
 rm ./ranked_genes_all_candidates #TODO: this option is also generating "ranked_genes_all_candidates" file in the current working directory, even if only the option --output_top is used
 
+# ranker propagate 
+## with normalization
+ranker.py -k $test_data/kernel_for_validating -n $test_data/kernel_for_validating.lst -s $test_data/seed_genes_for_validating -p -N "by_column" -o $out/ranker_propagate_normalized
+## without normalization
+ranker.py -k $test_data/kernel_for_validating -n $test_data/kernel_for_validating.lst -s $test_data/seed_genes_for_validating -p -o $out/ranker_propagate_not_normalized
+## with restart
+ranker.py -k $test_data/kernel_for_validating -n $test_data/kernel_for_validating.lst -s $test_data/seed_genes_for_validating -p --propagate_options '"tolerance": 1e-5, "iteration_limit": 100, "with_restart": 0.7' -o $out/ranker_propagate_with_restart
+
+
 # Just seeds
 
 for file_to_test in `ls $out`; do

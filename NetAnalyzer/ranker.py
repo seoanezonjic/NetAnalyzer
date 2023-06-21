@@ -15,7 +15,7 @@ class Ranker:
 
   def normalize_matrix(self, mode = "by_column"):
     degree_matrix = self.matrix.sum(0)
-    inv_degree_matrix = np.linalg.inv(degree_matrix)
+    inv_degree_matrix = np.diag(1/degree_matrix)
     if mode == "by_column":
       self.matrix = self.matrix @ inv_degree_matrix 
     elif mode == "by_row":
@@ -96,30 +96,38 @@ class Ranker:
     seed_attr_old = seed_attr
     error = tol + 1 # Now error is more than tol
     k = 0
-    while error > tol or k < n:
+    print("The seed is", seed_attr_old)
+    while error > tol and k < n:
       if restart_factor > 0:
         seed_attr_new = (1 - restart_factor)*matrix@seed_attr_old + restart_factor*seed_attr
       else:
         seed_attr_new = matrix @ seed_attr_old
       # Normalization
       seed_attr_new = seed_attr_new / seed_attr_new.sum(0) 
+      print("The new is:", seed_attr_new)
+      print("The old is:", seed_attr_old)
       # Take error
-      error = np.norm(seed_attr_new - seed_attr_old, ord="inf")
+      error = np.linalg.norm(seed_attr_new - seed_attr_old, ord=np.inf)
+      print("The error is", error)
       seed_attr_old = seed_attr_new
       k += 1
 
     if k >= n: # TODO, let see the error.
       print("Convergence not achieved")
-    else:
-      return seed_attr_old
+    
+    return seed_attr_old
 
   def update_seed(self, genes_pos, propagate = False, options = {"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
     number_of_seed_genes = len(genes_pos)
     number_of_all_nodes = len(self.nodes)
+    print(genes_pos)
+    print(type(options))
     if propagate:
-      seed_vector = zeros((number_of_all_nodes))
+      seed_vector = np.zeros((number_of_all_nodes))
+      print(seed_vector)
       seed_vector[genes_pos] = 1
-      updated_seed = self.propagate_seed(self.matrix, seed_attr = seed, tol = options["tolerance"], n = options["iteration_limit"], with_restart = options["with_restart"])
+      print(seed_vector)
+      updated_seed = self.propagate_seed(self.matrix, seed_attr = seed_vector, tol = options["tolerance"], n = options["iteration_limit"], restart_factor = options["with_restart"])
       gen_list = updated_seed
     else:
       subsets_gen_values = self.matrix[genes_pos, :]

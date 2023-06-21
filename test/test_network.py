@@ -394,6 +394,24 @@ class BaseNetTestCase(unittest.TestCase):
 		expected = [('M3', 'M1', {'weight': 7.0})]
 		self.assertEqual(expected, list(test_value))
 
+	def test_write_subgraph(self):
+		output_filename = "subgraph.txt"
+		outFormat = "pair"
+		self.monopartite_network_weights.write_subgraph(("main","main"), output_filename, outFormat)
+		graph_to_test = Net_parser.load_network_by_pairs(output_filename, self.monopartite_layers)
+		self.assertEqual(list(self.monopartite_network_weights.graph.edges(data=True)), list(graph_to_test.graph.edges(data=True)))
+		os.remove(output_filename)
+
+		outFormat = "matrix"
+		output_filename = "subgraph"
+		self.monopartite_network_weights.write_subgraph(("main","main"), output_filename, outFormat)	
+		self.assertEqual(self.monopartite_network_weights.matrices.dig("adjacency_matrices",("main","main"))[0].tolist(), np.load("subgraph.npy").tolist())
+		self.assertTrue(os.path.exists(output_filename+"_colIds"))
+		self.assertTrue(os.path.exists(output_filename+"_rowIds"))
+		os.remove(output_filename+"_colIds")
+		os.remove(output_filename+"_rowIds")
+		os.remove(output_filename+".npy")
+
 	def test_get_directed_conns(self):
 		# No autorelations
 		test_value = self.network_obj.get_directed_conns(pair_operation = lambda x,y: (x,y), layers = ('main','projection'), compute_autorelations = False)

@@ -32,6 +32,11 @@ parser.add_argument("-n", "--input_nodes", dest="input_nodes", default=None,
   help="The list of node for each kernel in lst format")
 parser.add_argument("-s", "--genes_seed", dest="genes_seed", default=None,
   help="The name of the gene to look for backups")
+parser.add_argument("-N","--normalize_matrix", dest="normalize_matrix", default= None,
+  help="Select the type of normalization, options are: None, by_column, by_row, by_row_col")
+parser.add_argument("-p", "--propagate", dest="propagate", default = False, action = "store_true")
+parser.add_argument("--propagate_options", dest="propagate_options", default =  '"tolerance": 1e-5, "iteration_limit": 100, "with_restart": 0',
+  help="Additional options for propagation methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...'")
 parser.add_argument("-S", "--seed_sep", dest="seed_sep", default=",",
   help="Separator of seed genes. Only use when -s point to a file")
 parser.add_argument("-f", "--filter", dest="filter", default=None,
@@ -58,10 +63,13 @@ options = parser.parse_args()
 
 ranker = Ranker()
 ranker.matrix = np.load(options.kernel_file)
+if options.normalize_matrix is not None: ranker.normalize_matrix(mode= options.normalize_matrix)
 ranker.load_nodes_from_file(options.input_nodes)
 ranker.load_seeds(options.genes_seed, sep= options.seed_sep)
 options.filter is not None and ranker.load_references(options.filter, sep= ",") 
-ranker.do_ranking(leave_one_out= options.leave_one_out)
+exec('propagate_options = {' + options.propagate_options +'}')
+print(propagate_options)
+ranker.do_ranking(leave_one_out= options.leave_one_out, propagate = options.propagate, options = propagate_options)
 rankings = ranker.ranking
 
 discarded_seeds = [seed_name for seed_name, ranks in rankings.items() if not ranks]

@@ -535,7 +535,6 @@ class NetAnalyzer:
                 for nodeA, nodeB, data in subgraph.edges(data=True):
                     weight = data.get("weight")
                     if weight is not None:
-                        print(f"{nodeA}\t{nodeB}\t{str(weight)}")
                         f.write(f"{nodeA}\t{nodeB}\t{str(weight)}" + "\n")
                     else:
                         f.write(f"{nodeA}\t{nodeB}" + "\n")
@@ -732,6 +731,7 @@ class NetAnalyzer:
         if operation == "filter_cutoff":
             filtered_mat = mat1 >= options["cutoff"]
             mat_result = mat1 * filtered_mat
+            Adv_mat_calc.filter_cutoff_mat(mat1, cutoff = options["cutoff"])
             rows_result, cols_result = rows1, cols1
         elif operation == "filter_disparity":
             mat_result, rows_result, cols_result = Adv_mat_calc.disparity_filter_mat(mat1, rows1, cols1, pval_threshold = options["pval_threshold"])

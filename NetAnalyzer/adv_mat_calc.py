@@ -240,13 +240,19 @@ class Adv_mat_calc:
 	    stats["variance"] = stats["sumDevs"]/stats["count"]
 	    stats["varianceNonZero"] = stats["sumDevsNonZero"]/stats["countNonZero"]
 	    stats["standardDeviation"] = stats["variance"] ** 0.5
-	    stats["standardDeviationNonZero"] = stats["varianceNonZero"] ** 0.
+	    stats["standardDeviationNonZero"] = stats["varianceNonZero"] ** 0.5
 
 	@staticmethod
 	def binarize_mat(matrix):
-	    matrix = matrix >= 0
+	    matrix = matrix > 0
 	    matrix = matrix.astype(float)
 	    return matrix
+
+	@staticmethod
+	def filter_cutoff_mat(matrix, cutoff):
+	    filtered_mat = matrix >= cutoff
+	    mat_result = matrix * filtered_mat
+	    return mat_result
 
 	@staticmethod
 	def disparity_filter_mat(matrix, rowIds, colIds, pval_threshold = 0.05):

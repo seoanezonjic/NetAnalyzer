@@ -11,7 +11,6 @@ if [ -d $out ]; then
 fi
 mkdir -p $out
 
-source ~soft_bio_267/initializes/init_ruby
 
 text2binary_matrix.py -i $data_to_test/test_matrix_bin.npy -t "bin" -s -o $out/output_file > $out/statistics_from_text2bin
 rm $out/output_file.npy

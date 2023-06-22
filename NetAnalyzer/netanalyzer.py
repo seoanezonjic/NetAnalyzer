@@ -136,10 +136,7 @@ class NetAnalyzer:
 
         all_info_matrix = [matrix, layerAidNodes, layerBidNodes]
 
-        if layerA == layerB:
-            self.matrices["adjacency_matrices"][(layerA, layerA)] = all_info_matrix
-        else:
-            self.matrices["adjacency_matrices"][(layerA, layerB)] = all_info_matrix
+        self.matrices["adjacency_matrices"][(layerA, layerB)] = all_info_matrix
 
         return all_info_matrix
 
@@ -148,10 +145,7 @@ class NetAnalyzer:
             self.generate_adjacency_matrix(layerA, layerB)
 
     def adjMat2netObj(self, layerA, layerB):
-        if layerA == layerB:
-            matrix, rowIds, colIds = self.matrices["adjacency_matrices"][(layerA, layerA)] 
-        else:
-            matrix, rowIds, colIds = self.matrices["adjacency_matrices"][(layerA, layerB)] 
+        matrix, rowIds, colIds = self.matrices["adjacency_matrices"][(layerA, layerB)] 
 
         self.graph = nx.Graph()
         for rowId in rowIds: self.add_node(rowId, layerA)
@@ -517,8 +511,7 @@ class NetAnalyzer:
             sys.exit(0)
 
         filtered_relations = []
-        for i in range(len(layers2filter)-1):
-            layers = layers2filter[i:i+2]
+        for layers in itertools.pairwise(layers2filter):
             filtered_relations += filtered_function(layers, cutoff= default_options["cutoff"], compute_autorelations = default_options["compute_autorelations"])
 
         if options.get("binarize") == True:
@@ -571,11 +564,10 @@ class NetAnalyzer:
 
         if compute_autorelations:
             all_nodes = list(set(nodeIDsA).union(set(nodeIDsB)))
-            for nodeA in all_nodes:
-                for nodeB in all_nodes: 
-                    if self.graph.has_edge(nodeA, nodeB):
-                        res = pair_operation(nodeA, nodeB)
-                        directed_edges.append(res)
+            for nodeA, nodeB in itertools.combinations(all_nodes,2):
+                if self.graph.has_edge(nodeA, nodeB):
+                    res = pair_operation(nodeA, nodeB)
+                    directed_edges.append(res)
         else:
             for nodeA in nodeIDsA:
                 for nodeB in nodeIDsB:

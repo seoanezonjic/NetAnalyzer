@@ -391,17 +391,46 @@ class BaseNetTestCase(unittest.TestCase):
 		self.network_obj.adjust_pval_association(mock_hypergeo_assoc, "fdr_bh") # Same as benjamini in the test before
 		self.assertEqual(expected, mock_hypergeo_assoc)
 
-	def test_filter_cutoff(self):
+	def test_filter(self):
+		# With same two layers
 		test_value = self.monopartite_network_weights.graph.edges(data=True)
 		self.monopartite_network_weights.get_filter(("main","main"), method="cutoff", options={"cutoff": 5})
 		test_value = self.monopartite_network_weights.graph.edges(data=True)
 		expected = [('M3', 'M1', {'weight': 7.0})]
 		self.assertEqual(expected, list(test_value))
 
+		# With different three layers
+		self.tripartite_network_weights.graph.add_edge("M1","M2",weight=6)
+		self.tripartite_network_weights.graph.add_edge("P1","P2",weight=3)
+		self.tripartite_network_weights.graph.add_edge("S1","S2",weight=4)
 		self.tripartite_network_weights.get_filter(("main","projection","salient"), method="cutoff", options={"cutoff": 5})
 		expected = [('M1', 'P1', {'weight': 7.0}), ('P2', 'S1', {'weight': 5.0}), ('P2', 'S2', {'weight': 5.0}), ('S2', 'P3', {'weight': 6.0})]
-		test_value = self.tripartite_network_weights.graph.edges(data=True)
+		test_value = list(self.tripartite_network_weights.graph.edges(data=True))
+		test_value.remove(("M1","M2",{'weight':6}))
+		test_value.remove(("P1","P2",{'weight':3}))
+		test_value.remove(("S1","S2",{'weight':4}))
+		self.assertEqual(expected, test_value)
+
+		# With different layers and autorelations
+		self.tripartite_network_weights.get_filter(("main","projection","salient"), method="cutoff", options={"cutoff": 5, "compute_autorelations": True})
+		expected = [('M1', 'P1', {'weight': 7.0}), ('M1', 'M2', {'weight': 6}), ('P2', 'S1', {'weight': 5.0}), ('P2', 'S2', {'weight': 5.0}), ('S2', 'P3', {'weight': 6.0})]
+		test_value = list(self.tripartite_network_weights.graph.edges(data=True))
 		self.assertEqual(expected, list(test_value))
+
+	def test_cutoff_filter(self):
+		self.tripartite_network_weights.graph.add_edge("P1","P2",weight=3)
+		filtered_relations = self.tripartite_network_weights.filter_cutoff(("projection", "salient"), cutoff=5, compute_autorelations= False)
+		expected_relations =   [['P1', 'S1', 0],
+								['P2', 'S1', 5.0],
+								['P2', 'S2', 5.0],
+								['P2', 'S3', 0],
+								['P3', 'S1', 0],
+								['P3', 'S2', 6.0]]
+		self.assertEqual(expected_relations, filtered_relations)
+
+		filtered_relations = self.tripartite_network_weights.filter_cutoff(("projection", "salient"), cutoff=5, compute_autorelations= True)
+		expected_relations = [['S3', 'P2', 0], ['P1', 'S1', 0], ['P1', 'P2', 0], ['S2', 'P3', 6.0], ['S2', 'P2', 5.0], ['S1', 'P3', 0], ['S1', 'P2', 5.0]]
+		self.assertEqual(expected_relations.sort(), filtered_relations.sort())
 
 
 	def test_write_subgraph(self):
@@ -423,14 +452,15 @@ class BaseNetTestCase(unittest.TestCase):
 		os.remove(output_filename+".npy")
 
 	def test_get_directed_conns(self):
+		self.network_obj.graph.add_edge("M1", "M2")
 		# No autorelations
 		test_value = self.network_obj.get_directed_conns(pair_operation = lambda x,y: (x,y), layers = ('main','projection'), compute_autorelations = False)
 		test_value = sorted([sorted(set(pair)) for pair in test_value])
 		expected = list(self.network_obj.graph.edges())
+		expected.remove(("M1","M2"))
 		expected = sorted([sorted(set(pair)) for pair in expected])
 		self.assertEqual(expected, test_value)
 		# With autorelations
-		self.network_obj.graph.add_edge("M1", "M2")
 		test_value = self.network_obj.get_directed_conns(pair_operation = lambda x,y: (x,y), layers = ('main','projection'), compute_autorelations = True)
 		test_value = sorted(set([tuple(sorted(set(pair))) for pair in test_value]))
 		expected = list(self.network_obj.graph.edges())

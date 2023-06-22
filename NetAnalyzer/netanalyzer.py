@@ -4,7 +4,7 @@ import re
 import copy
 import networkx as nx
 import math
-import numpy
+import numpy as np
 import scipy.stats as stats
 import statsmodels
 import itertools
@@ -122,17 +122,17 @@ class NetAnalyzer:
     def generate_adjacency_matrix(self, layerA, layerB): 
         layerAidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerA] 
         layerBidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerB]
-        matrix = numpy.zeros((len(layerAidNodes), len(layerBidNodes)))
+        matrix = np.zeros((len(layerAidNodes), len(layerBidNodes)))
 
         has_weight = 'weight' if nx.get_edge_attributes(self.graph, 'weight') else None
 
         if layerA == layerB:
             # The method biadjacency matrix for this cases, fill the triangular upper matrix.
-            matrix_triu = numpy.array(nx.bipartite.biadjacency_matrix(self.graph, row_order=layerAidNodes, column_order=layerBidNodes, weight=has_weight, format='csr').todense())
-            matrix_tril = numpy.array(nx.bipartite.biadjacency_matrix(self.graph, row_order=layerBidNodes, column_order=layerAidNodes, weight=has_weight, format='csr').todense())
-            matrix = numpy.triu(matrix_triu) + numpy.tril(numpy.transpose(matrix_tril), k = -1)
+            matrix_triu = np.array(nx.bipartite.biadjacency_matrix(self.graph, row_order=layerAidNodes, column_order=layerBidNodes, weight=has_weight, format='csr').todense())
+            matrix_tril = np.array(nx.bipartite.biadjacency_matrix(self.graph, row_order=layerBidNodes, column_order=layerAidNodes, weight=has_weight, format='csr').todense())
+            matrix = np.triu(matrix_triu) + np.tril(np.transpose(matrix_tril), k = -1)
         else:
-            matrix = numpy.array(nx.bipartite.biadjacency_matrix(self.graph, row_order=layerAidNodes, column_order=layerBidNodes, weight=has_weight, format='csr').todense())
+            matrix = np.array(nx.bipartite.biadjacency_matrix(self.graph, row_order=layerAidNodes, column_order=layerBidNodes, weight=has_weight, format='csr').todense())
 
         all_info_matrix = [matrix, layerAidNodes, layerBidNodes]
 
@@ -212,8 +212,8 @@ class NetAnalyzer:
     def get_degree(self, zscore = True):
         degree = dict(self.graph.degree())
         if zscore:
-            deg = numpy.array([d for n, d in degree.items()])
-            deg_z = (deg - numpy.mean(deg)) / numpy.std(deg)
+            deg = np.array([d for n, d in degree.items()])
+            deg_z = (deg - np.mean(deg)) / np.std(deg)
             degree_z = {}
             count = 0
             for n, d in degree.items():
@@ -429,7 +429,7 @@ class NetAnalyzer:
             nodesSubs = intersProd - nodesProd
             nodesAInNetwork = ny - len(associatedIDs_node1)
             nodesBInNetwork = ny - len(associatedIDs_node2)
-            return numpy.float64(nodesSubs) / math.sqrt(nodesProd * nodesAInNetwork * nodesBInNetwork) # TODO: numpy.float64 is used to handle division by 0. Fix the implementation/test to avoid this case
+            return np.float64(nodesSubs) / math.sqrt(nodesProd * nodesAInNetwork * nodesBInNetwork) # TODO: np.float64 is used to handle division by 0. Fix the implementation/test to avoid this case
         relations = self.get_associations(layers, base_layer, _)
         self.association_values['pcc'] = relations
         return relations
@@ -445,8 +445,8 @@ class NetAnalyzer:
         node_rels = {}
 
         for node1, node2, assoc_index in pcc_relations:
-            self.add_nested_record(pcc_vals, node1, node2, numpy.abs(assoc_index))
-            self.add_nested_record(pcc_vals, node2, node1, numpy.abs(assoc_index))
+            self.add_nested_record(pcc_vals, node1, node2, np.abs(assoc_index))
+            self.add_nested_record(pcc_vals, node2, node1, np.abs(assoc_index))
             self.add_record(node_rels, node1, node2)
             self.add_record(node_rels, node2, node1)
         
@@ -487,12 +487,12 @@ class NetAnalyzer:
             self.adjust_pval_association(relations, 'fdr_bh')
         else:
             meth = 'hypergeometric'
-        relations = [[assoc[0], assoc[1], -numpy.log10(assoc[2])] for assoc in relations if assoc[2] > 0]
+        relations = [[assoc[0], assoc[1], -np.log10(assoc[2])] for assoc in relations if assoc[2] > 0]
         self.association_values[meth] = relations
         return relations
 
     def adjust_pval_association(self, associations, method): # TODO TEST
-        pvals = numpy.array([val[2] for val in associations])
+        pvals = np.array([val[2] for val in associations])
         adj_pvals = statsmodels.stats.multitest.multipletests(pvals, method=method, is_sorted=False, returnsorted=False)[1]
         for idx, adj_pval in enumerate(adj_pvals):
             associations[idx][2] = adj_pval
@@ -500,8 +500,8 @@ class NetAnalyzer:
     ## filter methods
     #----------------
 
-    def get_filter(self, layers2filter, method="cutoff", options={}):
-        default_options = {"cutoff": None, "compute_autorelations": False}
+    def get_filter(self, layers, method="cutoff", options={}):
+        default_options = {"cutoff": None, "compute_autorelations": False, "binarize": False}
         default_options.update(options)
 
         if method == "cutoff":
@@ -510,18 +510,18 @@ class NetAnalyzer:
             print('Not defined method')                                                                                                      
             sys.exit(0)
 
-        filtered_relations = []
-        for layers in itertools.pairwise(layers2filter):
-            filtered_relations += filtered_function(layers, cutoff= default_options["cutoff"], compute_autorelations = default_options["compute_autorelations"])
+        edges_with_filtered_values = []
+        for layers_pairs in itertools.pairwise(layers):
+            edges_with_filtered_values += filtered_function(layers_pairs, cutoff= default_options["cutoff"], compute_autorelations = default_options["compute_autorelations"])
 
-        if options.get("binarize") == True:
-            filtered_relations = [[edge[0], edge[1]] for edge in filtered_relations if edge[2] > 0]
+        if default_options["binarize"] == True:
+            edges_with_filtered_values = [[edge[0], edge[1], float(edge[2]>0)] for edge in edges_with_filtered_values]
 
-        self.update_edges_with(filtered_relations)
+        self.update_edges_with(edges_with_filtered_values) 
 
 
-    def filter_cutoff(self, layers2filter, cutoff=0.5, compute_autorelations= False):  
-        filtered_relations = []
+    def filter_cutoff(self, layers, cutoff=0.5, compute_autorelations= False):  
+        edges_with_filtered_values = []
 
         def _(node1, node2):
             edges_attr = self.graph.edges()[node1,node2]
@@ -530,9 +530,9 @@ class NetAnalyzer:
                 weight = 0
             return [node1, node2, weight]
 
-        filtered_relations = self.get_directed_conns(_, layers = layers2filter, compute_autorelations= compute_autorelations)
+        edges_with_filtered_values = self.get_direct_conns(_, layers = layers, compute_autorelations= compute_autorelations)
 
-        return filtered_relations
+        return edges_with_filtered_values
 
     def write_subgraph(self, layers, output_filename, outFormat='pair'): 
         if outFormat == "pair":
@@ -552,30 +552,29 @@ class NetAnalyzer:
             self.write_obj(matrix, output_filename=output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
 
 
-    def get_directed_conns(self, pair_operation = None, layers = None, compute_autorelations = False): 
-        directed_edges = []
+    def get_direct_conns(self, pair_operation = None, layers = None, compute_autorelations = False): 
+        direct_edges = []
+        nodeIDsA = self.get_nodes_layer([layers[0]])
         if layers[0] == layers[1]:
-            nodeIDsA = self.collect_nodes(layers = [layers[0]])[0]
             nodeIDsB = nodeIDsA
         else:
-            nodeIDsA = self.get_nodes_layer([layers[0]])
             nodeIDsB = self.get_nodes_layer([layers[1]])
 
 
         if compute_autorelations:
             all_nodes = list(set(nodeIDsA).union(set(nodeIDsB)))
-            for nodeA, nodeB in itertools.combinations(all_nodes,2):
+            for nodeA, nodeB in itertools.combinations(all_nodes,2): # Watchout! Just valids for non directed graphs
                 if self.graph.has_edge(nodeA, nodeB):
                     res = pair_operation(nodeA, nodeB)
-                    directed_edges.append(res)
+                    direct_edges.append(res)
         else:
             for nodeA in nodeIDsA:
                 for nodeB in nodeIDsB:
                     if self.graph.has_edge(nodeA, nodeB):
                         res = pair_operation(nodeA, nodeB)
-                        directed_edges.append(res)
+                        direct_edges.append(res)
 
-        return directed_edges
+        return direct_edges
 
 
     def update_edges_with(self, relations):
@@ -610,7 +609,7 @@ class NetAnalyzer:
 
     def write_kernel(self, layers, kernel_type, output_file):
         kernel, rowIds, colIds = self.matrices["kernels"][layers][kernel_type]
-        numpy.save(output_file, kernel)
+        np.save(output_file, kernel)
         self.write_nodelist(rowIds, output_file + "_rowIds")
         self.write_nodelist(rowIds, output_file + "_colIds")
 
@@ -639,7 +638,7 @@ class NetAnalyzer:
                 source = com.pop()
                 for target in com:
                     path_lens.append(nx.shortest_path_length(self.graph, source, target, weight= weight_attr_name))
-            asp_com = numpy.mean(path_lens)
+            asp_com = np.mean(path_lens)
         except nx.exception.NetworkXNoPath:
             asp_com = None
         return asp_com 
@@ -1115,7 +1114,7 @@ class NetAnalyzer:
         elementA_names = list(index_A.keys())
         elementB_names = list(index_B.keys())
 
-        matrix = numpy.zeros((len(elementA_names), len(elementB_names)))
+        matrix = np.zeros((len(elementA_names), len(elementB_names)))
         for pair in pairs:
             elementA, elementB, val = pair
             i = index_A[pair[0]] 
@@ -1163,7 +1162,7 @@ class NetAnalyzer:
             with open(output_filename, 'w') as f:
                 for pair in obj: f.write("\t".join([str(item) for item in pair]) + "\n")
         elif Format == 'matrix':
-            numpy.save(output_filename, obj)
+            np.save(output_filename, obj)
             if rowIds != None:
                 with open(output_filename + '_rowIds', 'w') as f:
                     for item in rowIds: f.write(item + "\n")
@@ -1183,7 +1182,7 @@ class NetAnalyzer:
     def set_seed(self, seed):
         try: 
             random.seed(int(seed))
-            numpy.random.seed(int(seed))
+            np.random.seed(int(seed))
         except ValueError:
-            #Numpy seed cannot used something else but integers, and although random allows it, 200, 200.0 and "200" gives different results, so in order to avoid weird results, we force the seed to be an integer
+            #np seed cannot used something else but integers, and although random allows it, 200, 200.0 and "200" gives different results, so in order to avoid weird results, we force the seed to be an integer
             raise(f"ERROR: The seed must be a valid number")

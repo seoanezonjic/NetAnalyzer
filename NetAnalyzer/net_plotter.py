@@ -31,6 +31,7 @@ class Net_plotter:
         return self.graph.nodes(data=True)[node_id]['layer']
 
     def plot_dot(self, user_options = {}): # input keys: layout
+        # Watch out: Node ids must be with no ":".
         options = {'layout': "sfdp"}
         options.update(user_options)
         graphviz_colors = ['lightsteelblue1', 'lightyellow1', 'lightgray', 'orchid2']
@@ -45,11 +46,11 @@ class Net_plotter:
             graph.node(f'"{e[1]}"', '', style = 'filled', fillcolor = palette[l1])
             graph.edge(f'"{e[0]}"', f'"{e[1]}"')
 
-        for nodeID in self.reference_nodes: graph.node(nodeID, '', style = 'filled', fillcolor = 'firebrick1')
+        for nodeID in self.reference_nodes: graph.node(f'"{nodeID}"', '', style = 'filled', fillcolor = 'firebrick1')
         graphviz_border_colors = ['blue', 'darkorange', 'red', 'olivedrab4']
         for groupID, gNodes in self.group_nodes.items():
             border_color = graphviz_border_colors.pop(0)
-            for nodeID in gNodes: graph.node(nodeID, '', color = border_color, penwidth = '10')
+            for nodeID in gNodes: graph.node(f'"{nodeID}"', '', color = border_color, penwidth = '10')
         graph.render(outfile= options['output_file'] + '.png', format='png', engine = options['layout'])
 
     def plot_cyt_app(self, user_options = {}):

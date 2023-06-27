@@ -40,10 +40,10 @@ class Net_plotter:
         graph.attr(overlap = 'false', outputorder='edgesfirst')
         for e in self.graph.edges:
             l0 = self.get_node_layer(e[0])
-            graph.node(e[0], '', style = 'filled', fillcolor = palette[l0])
+            graph.node(f"'{e[0]}'", '', style = 'filled', fillcolor = palette[l0])
             l1 = self.get_node_layer(e[1])
-            graph.node(e[1], '', style = 'filled', fillcolor = palette[l1])
-            graph.edge(e[0], e[1])
+            graph.node(f"'{e[1]}'", '', style = 'filled', fillcolor = palette[l1])
+            graph.edge(f"'{e[0]}'", f"'{e[1]}'")
 
         for nodeID in self.reference_nodes: graph.node(nodeID, '', style = 'filled', fillcolor = 'firebrick1')
         graphviz_border_colors = ['blue', 'darkorange', 'red', 'olivedrab4']

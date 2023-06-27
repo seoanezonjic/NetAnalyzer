@@ -212,15 +212,27 @@ class NetAnalyzer:
     def get_degree(self, zscore = True):
         degree = dict(self.graph.degree())
         if zscore:
-            deg = np.array([d for n, d in degree.items()])
-            deg_z = (deg - np.mean(deg)) / np.std(deg)
-            degree_z = {}
-            count = 0
-            for n, d in degree.items():
-                degree_z[n] = deg_z[count]
-                count += 1
-            degree = degree_z
+            degree = self.znormalize_dic_by_values(degree)
         return degree
+
+    def get_betweenness_centrality(self, zscore = True):
+        betweenness_centrality = dict(nx.betweenness_centrality(self.graph))
+        if zscore:
+            betweenness_centrality = self.znormalize_dic_by_values(betweenness_centrality)
+        return betweenness_centrality
+
+
+    def znormalize_dic_by_values(self, dic2znormalize):
+        data = np.array([d for n, d in dic2znormalize.items()])
+        data_z = Adv_mat_calc.zscore_normalize(data)
+        znormalized_dic = {}
+        count = 0
+        for n, d in dic2znormalize.items():
+            znormalized_dic[n] = data_z[count]
+            count += 1
+        dic2znormalize = znormalized_dic
+        return dic2znormalize
+
 
     def collect_nodes(self, layers = 'all'):
         nodeIDsA = []
@@ -646,18 +658,37 @@ class NetAnalyzer:
     def shortest_paths(self, community):
         return nx.all_pairs_shortest_path(community)
 
-    def get_node_attributes(self, attr_names):
-        attrs = []
+
+    def get_node_attributes(self, attr_names, layers = "all", summary = False, output_filename = None):
+        if layers == "all": layers = self.layers
+        node_universe = self.get_nodes_layer(layers)
+
+        attrs = {}
         for attr_name in attr_names:
             if attr_name == 'get_degree':
-                attrs.append(self.get_degree(zscore=False))
+                attrs["get_degree"] = self.get_degree(zscore=False)
             elif attr_name == 'get_degreeZ':
-                attrs.append(self.get_degree())
-        node_ids = attrs[0].keys()
+                attrs["get_degreeZ"] = self.get_degree()
+            elif attr_name == "betweenness_centrality":
+                attrs["betweenness_centrality"] = self.get_betweenness_centrality(zscore=False)
+            elif attr_name == "betweenness_centralityZ":
+                attrs["betweenness_centralityZ"] = self.get_betweenness_centrality(zscore=False)
+
+        node_ids = attrs[attr_names[0]].keys() # TODO: This line of code should be replaced for an option to select node for each attr.
+        node_ids = [node_id for node_id in node_ids if node_id in node_universe]
+        
         node_attrs = []
-        for n in node_ids:
-            n_attrs = [ at[n] for at in attrs ]
-            node_attrs.append([n] + n_attrs)
+        if summary: 
+            for at in attr_names:
+                stats = Adv_mat_calc.get_stats_from_list(list(attrs[at].values()))
+                node_attrs += [[at] + stat for stat in stats]
+        else:
+            for n in node_ids:
+                n_attrs = [ attrs[at][n] for at in attr_names ]
+                node_attrs.append([n] + n_attrs)
+
+        self.control_output(values = node_attrs, output_filename=output_filename, inFormat="pair", outFormat="pair", add_to_object=False)
+
         return node_attrs
 
     ## Ploting method 
@@ -1137,7 +1168,7 @@ class NetAnalyzer:
                 obj, rowIds, colIds = self.pairs2matrix(self.nested_pairs2pairs(obj)) # Talk with PSZ about the trade-off combinatorial vs optimization
         return obj, rowIds, colIds
 
-    def control_output(self, values, output_filename, inFormat, outFormat, add_to_object, matrix_keys, rowIds = None, colIds = None):
+    def control_output(self, values, output_filename, inFormat, outFormat, add_to_object, matrix_keys = None, rowIds = None, colIds = None):
         if add_to_object and output_filename == None: 
             matrix, rowIds, colIds = self.transform2obj(values, inFormat= inFormat, outFormat= "matrix", rowIds = rowIds, colIds = colIds) 
             

@@ -144,6 +144,7 @@ parser.add_argument("--seed", dest="seed", default=None, type = lambda x: x,
 					help="sepecify seed for clusterin processes")
 parser.add_argument("-A", "--attributes", dest="get_attributes", default=[], type =string_list,
 					help="String separated by commas with the name of network attribute")
+parser.add_argument("--attributes_summarize", dest="attributes_summarize", default= False, action = "store_true", help="If the attribtes needs to be obtained summarized") 
 parser.add_argument("--dsl_script", dest="dsl_script", default=None,
 					help="Path to dsl script to perform complex analysis")
 parser.add_argument("-O", "--ontology", dest="ontologies", default=[], type=list_parse,
@@ -259,6 +260,5 @@ if options.expand_clusters is not None:
       for node in nodes: out_file.write(f"{cl_id}\t{node}\n")
 
 if len(options.get_attributes) > 0:
-  node_attributes = fullNet.get_node_attributes(options.get_attributes)
-  with open(os.path.join(os.path.dirname(options.output_file), 'node_attributes.txt'), 'w' ) as f:
-    for attributes in node_attributes: f.write("\t".join([str(att) for att in attributes]) + "\n")
+  fullNet.get_node_attributes(options.get_attributes, summary=options.attributes_summarize, output_filename= "node_attributes.txt")
+

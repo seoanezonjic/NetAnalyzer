@@ -121,6 +121,40 @@ class Adv_mat_calc:
 	 	weigth = weigth * nx
 	 	return weigth
 
+
+	@staticmethod
+	def zscore_normalize(data):
+	    data = np.array(data)
+	    data = (data - np.mean(data)) / np.std(data)
+	    return data
+
+	@staticmethod
+	def get_stats_from_list(data): #TODO: think inj a dry version
+		data = np.array(data).reshape((1,len(data)))
+		primary_stats = Adv_mat_calc.get_primary_stats(data)
+		stats = []
+		stats.append(['Elements', primary_stats["count"]])
+		stats.append(['Elements Non Zero', primary_stats["countNonZero"]])
+		stats.append(['Non Zero Density', primary_stats["countNonZero"]/primary_stats["count"]])
+		stats.append(['Max', primary_stats["max"]])
+		stats.append(['Min', primary_stats["min"]])
+		stats.append(['Average', primary_stats["average"]])
+		stats.append(['Variance', primary_stats["variance"]])
+		stats.append(['Standard Deviation', primary_stats["standardDeviation"]])
+		stats.append(['Q1', primary_stats["q1"]])
+		stats.append(['Median', primary_stats["median"]])
+		stats.append(['Q3', primary_stats["q3"]])
+		stats.append(['Min Non Zero', primary_stats["minNonZero"]])
+		stats.append(['Average Non Zero', primary_stats["averageNonZero"]])
+		stats.append(['Variance Non Zero', primary_stats["varianceNonZero"]])
+		stats.append(['Standard Deviation Non Zero', primary_stats["standardDeviationNonZero"]])
+		stats.append(['Q1 Non Zero', primary_stats["q1NonZero"]])
+		stats.append(['Median Non Zero', primary_stats["medianNonZero"]])
+		stats.append(['Q3 Non Zero', primary_stats["q3NonZero"]])
+		stats = map(lambda x: [x[0],str(x[1])],stats)
+		return stats
+
+
 	@staticmethod
 	def get_stats_from_matrix(matrix): 
 		stats = []

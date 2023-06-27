@@ -21,6 +21,7 @@ mkdir -p $out/projections
 mkdir -p $out/kernels
 mkdir -p $out/clustering
 mkdir -p $out/dsl
+mkdir -p $out/attributes
 
 
 
@@ -36,6 +37,13 @@ netanalyzer.py -i $data_to_test/tripartite_network_for_validating.txt -a $out/pr
 # dsl option
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --dsl_script $data_test_scripts/dsl/jaccard_dsl
 
+# ----------------------------------- Nodes Attributes ----------------------------------------
+# # Summarize 
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -a $out/projections/jaccard_results.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' -A "get_degree,get_degreeZ" --attributes_summarize
+mv node_attributes.txt $out/attributes/node_attributes_summ.txt
+# # Not Summary
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -a $out/projections/jaccard_results.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' -A "get_degree,get_degreeZ"
+mv node_attributes.txt $out/attributes/node_attributes_nonsumm.txt
 
 #  ---------------------------------- Obtaining kernels ----------------------------------------
 # Non normalized kernels.
@@ -67,6 +75,11 @@ done
 for file_to_test in `ls $out/dsl`; do
 	echo $file_to_test
 	diff $out/dsl/$file_to_test $data_test_scripts/dsl/$file_to_test
+done
+
+for file_to_test in `ls $out/attributes`; do
+	echo $file_to_test
+	diff $out/attributes/$file_to_test $data_test_scripts/attributes/$file_to_test
 done
 
 # ---------------------------------- Plotting ----------------------------------------

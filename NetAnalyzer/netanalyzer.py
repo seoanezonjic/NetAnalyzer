@@ -1,4 +1,4 @@
-import random
+.0import random
 import sys 
 import re
 import copy
@@ -638,6 +638,8 @@ class NetAnalyzer:
          outFormat=outFormat, add_to_object=add_to_object, matrix_keys= ("semantic_sims", layers, sim_type))
         return similarity_pairs
 
+
+
     def shortest_path(self, source, target):
         return nx.shortest_path(self.graph, source, target)
 
@@ -672,7 +674,7 @@ class NetAnalyzer:
             elif attr_name == "betweenness_centrality":
                 attrs["betweenness_centrality"] = self.get_betweenness_centrality(zscore=False)
             elif attr_name == "betweenness_centralityZ":
-                attrs["betweenness_centralityZ"] = self.get_betweenness_centrality(zscore=False)
+                attrs["betweenness_centralityZ"] = self.get_betweenness_centrality()
 
         node_ids = attrs[attr_names[0]].keys() # TODO: This line of code should be replaced for an option to select node for each attr.
         node_ids = [node_id for node_id in node_ids if node_id in node_universe]

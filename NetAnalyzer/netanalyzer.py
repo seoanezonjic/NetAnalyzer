@@ -360,12 +360,39 @@ class NetAnalyzer:
             relations = self.get_csi_associations(layers, base_layer)
         elif meth == 'transference': #tripartite networks
             relations = self.get_association_by_transference_resources(layers, base_layer)
+        elif meth == "correlation":
+            relations = self.get_corr_associations(layers, base_layer)
 
         if len(layers) == 1: layers = (layers[0], layers[0])
         self.control_output(values = relations, output_filename=output_filename, inFormat="pair",
          outFormat=outFormat, add_to_object=add_to_object, matrix_keys= ("associations", layers, meth))
 
         return relations
+
+    def get_corr_associations(self, layers, base_layer, corr_type, pvalue, pvalue_adj_method, alternative = 'greater'): # TODO: Not use yet! need testing.
+        biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))
+        if biadj_matrix is None:
+            biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
+        
+        # biadj_df = pd.DataFrame(biadj_matrix[0], index=biadj_matrix[1], columns=biadj_matrix[2])
+        # if corr_type == "pearson":
+        #     corr_mat = biadj_df.corr(method='pearson', min_periods=1, numeric_only=False)
+        # elif corr_type == "spearman":
+        #     corr_mat = biadj_df.corr(method='spearman', min_periods=1, numeric_only=False)
+        #relations = self.matrix2relations(corr_mat, df.index.tolist(), df.columns.tolist())
+
+        if corr_type == "pearson": # TODO: This function should be adjusted to be applied just in cases were non zero values in one of the two rows.
+            corr_func = lambda x,y : scipy.stats.pearsonr(x,y, alternative=alternative)
+        elif corr_type == "spearman":
+            corr_func = lambda x,y : scipy.stats.spearmanr(x,y, alternative=alternative)
+        relations = []
+        for i, node1 in enumerate(rowIds):
+            for j, node2 in enumerate(rowIds[1:]):
+                corr_obj = corr_func(biadj_matrix[i,],biadj_matrix[j,])
+                corr, pval = corr.statistic, corr.pvalue
+                if pval < pvalue: relations.append([node1, node2, corr])
+        return relations
+
 
     def get_association_by_transference_resources(self, firstPairLayers, secondPairLayers, lambda_value1 = 0.5, lambda_value2 = 0.5):
         relations = []
@@ -431,7 +458,7 @@ class NetAnalyzer:
         self.association_values['cosine'] = relations
         return relations
 
-    def get_pcc_associations(self, layers, base_layer):
+    def get_pcc_associations(self, layers, base_layer, weighted = False ):
         #for Ny calcule use get_nodes_layer
         base_layer_nodes = self.get_nodes_layer([base_layer])
         ny = len(base_layer_nodes)

@@ -1,7 +1,3 @@
-Note: to be able to use all crisp methods, you need to install some additional packages:  {'gurobipy'}
-Note: to be able to use all crisp methods, you need to install some additional packages:  {'graph_tool', 'infomap', 'karateclub', 'wurlitzer'}
-Note: to be able to use all crisp methods, you need to install some additional packages:  {'ASLPAw', 'karateclub'}
-Note: to be able to use all crisp methods, you need to install some additional packages:  {'infomap', 'wurlitzer'}
 Matrix - Dimensions	3x3
 Matrix - Elements	9
 Matrix - Elements Non Zero	6

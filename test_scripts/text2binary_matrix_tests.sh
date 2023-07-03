@@ -12,7 +12,7 @@ fi
 mkdir -p $out
 
 
-text2binary_matrix.py -i $data_to_test/test_matrix_bin.npy -t "bin" -s -o $out/output_file > $out/statistics_from_text2bin
+text2binary_matrix.py -i $data_to_test/test_matrix_bin.npy -t "bin" -s $out/statistics_from_text2bin -o $out/output_file 
 rm $out/output_file.npy
 
 text2binary_matrix.py -i $data_to_test/test_matrix_bin.npy -t "bin" -o $out/cutoff_no_binarizado -c 0.5

@@ -86,7 +86,7 @@ parser.add_argument('-B', '--binarize', dest="binarize", default=None, type = la
 	help='Binarize matrix changin x >= thr to one and any other to zero into matrix given')
 parser.add_argument('-c', '--cutoff', dest="cutoff", default=None, type = lambda x: float(x),
 	help='Cutoff matrix values keeping just x >= and setting any other to zero into matrix given')
-parser.add_argument('-s', '--get_stats', dest="stats", default=False, action= "store_true",
+parser.add_argument('-s', '--get_stats', dest="stats", default=None,
 	help='Get stats from the processed matrix')
 parser.add_argument('-O', '--output_type', dest="output_type", default='bin',
 	help='Set output format file. "bin" for binary (default) or "mat" for tabulated text file matrix')
@@ -126,11 +126,10 @@ if options.cutoff is not None and options.binarize is None:
 	matrix = Adv_mat_calc.filter_cutoff_mat(matrix, options.cutoff)
 
 
-if options.stats:
+if options.stats is not None:
 	stats = Adv_mat_calc.get_stats_from_matrix(matrix)
-
-	for stat in stats:
-		print("\t".join(stat)) # TODO: Talk with PSZ about the problem in output.
+	with open(options.stats, 'w') as f:
+		for row in stats: f.write("\t".join([str(item) for item in row]) + "\n")
 
 
 if options.output_type == 'bin':	

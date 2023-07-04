@@ -228,6 +228,20 @@ class BaseNetTestCase(unittest.TestCase):
 		expected_result = [['A', 0.8164965809277259, 2], ['C', -1.2247448713915894, 1], ['E', 0.8164965809277259, 2],['B', -1.2247448713915894, 1], ['D', 0.8164965809277259, 2]]
 		self.assertEqual(expected_result, node_attribute_test)
 
+	def test_get_corr_association(self):
+		test_association = self.network_obj.get_corr_associations(['main'], 'projection', corr_type = "pearson", pvalue = 0.5, pvalue_adj_method = None)
+		expected_result = [['M3', 'M4', 0.6123724356957945], ['M3', 'M5', 0.408248290463863], ['M3', 'M6', 0.24999999999999997], ['M4', 'M5', 0.6666666666666665], ['M4', 'M6', 0.40824829046386296], ['M5', 'M6', 0.6123724356957945]]
+		self.assertEqual(expected_result, test_association)
+
+	def test_get_umap_association(self):
+		test_association = self.network_obj.get_umap_associations(['main'], 'projection', n_neighbors = 2, random_seed = 47)
+		expected_result =[['M1', 'M2', 0.6002185251036823], ['M1', 'M3', 0.11037451107508203], ['M1', 'M4', 0.11159872906434885], 
+		['M1', 'M5', 0.1144982881204995], ['M1', 'M6', 0.11054041266167607], ['M2', 'M3', 0.10307350076833578], 
+		['M2', 'M4', 0.1039929682744289], ['M2', 'M5', 0.10640654114609778], ['M2', 'M6', 0.10296241663968433], 
+		['M3', 'M4', 0.5658029814523433], ['M3', 'M5', 0.3796017100676096], ['M3', 'M6', 0.32918489985163335],
+		 ['M4', 'M5', 0.5324722793734511], ['M4', 'M6', 0.44022124562159204], ['M5', 'M6', 0.663745538234136]]
+		self.assertEqual(expected_result, test_association)
+
 	def test_get_counts_association(self):	
 		test_association = self.network_obj.get_counts_associations(['main'], 'projection')
 		test_association = [[a[0], a[1], a[2]] for a in test_association]

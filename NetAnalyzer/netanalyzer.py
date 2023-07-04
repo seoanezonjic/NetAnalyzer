@@ -336,7 +336,12 @@ class NetAnalyzer:
     #     return decorator
 
     #@add_parameters(output_filename=None, outFormat='pair', add_to_object= False, inFormat="pair", matrix_main_key = "associations", matrix_second_key = "meth")
-    def get_association_values(self, layers, base_layer, meth, output_filename=None, outFormat='pair', add_to_object= False):
+    def get_association_values(self, layers, base_layer, meth, output_filename=None, outFormat='pair', add_to_object= False, **options): #TODO: Talk with PSZ about **optinos or options= {}
+
+        default_options = {"n_neighbors": 15, "min_dist": 0.1, "n_components": 2, "metric": 'euclidean', 
+        "corr_type": "pearson", "pvalue": 0.05, "pvalue_adj_method": None, "alternative": 'greater'}
+        default_options.update(options)
+
         relations = [] #node A, node B, val
         if meth == 'counts':
             relations = self.get_counts_associations(layers, base_layer)
@@ -361,7 +366,9 @@ class NetAnalyzer:
         elif meth == 'transference': #tripartite networks
             relations = self.get_association_by_transference_resources(layers, base_layer)
         elif meth == "correlation":
-            relations = self.get_corr_associations(layers, base_layer)
+            relations = self.get_corr_associations(layers, base_layer, corr_type = default_options["corr_type"], pvalue = default_options["pvalue"], pvalue_adj_method = default_options["pvalue_adj_method"], alternative = default_options["alternative"])
+        elif meth == "umap":
+            relations = self.get_umap_associations(layers, base_layer, n_neighbors = default_options["n_neighbors"], min_dist = default_options["min_dist"], n_components = default_options["n_components"], metric = default_options["metric"])
 
         if len(layers) == 1: layers = (layers[0], layers[0])
         self.control_output(values = relations, output_filename=output_filename, inFormat="pair",
@@ -369,30 +376,40 @@ class NetAnalyzer:
 
         return relations
 
-    def get_corr_associations(self, layers, base_layer, corr_type, pvalue, pvalue_adj_method, alternative = 'greater'): # TODO: Not use yet! need testing.
+    def get_corr_associations(self, layers, base_layer, corr_type = "pearson", pvalue = 0.05, pvalue_adj_method = None, alternative = 'greater'): # TODO: Not use yet! need testing.
         biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))
         if biadj_matrix is None:
             biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
-        
-        # biadj_df = pd.DataFrame(biadj_matrix[0], index=biadj_matrix[1], columns=biadj_matrix[2])
-        # if corr_type == "pearson":
-        #     corr_mat = biadj_df.corr(method='pearson', min_periods=1, numeric_only=False)
-        # elif corr_type == "spearman":
-        #     corr_mat = biadj_df.corr(method='spearman', min_periods=1, numeric_only=False)
-        #relations = self.matrix2relations(corr_mat, df.index.tolist(), df.columns.tolist())
 
+        matrix, rowIds, _ = biadj_matrix
+        
         if corr_type == "pearson": # TODO: This function should be adjusted to be applied just in cases were non zero values in one of the two rows.
-            corr_func = lambda x,y : scipy.stats.pearsonr(x,y, alternative=alternative)
+            corr_func = lambda x,y : stats.pearsonr(x,y) # TODO: put the option alternative
         elif corr_type == "spearman":
-            corr_func = lambda x,y : scipy.stats.spearmanr(x,y, alternative=alternative)
+            corr_func = lambda x,y : stats.spearmanr(x,y)
         relations = []
-        for i, node1 in enumerate(rowIds):
-            for j, node2 in enumerate(rowIds[1:]):
-                corr_obj = corr_func(biadj_matrix[i,],biadj_matrix[j,])
-                corr, pval = corr.statistic, corr.pvalue
-                if pval < pvalue: relations.append([node1, node2, corr])
+        for i,j in itertools.combinations(range(0,len(rowIds)), 2):
+            node1 = rowIds[i]
+            node2 = rowIds[j]
+            corr_obj = corr_func(matrix[i,],matrix[j,])
+            corr, pval = corr_obj.statistic, corr_obj.pvalue
+            relations.append([node1, node2, pval, corr])
+
+        if pvalue_adj_method is not None: self.adjust_pval_association(relations, pvalue_adj_method)
+        relations = [[relation[0], relation[1], relation[3]] for relation in relations if relation[2] < pvalue ]
+
         return relations
 
+    def get_umap_associations(self, layers, base_layer, n_neighbors = 15, min_dist = 0.1, n_components = 2, metric = 'euclidean', random_seed = None):
+        biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))
+        if biadj_matrix is None:
+            biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
+        data, rowIds, _ = biadj_matrix
+        umap_coords = Adv_mat_calc.data2umap(data, n_neighbors=n_neighbors, min_dist=min_dist, n_components=n_components, metric=metric, random_seed = random_seed)
+        umap_sims = np.triu(Adv_mat_calc.coords2sim(umap_coords, sim="euclidean"), k = 1)
+        relations = self.matrix2relations(umap_sims, rowIds, rowIds)
+        relations = [relation for relation in relations if relation[2] != 0]
+        return relations
 
     def get_association_by_transference_resources(self, firstPairLayers, secondPairLayers, lambda_value1 = 0.5, lambda_value2 = 0.5):
         relations = []

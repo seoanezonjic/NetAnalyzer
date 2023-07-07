@@ -45,7 +45,7 @@ class NetworkParserTestCase(unittest.TestCase):
 
 
 	def test_load_bin_matrix(self):
-		options = {'input_format' : 'bin', 'input_file' : os.path.join(DATA_TEST_PATH, 'monopartite_network_bin_matrix.npy'), 'layers' : self.monopartite_layers, 'node_file' : self.monopartite_network_node_names}
+		options = {'input_format' : 'bin', 'input_file' : os.path.join(DATA_TEST_PATH, 'monopartite_network_bin_matrix.npy'), 'layers' : self.monopartite_layers, 'node_files' : [self.monopartite_network_node_names]}
 		monopartite_network_by_bin_matrix = Net_parser.load(options)
 		test_adjacency, text_x_axis, text_y_axis = monopartite_network_by_bin_matrix.matrices["adjacency_matrices"][('main', 'main')]
 		expected_adjacency_matrix = numpy.array([[0, 1, 1, 0, 0],[1, 0, 0, 0, 0], [1, 0, 0, 0, 1], [0, 0, 0, 0, 1], [0, 0, 1, 1, 0]])
@@ -55,7 +55,7 @@ class NetworkParserTestCase(unittest.TestCase):
 		self.assertTrue((expected_adjacency_matrix == test_adjacency).all())
 
 	def test_load_network_by_bin_matrix(self):
-		monopartite_network_by_bin_matrix = Net_parser.load_network_by_bin_matrix(os.path.join(DATA_TEST_PATH, 'monopartite_network_bin_matrix.npy'), self.monopartite_network_node_names, self.monopartite_layers)
+		monopartite_network_by_bin_matrix = Net_parser.load_network_by_bin_matrix(os.path.join(DATA_TEST_PATH, 'monopartite_network_bin_matrix.npy'), [self.monopartite_network_node_names], self.monopartite_layers)
 		test_adjacency, text_x_axis, text_y_axis = monopartite_network_by_bin_matrix.matrices["adjacency_matrices"][('main', 'main')]
 		expected_adjacency_matrix = numpy.array([[0, 1, 1, 0, 0],[1, 0, 0, 0, 0], [1, 0, 0, 0, 1], [0, 0, 0, 0, 1], [0, 0, 1, 1, 0]])
 		expected_axis =  ['A', 'B', 'C', 'D', 'E']
@@ -64,7 +64,7 @@ class NetworkParserTestCase(unittest.TestCase):
 		self.assertTrue((expected_adjacency_matrix == test_adjacency).all())
 
 	def test_load_plain_matrix(self):
-		options = {'input_format' : 'matrix', 'input_file' : os.path.join(DATA_TEST_PATH, 'monopartite_network_matrix'), 'splitChar' : "\t", 'layers' : self.monopartite_layers, 'node_file' : self.monopartite_network_node_names}
+		options = {'input_format' : 'matrix', 'input_file' : os.path.join(DATA_TEST_PATH, 'monopartite_network_matrix'), 'splitChar' : "\t", 'layers' : self.monopartite_layers, 'node_files' : [self.monopartite_network_node_names]}
 		monopartite_network_by_plain_matrix = Net_parser.load(options)
 		test_adjacency, text_x_axis, text_y_axis = monopartite_network_by_plain_matrix.matrices["adjacency_matrices"][('main', 'main')]
 		expected_adjacency_matrix = numpy.array([[0, 0, 1, 0, 1],[0, 0, 0, 1, 0], [1, 0, 0, 0, 0], [0, 1, 0, 0, 1], [1, 0, 0, 1, 0]])
@@ -74,7 +74,7 @@ class NetworkParserTestCase(unittest.TestCase):
 		self.assertTrue((expected_adjacency_matrix == test_adjacency).all())
 
 	def test_load_network_by_plain_matrix(self):
-		monopartite_network_by_plain_matrix = Net_parser.load_network_by_plain_matrix(os.path.join(DATA_TEST_PATH, 'monopartite_network_matrix'), self.monopartite_network_node_names, self.monopartite_layers)
+		monopartite_network_by_plain_matrix = Net_parser.load_network_by_plain_matrix(os.path.join(DATA_TEST_PATH, 'monopartite_network_matrix'), [self.monopartite_network_node_names], self.monopartite_layers)
 		test_adjacency, text_x_axis, text_y_axis = monopartite_network_by_plain_matrix.matrices["adjacency_matrices"][('main', 'main')]
 		expected_adjacency_matrix = numpy.array([[0, 0, 1, 0, 1],[0, 0, 0, 1, 0], [1, 0, 0, 0, 0], [0, 1, 0, 0, 1], [1, 0, 0, 1, 0]])
 		expected_axis =  ['A', 'B', 'C', 'D', 'E']

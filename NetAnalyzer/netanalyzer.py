@@ -34,6 +34,7 @@ class NestedDict(dict):
 class NetAnalyzer:
 
     def __init__(self, layers):
+        self.threads = 2
         self.graph = nx.Graph() # Talk with PSZ, problem with directed graphs on loading edges.
         self.layers = layers
         self.association_values = {}
@@ -177,6 +178,7 @@ class NetAnalyzer:
         if ontology_file_path not in self.loaded_obos: #Load new ontology
             ontology = Ontology(file = ontology_file_path, load_file = True)
             ontology.precompute()
+            ontology.threads = self.threads
             self.loaded_obos.append(ontology_file_path)
             self.ontologies.append(ontology)
         else: #Link loaded ontology to current layer
@@ -769,10 +771,8 @@ class NetAnalyzer:
         stats = Adv_mat_calc.get_stats_from_matrix(matrix)
         self.write_obj(stats, output_filename, Format="pair")
 
-    def mat_vs_mat_operation(self, mat1_keys, mat2_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False, add_to_object_name = None):
+    def mat_vs_mat_operation(self, mat1_keys, mat2_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False):
         result = (None, None, None)
-        if add_to_object and add_to_object_name is None:
-            add_to_object_name = operation
 
         mat1 = self.matrices.dig(*mat1_keys)
         mat2 = self.matrices.dig(*mat2_keys)
@@ -788,6 +788,7 @@ class NetAnalyzer:
             mat2 = mat2 >= options["cutoff"]
             mat_result = mat1 * mat2
             rows_result, cols_result = rows1, cols1
+            mat_result, rows_result, cols_result = Adv_mat_calc.remove_zero_lines(mat_result, rows_result, cols_result)
             layers = mat1_keys[1]
 
 
@@ -798,8 +799,6 @@ class NetAnalyzer:
 
     def filter_matrix(self, mat_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False):
         result = (None, None, None)
-        if add_to_object and add_to_object_name is None:
-            add_to_object_name = operation
 
         mat1 = self.matrices.dig(*mat_keys)
 
@@ -822,6 +821,7 @@ class NetAnalyzer:
         if options.get("binarize"):
             mat_result = Adv_mat_calc.binarize_mat(mat_result)
 
+        mat_result, rows_result, cols_result = Adv_mat_calc.remove_zero_lines(mat_result, rows_result, cols_result)
 
         self.control_output(values = mat_result, rowIds = rows_result, colIds = cols_result, output_filename = output_filename, 
             inFormat = "matrix", outFormat = outFormat, add_to_object = add_to_object, matrix_keys = mat_keys)
@@ -1215,14 +1215,16 @@ class NetAnalyzer:
         return obj, rowIds, colIds
 
     def control_output(self, values, output_filename, inFormat, outFormat, add_to_object, matrix_keys = None, rowIds = None, colIds = None):
-        if add_to_object and output_filename == None: 
+        if add_to_object: 
             matrix, rowIds, colIds = self.transform2obj(values, inFormat= inFormat, outFormat= "matrix", rowIds = rowIds, colIds = colIds) 
-            
-            result_dic = self.matrices.dig(matrix_keys[0], matrix_keys[1])
+            path_keys = matrix_keys[:-1]
+            final_key = matrix_keys[-1]
+            result_dic = self.matrices.dig(*path_keys)
             if result_dic is not None:
-                result_dic[matrix_keys[2]] = [matrix, rowIds, colIds]
+                result_dic[final_key] = [matrix, rowIds, colIds]
             else:
-                self.matrices[matrix_keys[0]][matrix_keys[1]] = {matrix_keys[2]: [matrix, rowIds, colIds]}
+                # This is posible just when len(matrix_keys) == 3
+                self.matrices[path_keys[0]][path_keys[1]] = {final_key: [matrix, rowIds, colIds]}
         elif output_filename != None: 
             obj, rowIds, colIds = self.transform2obj(values, inFormat= inFormat, outFormat= outFormat, rowIds = rowIds, colIds = colIds)
             self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)

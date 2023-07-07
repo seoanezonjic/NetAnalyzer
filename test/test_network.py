@@ -495,13 +495,10 @@ class BaseNetTestCase(unittest.TestCase):
 		mat_keys = ("adjacency_matrices", ("main","main"))
 		# Checking cutoff filter.
 		operation = "filter_cutoff"
-		expected = [[0., 0., 2., 7.],
-		       		[0., 0., 0., 0.],
-		       		[2., 0., 0., 3.],
-		       		[7., 0., 3., 0.]]
+		expected = [[0.0, 2.0, 7.0], [2.0, 0.0, 3.0], [7.0, 3.0, 0.0]]
 		options = {"cutoff": 2}
-		expected_cols = ['M3', 'M4', 'M2', 'M1']
-		expected_rows = ['M3', 'M4', 'M2', 'M1']
+		expected_cols = ['M3', 'M2', 'M1']
+		expected_rows = ['M3', 'M2', 'M1']
 		test_value, row_value, col_value = self.monopartite_network_weights.filter_matrix(mat_keys, operation, options)
 		self.assertEqual(expected, test_value.tolist())
 		self.assertListEqual(expected_cols, col_value)

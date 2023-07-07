@@ -76,8 +76,8 @@ parser = argparse.ArgumentParser(description='Perform Network analysis from NetA
 
 parser.add_argument("-i", "--input_file", dest="input_file", default= None, 
 					help="Input file to create networks for further analysis")
-parser.add_argument("-n","--node_names_file", dest="node_file", default=None,
-					help="File with node names corresponding to the input matrix, only use when -i is set to bin or matrix")
+parser.add_argument("-n","--node_names_file", dest="node_files", default=None, type = lambda x: x.split(","),
+					help="Files with node names corresponding to the input matrix, only use when -i is set to bin or matrix, could be two paths, indicating rows and cols, respectively. If just one path added, it is assumed to be for rows and cols")
 parser.add_argument("-s","--split_char", dest="split_char", default='\t',
 					help = "Character for splitting input file. Default: tab")
 parser.add_argument("-f","--input_format", dest="input_format", default='pair',
@@ -114,8 +114,8 @@ parser.add_argument("-g", "--graph_file", dest="graph_file", default=None,
 					help="Build a graphic representation of the network")
 parser.add_argument("--graph_options", dest="graph_options", default={'method': 'elgrapho', 'layout': 'forcedir', 'steps': '30'}, type= graph_options_parse,
 					help="Set graph parameters as 'NAME1=value1,NAME2=value2,...")
-parser.add_argument("-T","--threads", dest="threads", default=0, type= based_0,
-					help="Number of threads to use in computation, one thread will be reserved as manager.")
+parser.add_argument("-T","--processes", dest="processes", default=2, type= int,
+					help="Number of processes to use in computation")
 parser.add_argument("-r","--reference_nodes", dest="reference_nodes", default=[], type= lambda x: x.split(","),
 					help="Node ids comma separared")
 parser.add_argument("-R","--compare_clusters_reference", dest="compare_clusters_reference", default=None, type= group_nodes_parse,
@@ -157,12 +157,13 @@ print("Loading network data")
 opts = vars(options)
 fullNet = Net_parser.load(opts) # FRED: Remove this part of vars and modify the loads methods (Tlk wth PSZ)
 fullNet.set_compute_pairs(options.use_pairs, not options.no_autorelations)
-#fullNet.threads = options.threads
+fullNet.threads = options.processes
 
 fullNet.reference_nodes = options.reference_nodes
 for ont_data in opts['ontologies']:
 	layer_name, ontology_file_path = ont_data
 	fullNet.link_ontology(ontology_file_path, layer_name)
+	fullNet.ontology
 
 if options.group_nodes:
 	fullNet.set_groups(options.group_nodes)

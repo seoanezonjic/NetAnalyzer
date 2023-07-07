@@ -14,7 +14,7 @@ class KernelTestCase(unittest.TestCase):
 		options = {'input_format' : 'bin', 
 				   'input_file' : self.monopartite_network_file, 
 				   'layers' : [['main', 'M[0-9]+'], ['main', 'M[0-9]+']], 
-				   'node_file' : self.monopartite_network_node_names,
+				   'node_files' : [self.monopartite_network_node_names],
 				   'load_both': True}
 		self.monopartite_network = Net_parser.load(options)
 		self.ct_kernel_to_test = np.load(os.path.join(DATA_TEST_PATH, 'ct.npy'))

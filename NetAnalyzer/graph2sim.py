@@ -33,7 +33,7 @@ class Graph2sim:
 		return emb_coords
 
 	def emb_coords2kernel(emb_coords, normalization = False):
-		kernel = coords2sim(emb_coords, sim = "dotProduct")
+		kernel = Adv_mat_calc.coords2sim(emb_coords, sim = "dotProduct")
 		if normalization: kernel = Adv_mat_calc.cosine_normalization(kernel)
 		return kernel
 

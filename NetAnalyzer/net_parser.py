@@ -9,9 +9,9 @@ class Net_parser:
 		if options['input_format'] == 'pair':
 		  net = Net_parser.load_network_by_pairs(options['input_file'], options['layers'], options['split_char'])
 		elif options['input_format'] == 'bin':
-		  net = Net_parser.load_network_by_bin_matrix(options['input_file'], options['node_file'], options['layers'])
+		  net = Net_parser.load_network_by_bin_matrix(options['input_file'], options['node_files'], options['layers'])
 		elif options['input_format'] == 'matrix':
-		  net = Net_parser.load_network_by_plain_matrix(options['input_file'], options['node_file'], options['layers'], options['splitChar'])
+		  net = Net_parser.load_network_by_plain_matrix(options['input_file'], options['node_files'], options['layers'], options['splitChar'])
 		else:
 		  raise("ERROR: The format " + options['input_format'] + " is not defined")
 
@@ -45,21 +45,31 @@ class Net_parser:
 	def load_network_by_bin_matrix(input_file, node_file, layers):
 		tag_layers = tuple([layer[0] for layer in layers])
 		net = NetAnalyzer(tag_layers)
-		node_names = Net_parser.load_input_list(node_file)
-		if len(tag_layers) == 1:
-			net.matrices["adjacency_matrices"][(tag_layers[0],tag_layers[0])] = [numpy.load(input_file), node_names, node_names]
+		if len(node_file) == 1:
+			node_names = Net_parser.load_input_list(node_file[0])
+			row_names = col_names = node_names
 		else:
-			net.matrices["adjacency_matrices"][tag_layers] = [numpy.load(input_file), node_names, node_names]
+			row_names = Net_parser.load_input_list(node_file[0])
+			col_names = Net_parser.load_input_list(node_file[1])
+		if len(tag_layers) == 1:
+			net.matrices["adjacency_matrices"][(tag_layers[0],tag_layers[0])] = [numpy.load(input_file), row_names, col_names]
+		else:
+			net.matrices["adjacency_matrices"][tag_layers] = [numpy.load(input_file), row_names, col_names]
 		return net
 
 	def load_network_by_plain_matrix(input_file, node_file, layers, splitChar="\t"):
 		tag_layers = tuple([layer[0] for layer in layers])
 		net = NetAnalyzer(tag_layers)
-		node_names = Net_parser.load_input_list(node_file)
-		if len(tag_layers) == 1:
-			net.matrices["adjacency_matrices"][(tag_layers[0],tag_layers[0])] = [numpy.loadtxt(input_file, delimiter=splitChar), node_names, node_names]
+		if len(node_file) == 1:
+			node_names = Net_parser.load_input_list(node_file[0])
+			row_names = col_names = node_names
 		else:
-			net.matrices["adjacency_matrices"][tag_layers] = [numpy.loadtxt(input_file, delimiter=splitChar), node_names, node_names]
+			row_names = Net_parser.load_input_list(node_file[0])
+			col_names = Net_parser.load_input_list(node_file[1])
+		if len(tag_layers) == 1:
+			net.matrices["adjacency_matrices"][(tag_layers[0],tag_layers[0])] = [numpy.loadtxt(input_file, delimiter=splitChar), row_names, col_names]
+		else:
+			net.matrices["adjacency_matrices"][tag_layers] = [numpy.loadtxt(input_file, delimiter=splitChar), row_names, col_names]
 		return net
 
 	def load_input_list(input_path):

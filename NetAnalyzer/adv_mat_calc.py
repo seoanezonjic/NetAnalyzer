@@ -329,6 +329,23 @@ class Adv_mat_calc:
 	    return final_adj_mat, final_rowIds, final_colIds
 
 	@staticmethod
+	def remove_zero_lines(matrix, rowIds, colIds, symmetric=False):
+		# TODO: Need test.
+		# TODO: semgent thsi in two functions for rows and columns.
+	    rows2delete = np.all(matrix == 0, axis=1)
+	    if symmetric:
+	        cols2delete = rows2delete
+	    else:
+	        cols2delete = np.all(matrix == 0, axis=0)
+
+	    matrix = matrix[~rows2delete]
+	    matrix = matrix[:,~cols2delete]
+	    if rowIds is not None: rowIds = [rowIds[i] for i in range(0,len(rowIds)) if not rows2delete[i]]
+	    if colIds is not None: colIds = [colIds[i] for i in range(0,len(colIds)) if not cols2delete[i]]
+
+	    return matrix, rowIds, colIds
+
+	@staticmethod
 	def get_disparity_backbone_pval(matrix):
 	    # by the moment, implementetion square (?)
 	    # TODO: Add a warning when not square matrix.

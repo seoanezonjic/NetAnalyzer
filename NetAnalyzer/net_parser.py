@@ -11,7 +11,7 @@ class Net_parser:
 		elif options['input_format'] == 'bin':
 		  net = Net_parser.load_network_by_bin_matrix(options['input_file'], options['node_files'], options['layers'])
 		elif options['input_format'] == 'matrix':
-		  net = Net_parser.load_network_by_plain_matrix(options['input_file'], options['node_files'], options['layers'], options['splitChar'])
+		  net = Net_parser.load_network_by_plain_matrix(options['input_file'], options['node_files'], options['layers'], options['split_char'])
 		else:
 		  raise("ERROR: The format " + options['input_format'] + " is not defined")
 

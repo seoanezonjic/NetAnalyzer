@@ -67,9 +67,9 @@ class Net_parser:
 			row_names = Net_parser.load_input_list(node_file[0])
 			col_names = Net_parser.load_input_list(node_file[1])
 		if len(tag_layers) == 1:
-			net.matrices["adjacency_matrices"][(tag_layers[0],tag_layers[0])] = [numpy.loadtxt(input_file, delimiter=splitChar), row_names, col_names]
+			net.matrices["adjacency_matrices"][(tag_layers[0],tag_layers[0])] = [numpy.genfromtxt(input_file, delimiter=splitChar), row_names, col_names]
 		else:
-			net.matrices["adjacency_matrices"][tag_layers] = [numpy.loadtxt(input_file, delimiter=splitChar), row_names, col_names]
+			net.matrices["adjacency_matrices"][tag_layers] = [numpy.genfromtxt(input_file, delimiter=splitChar), row_names, col_names]
 		return net
 
 	def load_input_list(input_path):

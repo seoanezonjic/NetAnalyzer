@@ -153,7 +153,7 @@ class NetAnalyzer:
         for colId in colIds: self.add_node(colId, layerB)
 
         for rowPos, rowId in enumerate(rowIds):
-                for colPos, colId in enumerate(rowIds):
+                for colPos, colId in enumerate(colIds):
                         associationValue = matrix[rowPos, colPos]
                         if associationValue > 0: self.graph.add_edge(rowId, colId, weight=associationValue)
         return self.graph
@@ -378,6 +378,16 @@ class NetAnalyzer:
 
         return relations
 
+    def get_matrix_from_keys(self, matrix_keys, symm = True): # TODO: Implement this option in the code.
+        layers = matrix_keys[1]
+        matrix = self.matrices.dig(*matrix_keys)
+        if matrix is None and symm: 
+            matrix_keys = list(matrix_keys)
+            matrix_keys[1] = (layers[1], layers[0])
+            matrix_keys = tuple(matrix_keys)
+            matrix = self.matrices.dig(*matrix_keys)
+        return matrix
+
     def get_corr_associations(self, layers, base_layer, corr_type = "pearson", pvalue = 0.05, pvalue_adj_method = None, alternative = 'greater'): # TODO: Not use yet! need testing.
         biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))
         if biadj_matrix is None:
@@ -385,15 +395,18 @@ class NetAnalyzer:
 
         matrix, rowIds, _ = biadj_matrix
         
-        if corr_type == "pearson": # TODO: This function should be adjusted to be applied just in cases were non zero values in one of the two rows.
-            corr_func = lambda x,y : stats.pearsonr(x,y) # TODO: put the option alternative
+        if corr_type == "pearson": 
+            corr_func = lambda x,y : stats.pearsonr(x,y, alternative= alternative) # TODO: put the option alternative
         elif corr_type == "spearman":
-            corr_func = lambda x,y : stats.spearmanr(x,y)
+            corr_func = lambda x,y : stats.spearmanr(x,y, alternative= alternative)
         relations = []
         for i,j in itertools.combinations(range(0,len(rowIds)), 2):
             node1 = rowIds[i]
             node2 = rowIds[j]
-            corr_obj = corr_func(matrix[i,],matrix[j,])
+            x = matrix[i,]
+            y = matrix[j,]
+            not_nan_values = (np.isnan(x) + np.isnan(y)) == False
+            corr_obj = corr_func(x[not_nan_values],y[not_nan_values])
             corr, pval = corr_obj.statistic, corr_obj.pvalue
             relations.append([node1, node2, pval, corr])
 
@@ -566,7 +579,7 @@ class NetAnalyzer:
             filtered_function = self.filter_cutoff
         else:
             print('Not defined method')                                                                                                      
-            sys.exit(0)
+            sys.exit(1)
 
         edges_with_filtered_values = []
         for layers_pairs in itertools.pairwise(layers):
@@ -761,7 +774,7 @@ class NetAnalyzer:
             self.write_obj(mat, output_filename, Format= "matrix", rowIds=rowIds, colIds=colIds)
         else:                                                                                         
             logging.warning("keys for matrices which dont exist yet")
-            sys.exit(0)
+            sys.exit(1)
 
     def write_stats_from_matrix(self, mat_keys, output_filename="stats_from_matrix"): 
         matrix_data = self.matrices.dig(*mat_keys)
@@ -779,7 +792,7 @@ class NetAnalyzer:
 
         if mat1 is None or mat2 is None:                                                                                                     
             logging.warning("keys for matrices which dont exist yet") # Talk with PSZ
-            sys.exit(0)
+            sys.exit(1)
         else:
             mat1, rows1, cols1 = mat1
             mat2, rows2, cols2 = mat2
@@ -804,7 +817,7 @@ class NetAnalyzer:
 
         if mat1 is None:                                                                                                     
             logging.warning("keys for matrices which dont exist yet")
-            sys.exit(0)
+            sys.exit(1)
         else:
             mat1, rows1, cols1 = mat1
             layers = mat_keys[1]
@@ -922,7 +935,7 @@ class NetAnalyzer:
                 communities = algorithms.aslpaw(self.graph)
         else:
             print('Not defined method')                                                                                                      
-            sys.exit(0)
+            sys.exit(1)
         print(communities.method_parameters, file=sys.stderr)
         print(communities.overlap, file=sys.stderr)
         print(communities.node_coverage, file=sys.stderr)

@@ -163,7 +163,7 @@ fullNet.reference_nodes = options.reference_nodes
 for ont_data in opts['ontologies']:
 	layer_name, ontology_file_path = ont_data
 	fullNet.link_ontology(ontology_file_path, layer_name)
-	fullNet.ontology
+	fullNet.ontologies
 
 if options.group_nodes:
 	fullNet.set_groups(options.group_nodes)

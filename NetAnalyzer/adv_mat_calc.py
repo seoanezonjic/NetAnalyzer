@@ -321,6 +321,7 @@ class Adv_mat_calc:
 
 	    # remove genes with no significance
 	    k = np.sum(new_adj, axis=0)
+
 	    final_adj_mat = matrix[:,k>0]
 	    final_adj_mat = final_adj_mat[k>0,:]
 	    final_rowIds = [node_id for node_id, is_good in zip(rowIds, list(k>0)) if is_good]
@@ -349,7 +350,7 @@ class Adv_mat_calc:
 	def get_disparity_backbone_pval(matrix):
 	    # by the moment, implementetion square (?)
 	    # TODO: Add a warning when not square matrix.
-	    pval_mat = matrix 
+	    pval_mat = matrix.copy()
 	    W = np.sum(pval_mat, axis=0)
 	    k = (pval_mat > 0).sum(0)
 	    # operacion vectorizada.

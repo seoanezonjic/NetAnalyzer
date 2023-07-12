@@ -230,7 +230,11 @@ class BaseNetTestCase(unittest.TestCase):
 
 	def test_get_corr_association(self):
 		test_association = self.network_obj.get_corr_associations(['main'], 'projection', corr_type = "pearson", pvalue = 0.5, pvalue_adj_method = None)
-		expected_result = [['M3', 'M4', 0.6123724356957945], ['M3', 'M5', 0.408248290463863], ['M3', 'M6', 0.24999999999999997], ['M4', 'M5', 0.6666666666666665], ['M4', 'M6', 0.40824829046386296], ['M5', 'M6', 0.6123724356957945]]
+		test_association = [ [association[0], association[1], np.round(association[2],4)] for association in test_association ]
+		expected_result = [['M3', 'M4', 0.6124], ['M3', 'M5', 0.4082], ['M3', 'M6', 0.25], ['M4', 'M3', 0.6124], 
+		['M4', 'M5', 0.6667], ['M4', 'M6', 0.4082], ['M5', 'M3', 0.4082],
+		 ['M5', 'M4', 0.6667], ['M5', 'M6', 0.6124], ['M6', 'M3', 0.25], 
+		 ['M6', 'M4', 0.4082], ['M6', 'M5', 0.6124]]
 		self.assertEqual(expected_result, test_association)
 
 	def test_get_umap_association(self):
@@ -506,8 +510,8 @@ class BaseNetTestCase(unittest.TestCase):
 		# Checking disparity filter.
 		operation = "filter_disparity"
 		options = {"pval_threshold": 0.4}
-		expected = [[1.  , 0.3 ],
-       				[0.09, 1.  ]]
+		expected = [[0., 7.],
+					[7., 0.]]
 		expected_rows = ['M3', 'M1']
 		expected_cols = ['M3', 'M1']
 		test_value, row_value, col_value = self.monopartite_network_weights.filter_matrix(mat_keys, operation, options)

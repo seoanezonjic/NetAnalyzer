@@ -397,6 +397,25 @@ class NetAnalyzer:
         relations = [relation for relation in relations if relation[2] != 0]
         return relations
 
+    # def get_pca_associations(self, layers, base_layer, ):
+    #     # adjust the function to use more than 2 n_components
+    #     # and try to select the correct number of n_componentes (automatically)
+    #     biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))
+    #     if biadj_matrix is None:
+    #         biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
+
+    #     matrix, rowIds, _ = biadj_matrix
+
+    #     from sklearn.preprocessing import StandardScaler
+    #     from sklearn.decomposition import PCA
+    #     x = StandardScaler().fit_transform(matrix)
+    #     pca = PCA(n_components=2)
+    #     pca_coords = pca.fit_transform(x)
+    #     pca_matrix_sim = Adv_mat_calc.coords2sim(pca_coords, sim = "dotProduct")
+    #     relations = self.matrix2relations(pca_matrix_sim , rowIds, rowIds)
+    #     return relations
+
+
     def get_association_by_transference_resources(self, firstPairLayers, secondPairLayers, lambda_value1 = 0.5, lambda_value2 = 0.5):
         relations = []
         matrix1 = self.matrices["adjacency_matrices"][firstPairLayers][0]
@@ -805,7 +824,9 @@ class NetAnalyzer:
             rows_result, cols_result = rows1, cols1
         elif operation == "filter_disparity":
             mat_result, rows_result, cols_result = Adv_mat_calc.disparity_filter_mat(mat1, rows1, cols1, pval_threshold = options["pval_threshold"])
-    
+        elif operation == "filter_by_percentile":
+            mat_result = Adv_mat_calc.percentile_filter(mat1, options["percentile"]) # TODO: Check is this is valid for non-square matrix
+            rows_result, cols_result = rows1, cols1
 
         if options.get("binarize"):
             mat_result = Adv_mat_calc.binarize_mat(mat_result)

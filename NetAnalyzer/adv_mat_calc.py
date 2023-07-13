@@ -312,6 +312,15 @@ class Adv_mat_calc:
 	    return mat_result
 
 	@staticmethod
+	def percentile_filter(matrix, percentile_threshold=90):
+	    percentiles = np.percentile(matrix, percentile_threshold, axis=1)
+	    result_mat = matrix >= percentiles[:, np.newaxis]
+	    new_adj = result_mat.transpose()*result_mat
+	    mat1[~new_adj] = 0
+	    return mat1
+
+
+	@staticmethod
 	def disparity_filter_mat(matrix, rowIds, colIds, pval_threshold = 0.05):
 	    pval_mat = Adv_mat_calc.get_disparity_backbone_pval(matrix)
 	    # Create edge list from that p value matrix

@@ -313,6 +313,7 @@ class Adv_mat_calc:
 
 	@staticmethod
 	def percentile_filter(matrix, percentile_threshold=90):
+		# TODO: Is necessary to obtain percentiles just form non zero data
 	    percentiles = np.percentile(matrix, percentile_threshold, axis=1)
 	    result_mat = matrix >= percentiles[:, np.newaxis]
 	    new_adj = result_mat.transpose()*result_mat

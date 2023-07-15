@@ -342,6 +342,8 @@ class NetAnalyzer:
             relations = self.get_corr_associations(layers, base_layer, corr_type = default_options["corr_type"], pvalue = default_options["pvalue"], pvalue_adj_method = default_options["pvalue_adj_method"], alternative = default_options["alternative"])
         elif meth == "umap":
             relations = self.get_umap_associations(layers, base_layer, n_neighbors = default_options["n_neighbors"], min_dist = default_options["min_dist"], n_components = default_options["n_components"], metric = default_options["metric"])
+        elif meth == "bicm":
+            relations = self.get_bicm_associations(layers, base_layer, pvalue = default_options["pvalue"])
 
         if len(layers) == 1: layers = (layers[0], layers[0])
         self.control_output(values = relations, output_filename=output_filename, inFormat="pair",
@@ -358,6 +360,25 @@ class NetAnalyzer:
             matrix_keys = tuple(matrix_keys)
             matrix = self.matrices.dig(*matrix_keys)
         return matrix
+
+    def get_bicm_associations(self, layers, base_layer, pvalue = 0.05, pvalue_adj_method = 'fdr'):
+        biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))
+        if biadj_matrix is None:
+            biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
+
+        matrix, rowIds, _ = biadj_matrix
+
+        #from bicm.graph_classes import BipartiteGraph
+        miGraph = BipartiteGraph(biadjacency=biad_mat)
+        relations = miGraph.get_rows_projection(
+                            alpha=pvalue,
+                            method='poisson',
+                            progress_bar=False,
+                            fmt='edgelist',
+                            validation_method=pvalue_adj_method)
+        relations = [[rowIds[relation[0]], rowIds[relation[1]], 1] for relation in relations] # TODO: Check 0-based numeration.
+        return relations
+
 
     def get_corr_associations(self, layers, base_layer, corr_type = "pearson", pvalue = 0.05, pvalue_adj_method = None, alternative = 'greater'): 
         biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))

@@ -312,7 +312,7 @@ class NetAnalyzer:
     def get_association_values(self, layers, base_layer, meth, output_filename=None, outFormat='pair', add_to_object= False, **options): #TODO: Talk with PSZ about **optinos or options= {}
 
         default_options = {"n_neighbors": 15, "min_dist": 0.1, "n_components": 2, "metric": 'euclidean', 
-        "corr_type": "pearson", "pvalue": 0.05, "pvalue_adj_method": None, "alternative": 'greater'}
+        "corr_type": "pearson", "pvalue": 0.05, "pvalue_adj_method": None, "alternative": 'greater', "coords2sim_type":  'dotProduct' }
         default_options.update(options)
 
         relations = [] #node A, node B, val
@@ -342,6 +342,8 @@ class NetAnalyzer:
             relations = self.get_corr_associations(layers, base_layer, corr_type = default_options["corr_type"], pvalue = default_options["pvalue"], pvalue_adj_method = default_options["pvalue_adj_method"], alternative = default_options["alternative"])
         elif meth == "umap":
             relations = self.get_umap_associations(layers, base_layer, n_neighbors = default_options["n_neighbors"], min_dist = default_options["min_dist"], n_components = default_options["n_components"], metric = default_options["metric"])
+        elif meth == "pca":
+            relations = self.get_pca_associations(layers, base_layer,  n_components = default_options["n_components"], coords2sim_type = default_options["coords2sim_type"])
         elif meth == "bicm":
             relations = self.get_bicm_associations(layers, base_layer, pvalue = default_options["pvalue"])
 
@@ -362,14 +364,15 @@ class NetAnalyzer:
         return matrix
 
     def get_bicm_associations(self, layers, base_layer, pvalue = 0.05, pvalue_adj_method = 'fdr'):
+        # TODO: Need test.
         biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))
         if biadj_matrix is None:
             biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
 
         matrix, rowIds, _ = biadj_matrix
 
-        #from bicm.graph_classes import BipartiteGraph
-        miGraph = BipartiteGraph(biadjacency=biad_mat)
+        from bicm.graph_classes import BipartiteGraph
+        miGraph = BipartiteGraph(biadjacency=matrix)
         relations = miGraph.get_rows_projection(
                             alpha=pvalue,
                             method='poisson',
@@ -418,23 +421,22 @@ class NetAnalyzer:
         relations = [relation for relation in relations if relation[2] != 0]
         return relations
 
-    # def get_pca_associations(self, layers, base_layer, ):
-    #     # adjust the function to use more than 2 n_components
-    #     # and try to select the correct number of n_componentes (automatically)
-    #     biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))
-    #     if biadj_matrix is None:
-    #         biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
+    def get_pca_associations(self, layers, base_layer, n_components = 2, coords2sim_type = "dotProduct"):
+        # TODO: Try to select the correct number of n_componentes (automatically)
+        biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))
+        if biadj_matrix is None:
+            biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
 
-    #     matrix, rowIds, _ = biadj_matrix
+        matrix, rowIds, _ = biadj_matrix
 
-    #     from sklearn.preprocessing import StandardScaler
-    #     from sklearn.decomposition import PCA
-    #     x = StandardScaler().fit_transform(matrix)
-    #     pca = PCA(n_components=2)
-    #     pca_coords = pca.fit_transform(x)
-    #     pca_matrix_sim = Adv_mat_calc.coords2sim(pca_coords, sim = "dotProduct")
-    #     relations = self.matrix2relations(pca_matrix_sim , rowIds, rowIds)
-    #     return relations
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.decomposition import PCA
+        x = StandardScaler().fit_transform(matrix)
+        pca = PCA(n_components=n_components)
+        pca_coords = pca.fit_transform(x)
+        pca_matrix_sim = Adv_mat_calc.coords2sim(pca_coords, sim = coords2sim_type)
+        relations = self.matrix2relations(pca_matrix_sim , rowIds, rowIds)
+        return relations
 
 
     def get_association_by_transference_resources(self, firstPairLayers, secondPairLayers, lambda_value1 = 0.5, lambda_value2 = 0.5):

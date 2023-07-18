@@ -1,6 +1,7 @@
 import sys 
 import numpy as np
 from scipy import linalg
+import scipy.stats as stats
 from scipy.spatial import distance_matrix
 import umap
 from warnings import warn
@@ -150,6 +151,28 @@ class Adv_mat_calc:
 	    data = np.array(data)
 	    data = (data - np.mean(data)) / np.std(data)
 	    return data
+
+	@staticmethod
+	def pearsonr(x=None,y=None, alternative='two-sided', method=None):
+	    if y is not None:
+	        corr_obj = stats.pearsonr(x, y, alternative=alternative, method= method)
+	        rs = corr_obj.correlation
+	        prob = corr_obj.pvalue
+	    else:
+	        if alternative == 'two-sided':
+	            p = lambda t,n: 2 * (1 - stats.t.cdf(abs(t), n - 2))
+	        elif alternative == 'greater':
+	            p = lambda t,n: 1 - stats.t.cdf(t, n - 2)
+	        elif alternative == 'less':
+	            p = lambda t,n: stats.t.cdf(t, n - 2)
+	        else:
+	            raise ValueError("Invalid alternative argument. Valid options are 'two-sided', 'greater', or 'less'.")
+    
+	        N = np.ones((x.shape[0], x.shape[0]))*x.shape[1] # This should be adopted to na cases.
+	        R = np.corrcoef(x)
+	        T = (R*np.sqrt(N-2))/(np.sqrt(1-R**2))
+	        P = 2*(1-stats.t.cdf(abs(T), N - 2))
+	    return R, P
 
 	@staticmethod
 	def get_stats_from_list(data): #TODO: think inj a dry version

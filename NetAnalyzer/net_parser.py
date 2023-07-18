@@ -51,6 +51,8 @@ class Net_parser:
 		else:
 			row_names = Net_parser.load_input_list(node_file[0])
 			col_names = Net_parser.load_input_list(node_file[1])
+			print(len(row_names))
+			print(len(col_names))
 		if len(tag_layers) == 1:
 			net.matrices["adjacency_matrices"][(tag_layers[0],tag_layers[0])] = [numpy.load(input_file), row_names, col_names]
 		else:

@@ -231,10 +231,8 @@ class BaseNetTestCase(unittest.TestCase):
 	def test_get_corr_association(self):
 		test_association = self.network_obj.get_corr_associations(['main'], 'projection', corr_type = "pearson", pvalue = 0.5, pvalue_adj_method = None)
 		test_association = [ [association[0], association[1], np.round(association[2],4)] for association in test_association ]
-		expected_result = [['M3', 'M4', 0.6124], ['M3', 'M5', 0.4082], ['M3', 'M6', 0.25], ['M4', 'M3', 0.6124], 
-		['M4', 'M5', 0.6667], ['M4', 'M6', 0.4082], ['M5', 'M3', 0.4082],
-		 ['M5', 'M4', 0.6667], ['M5', 'M6', 0.6124], ['M6', 'M3', 0.25], 
-		 ['M6', 'M4', 0.4082], ['M6', 'M5', 0.6124]]
+		expected_result = [['M3', 'M3', 1.0], ['M3', 'M4', 0.6124], ['M3', 'M5', 0.4082], ['M3', 'M6', 0.25], ['M4', 'M3', 0.6124], ['M4', 'M4', 1.0], ['M4', 'M5', 0.6667], ['M4', 'M6', 0.4082], ['M5', 'M3', 0.4082],
+		  ['M5', 'M4', 0.6667], ['M5', 'M5', 1.0], ['M5', 'M6', 0.6124], ['M6', 'M3', 0.25], ['M6', 'M4', 0.4082], ['M6', 'M5', 0.6124], ['M6', 'M6', 1.0]]
 		self.assertEqual(expected_result, test_association)
 
 	def test_get_umap_association(self):

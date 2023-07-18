@@ -18,6 +18,8 @@ from py_semtools import Ontology
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 from NetAnalyzer.net_plotter import Net_plotter
 from NetAnalyzer.graph2sim import Graph2sim
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 # https://stackoverflow.com/questions/60392940/multi-layer-graph-in-networkx
 # http://mkivela.com/pymnet
 
@@ -389,17 +391,13 @@ class NetAnalyzer:
             biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
 
         matrix, rowIds, _ = biadj_matrix
-
         
         if corr_type == "pearson": 
-            df = pd.DataFrame(matrix.T)
-            corr_mat = np.array(df.corr()).T
-            corr_pvalue = np.array(df.corr(method=lambda x, y: stats.pearsonr(x, y, alternative=alternative)[1]).T)
+            corr_mat, corr_pvalue = Adv_mat_calc.pearsonr(x=matrix, alternative=alternative)
         elif corr_type == "spearman":
-            corr_func = lambda m : stats.spearmanr(m, alternative= alternative)
             corr_obj = stats.spearmanr(matrix.T, alternative= alternative)
-            corr_mat = corr_obj.correlation.T
-            corr_pvalue = corr_obj.pvalue.T  
+            corr_mat = corr_obj.correlation
+            corr_pvalue = corr_obj.pvalue
 
         if pvalue_adj_method is not None: # TODO this is double comparations
             corr_pvalue = multipletests(corr_pvalue.reshape(corr_pvalue.shape[0]*corr_pvalue.shape[1]), method = pvalue_adj_method, is_sorted=False, returnsorted=False)[1].reshape(corr_pvalue.shape)
@@ -429,8 +427,6 @@ class NetAnalyzer:
 
         matrix, rowIds, _ = biadj_matrix
 
-        from sklearn.preprocessing import StandardScaler
-        from sklearn.decomposition import PCA
         x = StandardScaler().fit_transform(matrix)
         pca = PCA(n_components=n_components)
         pca_coords = pca.fit_transform(x)

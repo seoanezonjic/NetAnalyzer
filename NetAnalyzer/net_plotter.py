@@ -3,6 +3,9 @@ import sys
 import graphviz
 import json
 import base64
+import igraph as ig
+import matplotlib as mpl
+import random
 from py_report_html import Py_report_html
 
 class Net_plotter:
@@ -18,6 +21,8 @@ class Net_plotter:
 
         if options['method'] == 'graphviz':
             self.plot_dot(options)
+        if options['method'] == 'igraph':
+            self.plot_igraph(options)            
         elif options['method'] == 'cyt_app':
             self.plot_cyt_app(options)
         else:
@@ -30,6 +35,8 @@ class Net_plotter:
     def get_node_layer(self, node_id):
         return self.graph.nodes(data=True)[node_id]['layer']
 
+    ## GRAPHVIZ
+    ##############################################################
     def plot_dot(self, user_options = {}): # input keys: layout
         # Watch out: Node ids must be with no ":".
         options = {'layout': "sfdp"}
@@ -53,6 +60,37 @@ class Net_plotter:
             for nodeID in gNodes: graph.node(f'"{nodeID}"', '', color = border_color, penwidth = '10')
         graph.render(outfile= options['output_file'] + '.png', format='png', engine = options['layout'])
 
+    ## IGRAPH
+    ##########################################################################
+    def plot_igraph(self, user_options = {}):
+        random.seed(1234)
+        ig_net = ig.Graph.from_networkx(self.graph)
+        net_edge_weight = ig_net.es['weight']
+        newMax= max(net_edge_weight)
+        net_edge_weight = [ f"rgba(0.5,0.5,0.5,{round(w/newMax, 3)})" for w in net_edge_weight]
+        cmap=mpl.colormaps['Pastel1']
+        node_ids = ig_net.vs['_nx_name']
+        node_colors = [cmap(0)] * len(node_ids)
+        count = 1
+        for groupID, gNodes in self.group_nodes.items():
+            color = cmap(count)
+            for n in gNodes:
+                idx = node_ids.index(n)
+                node_colors[idx] = color
+            count += 1
+        opts = {
+            'bbox' : (1600, 1600),
+            'vertex_size' : 7,
+            'layout' : "drl",
+            'edge_color' : net_edge_weight,
+            'vertex_color': node_colors
+        }
+        opts.update(user_options)
+        print(opts['layout'])
+        ig.plot(ig_net, target=user_options['output_file'] + '.png', **opts)
+
+    ## CYTOSCAPE APP
+    ###########################################################################
     def plot_cyt_app(self, user_options = {}):
         options = {}
         options.update(user_options)
@@ -107,3 +145,4 @@ class Net_plotter:
             })
             count +=1
         return edges
+    ###########################################################################

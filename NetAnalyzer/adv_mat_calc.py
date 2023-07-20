@@ -153,12 +153,23 @@ class Adv_mat_calc:
 	    return data
 
 	@staticmethod
-	def pearsonr(x=None,y=None, alternative='two-sided', method=None):
+	def get_corr(x = None, y = None, alternative='two-sided', method=None, corr_type= "pearson"):
+		if corr_type == "pearson":
+			R, P = Adv_mat_calc.pearsonr(x, y, alternative, method)
+		elif corr_type == "spearman":
+			corr_obj = stats.spearmanr(a=x, b=y, alternative=alternative, nan_policy = "omit")
+			R = corr_obj.correlation
+			P = corr_obj.pvalue
+		return R, P
+
+	@staticmethod
+	def pearsonr(x=None,y=None, alternative='two-sided', method=None): # TODO; solve problem in divide by cero.
 	    if y is not None:
 	        corr_obj = stats.pearsonr(x, y, alternative=alternative, method= method)
 	        rs = corr_obj.correlation
 	        prob = corr_obj.pvalue
 	    else:
+	        x = x.T # This is needed to make it compatible with spearmanr from scipy.
 	        if alternative == 'two-sided':
 	            p = lambda t,n: 2 * (1 - stats.t.cdf(abs(t), n - 2))
 	        elif alternative == 'greater':
@@ -171,7 +182,7 @@ class Adv_mat_calc:
 	        N = np.ones((x.shape[0], x.shape[0]))*x.shape[1] # This should be adopted to na cases.
 	        R = np.corrcoef(x)
 	        T = (R*np.sqrt(N-2))/(np.sqrt(1-R**2))
-	        P = 2*(1-stats.t.cdf(abs(T), N - 2))
+	        P = p(T,N)
 	    return R, P
 
 	@staticmethod

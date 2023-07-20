@@ -393,19 +393,14 @@ class NetAnalyzer:
         matrix, rowIds, _ = biadj_matrix
         
         if corr_type == "pearson": 
-            corr_mat, corr_pvalue = Adv_mat_calc.pearsonr(x=matrix, alternative=alternative)
+            corr_mat, corr_pvalue = Adv_mat_calc.get_corr(x=matrix.T, alternative=alternative, corr_type = "pearson")
         elif corr_type == "spearman":
-            corr_obj = stats.spearmanr(matrix.T, alternative= alternative)
-            corr_mat = corr_obj.correlation
-            corr_pvalue = corr_obj.pvalue
+            corr_mat, corr_pvalue = Adv_mat_calc.get_corr(x=matrix.T, alternative= alternative, corr_type = "spearman")
 
-        if pvalue_adj_method is not None: # TODO this is double comparations
-            corr_pvalue = multipletests(corr_pvalue.reshape(corr_pvalue.shape[0]*corr_pvalue.shape[1]), method = pvalue_adj_method, is_sorted=False, returnsorted=False)[1].reshape(corr_pvalue.shape)
-        
-        finalMatrix, rowIds, colIds = self.mat_vs_mat((corr_mat, rowIds, rowIds), (corr_pvalue, rowIds, rowIds), operation="filter", options={"cutoff": pvalue, "cutoff_type": "less"})
-
-        relations = self.matrix2relations(finalMatrix, rowIds, colIds)
-        relations = [relation for relation in relations if relation[2] != 0]
+        relations = self.matrixes2pairs([corr_pvalue, corr_mat], rowIds, rowIds, symm = True)
+        relations = [ relation for relation in relations if relation[0] != relation[1] and not np.isnan(relation[2]) and relation[3] != 0 ]
+        if pvalue_adj_method is not None: self.adjust_pval_association(relations, pvalue_adj_method)
+        relations = [[relation[0], relation[1], relation[3]] for relation in relations if relation[2] < pvalue]
         return relations
 
     def get_umap_associations(self, layers, base_layer, n_neighbors = 15, min_dist = 0.1, n_components = 2, metric = 'euclidean', random_seed = None):
@@ -1178,20 +1173,52 @@ class NetAnalyzer:
         else:
             query_node1[node2] = val
 
-    def matrix2relations(self,finalMatrix, rowIds, colIds):
+    
+    # TODO: Talk with PSZ: The next three methods are redundant, but i dont see an efficiente manner of making one generic function (Fred)
+    def matrix2relations(self, finalMatrix, rowIds, colIds, symm = False):
         relations = []
-        for rowPos, rowId in enumerate(rowIds):
-            for colPos, colId in enumerate(colIds):
-                associationValue = finalMatrix[rowPos, colPos]
-                if associationValue >= 0: relations.append([rowId, colId, associationValue])
+        if symm:
+            for rowPos, rowId in enumerate(rowIds):
+                for colPos, colId in enumerate(colIds[rowPos:]):
+                    colPos += rowPos
+                    associationValue = finalMatrix[rowPos, colPos]
+                    if associationValue >= 0: relations.append([rowId, colId, associationValue])
+        else:
+            for rowPos, rowId in enumerate(rowIds):
+                for colPos, colId in enumerate(colIds):
+                    associationValue = finalMatrix[rowPos, colPos]
+                    if associationValue >= 0: relations.append([rowId, colId, associationValue])
         return relations
 
-    def matrix2pairs(self, matrix, rowIds, colIds):
+    def matrix2pairs(self, matrix, rowIds, colIds, symm = False):
         relations = []
-        for rowPos, rowId in enumerate(rowIds):
-            for colPos, colId in enumerate(colIds):
-                relations.append([rowId, colId, matrix[rowPos, colPos]])
+        if symm:
+            for rowPos, rowId in enumerate(rowIds):
+                for colPos, colId in enumerate(colIds[rowPos:]):
+                    colPos += rowPos
+                    relations.append([rowId, colId, matrix[rowPos, colPos]])
+        else:
+            for rowPos, rowId in enumerate(rowIds):
+                for colPos, colId in enumerate(colIds):
+                    relations.append([rowId, colId, matrix[rowPos, colPos]])
         return relations
+
+    def matrixes2pairs(self, matrixes, rowIds, colIds, symm = False):
+        # When there are multiple matrix with the same rows and cols.
+        relations = []
+        if symm:
+            for rowPos, rowId in enumerate(rowIds):
+                for colPos, colId in enumerate(colIds[rowPos:]):
+                    colPos += rowPos
+                    associationValues = [matrix[rowPos, colPos] for matrix in matrixes]
+                    relations.append([rowId, colId, *associationValues])
+        else:
+            for rowPos, rowId in enumerate(rowIds):
+                for colPos, colId in enumerate(colIds):
+                    associationValues = [matrix[rowPos, colPos] for matrix in matrixes]
+                    relations.append([rowId, colId, associationValue])
+        return relations
+
 
     def update_index(self, index, element, count):
         if index.get(element) is None:

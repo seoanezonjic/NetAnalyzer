@@ -72,6 +72,14 @@ class Adv_mat_calc:
 		return matrix_result
 
 	@staticmethod
+	def row_col_normalization(matrix):
+		D = np.zeros(matrix.shape)
+		np.fill_diagonal(D, matrix.sum(axis=1))
+		D_inv_sqrt = np.linalg.inv(np.sqrt(D))
+		normalized_matrix = np.dot(np.dot(D_inv_sqrt, matrix), D_inv_sqrt)
+		return normalized_matrix
+
+	@staticmethod
 	def cosine_normalization(matrix):
 		dims = np.shape(matrix)
 		normalized_matrix =  np.zeros(dims)

@@ -780,11 +780,24 @@ class NetAnalyzer:
 
     def write_stats_from_matrix(self, mat_keys, output_filename="stats_from_matrix"): 
         matrix_data = self.matrices.dig(*mat_keys)
-        if matrix_data == None: logging.warning("keys for matrices which dont exist yet")
+        if matrix_data == None: raise Exception("keys for matrices which dont exist yet")
         matrix, _, _ = matrix_data
 
         stats = Adv_mat_calc.get_stats_from_matrix(matrix)
         self.write_obj(stats, output_filename, Format="pair")
+
+    def normalize_matrix(self, mat_keys, by= "rows_cols"):
+        matrix_data = self.matrices.dig(*mat_keys)
+        if matrix_data == None: raise Exception("keys for matrices which dont exist yet")
+        matrix, rowIds, colIds = matrix_data
+
+        if by == "rows_cols":
+            matrix = Adv_mat_calc.row_col_normalization(matrix)
+        elif by == "cosine":
+            matrix = Adv_mat_calc.cosine_normalization(matrix)
+
+        self.control_output(values = matrix, rowIds = rowIds, colIds = colIds, output_filename = None, outFormat = "matrix",
+            inFormat = "matrix", add_to_object = True, matrix_keys = mat_keys)
 
 
     def mat_vs_mat(self, mat1_rowcol, mat2_rowcol, operation="cutoff", options={"cutoff": 0, "cutoff_type": "greater"}):
@@ -1269,7 +1282,7 @@ class NetAnalyzer:
                 obj, rowIds, colIds = self.pairs2matrix(self.nested_pairs2pairs(obj)) # Talk with PSZ about the trade-off combinatorial vs optimization
         return obj, rowIds, colIds
 
-    def control_output(self, values, output_filename, inFormat, outFormat, add_to_object, matrix_keys = None, rowIds = None, colIds = None):
+    def control_output(self, values, output_filename = None, inFormat = "pair", outFormat = "matrix" , add_to_object = False, matrix_keys = None, rowIds = None, colIds = None):
         if add_to_object: 
             matrix, rowIds, colIds = self.transform2obj(values, inFormat= inFormat, outFormat= "matrix", rowIds = rowIds, colIds = colIds) 
             path_keys = matrix_keys[:-1]

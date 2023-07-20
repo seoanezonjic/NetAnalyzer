@@ -93,9 +93,15 @@ class Adv_mat_calc:
 	def coords2sim(coords, sim = "dotProduct"):
 	    if sim == "dotProduct":
 	        sim_mat = coords.dot(coords.T)
+	    elif sim == "normalizedScaling":
+	        min_dist = np.min(Adv_mat_calc.coords2dis(coords, dist="euclidean"))
+	        max_dist = np.max(Adv_mat_calc.coords2dis(coords, dist="euclidean"))
+	        sim_mat = 1 - (Adv_mat_calc.coords2dis(coords, dist="euclidean") - min_dist) / (max_dist - min_dist)  
+	    elif isinstance(sim, (float, int)) or sim == "infinity" or "euclidean":
+	        sim_mat = Adv_mat_calc.coords2dis(coords, dist=sim)
+	        sim_mat = 1 / (sim_mat + 1)
 	    else:
-	        sim_mat = Adv_mat_calc.coords2dis(coords, dist = sim)
-	        sim_mat = 1/(sim_mat+1)
+	        raise ValueError("Invalid similarity measure specified.")
 	    return sim_mat
 
 	@staticmethod
@@ -368,8 +374,8 @@ class Adv_mat_calc:
 	    pval_mat = Adv_mat_calc.get_disparity_backbone_pval(matrix)
 	    # Create edge list from that p value matrix
 	    result_mat = pval_mat < pval_threshold
-	    # adjacency matrix, obtained when both p[i,j] and p[j,i] match the criteria
-	    new_adj = result_mat.transpose()*result_mat
+	    # adjacency matrix, obtained when p[i,j] OR p[j,i] match the criteria
+	    new_adj = result_mat.transpose() + result_mat
 
 	    # remove genes with no significance
 	    k = np.sum(new_adj, axis=0)

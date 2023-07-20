@@ -662,7 +662,7 @@ class NetAnalyzer:
     ## Kernel and similarity methods
     #------------------------------------
 
-    def get_kernel(self, layers, method, normalization=False, embedding_kwargs={}, output_filename=None, outFormat='matrix', add_to_object= False):
+    def get_kernel(self, layers, method, normalization=False, sim_type= "dotProduct", embedding_kwargs={}, output_filename=None, outFormat='matrix', add_to_object= False):
         #embedding_kwargs accept: dimensions, walk_length, num_walks, p, q, workers, window, min_count, seed, quiet, batch_words
 
         if method in Graph2sim.allowed_embeddings:
@@ -670,7 +670,7 @@ class NetAnalyzer:
             subgraph2embed = self.graph.subgraph(embedding_nodes)
             emb_coords = Graph2sim.get_embedding(subgraph2embed, embedding = method, **embedding_kwargs)
             
-            kernel = Graph2sim.emb_coords2kernel(emb_coords, normalization)
+            kernel = Graph2sim.emb_coords2kernel(emb_coords, normalization, sim_type= sim_type)
             rowIds = list(subgraph2embed.nodes())
             colIds = rowIds
         elif method[0:2] in Graph2sim.allowed_kernels:
@@ -801,14 +801,16 @@ class NetAnalyzer:
 
 
     def mat_vs_mat(self, mat1_rowcol, mat2_rowcol, operation="cutoff", options={"cutoff": 0, "cutoff_type": "greater"}):
+        default_options={"cutoff": 0, "cutoff_type": "greater"}
+        default_options.update(options)
         mat1, rows1, cols1 = mat1_rowcol
         mat2, rows2, cols2 = mat2_rowcol
 
         if operation == "filter":
-            if options["cutoff_type"] == "greater":
-                mat2 = mat2 >= options["cutoff"]
-            elif options["cutoff_type"] == "less":
-                mat2 = mat2 <= options["cutoff"]
+            if default_options["cutoff_type"] == "greater":
+                mat2 = mat2 >= default_options["cutoff"]
+            elif default_options["cutoff_type"] == "less":
+                mat2 = mat2 <= default_options["cutoff"]
             mat_result = mat1 * mat2
             rows_result, cols_result = rows1, cols1
             mat_result, rows_result, cols_result = Adv_mat_calc.remove_zero_lines(mat_result, rows_result, cols_result)

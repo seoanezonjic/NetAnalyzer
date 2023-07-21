@@ -73,10 +73,14 @@ class Net_plotter:
         for w in net_edge_weight:
             normalized = round(w/newMax, 3)
             if normalized > 1: normalized = 1
-            norm_net_edge_weight.append(f"rgba(0.5,0.5,0.5,{normalized})")
+            norm_net_edge_weight.append(f"rgba(0.7,0.7,0.7,{normalized})")
         cmap=mpl.colormaps['Pastel1']
         node_ids = ig_net.vs['_nx_name']
-        node_colors = [cmap(0)] * len(node_ids)
+        node_base_color = list(cmap(0))
+        node_base_color[3] = 0.25
+        node_base_color = tuple(node_base_color)
+        node_colors = [node_base_color] * len(node_ids)
+        # Node color
         count = 1
         for groupID, gNodes in self.group_nodes.items():
             color = cmap(count)
@@ -84,12 +88,28 @@ class Net_plotter:
                 idx = node_ids.index(n)
                 node_colors[idx] = color
             count += 1
+
+        # Node order: tag each node with a int that says in which order mut be plotted. 0 is the first node to be plotted and N node the last (so the first in the image)
+        node_order=[0] * len(node_ids)
+        node_count = len(node_ids) -1
+        node_dict = {}
+        for groupID, gNodes in self.group_nodes.items():
+            for n in gNodes:
+                node_dict[n] = node_count
+                node_count -= 1
+        for i,n_id in enumerate(node_ids):
+            order = node_dict.get(n_id)
+            if order == None: 
+                order = node_count
+                node_count -= 1
+            node_order[i] = order
         opts = {
-            'bbox' : (1600, 1600),
+            'bbox' : (2400, 2400),
             'vertex_size' : 7,
             'layout' : "drl",
             'edge_color' : norm_net_edge_weight,
-            'vertex_color': node_colors
+            'vertex_color': node_colors,
+            'vertex_order': node_order
         }
         opts.update(user_options)
         ig.plot(ig_net, target=user_options['output_file'] + '.png', **opts)

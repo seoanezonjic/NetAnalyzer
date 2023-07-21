@@ -68,12 +68,12 @@ class Net_plotter:
         ig_net = ig.Graph.from_networkx(self.graph)
         net_edge_weight = ig_net.es['weight']
         newMax= np.percentile(net_edge_weight, 90)
-        print(newMax)
-        net_edge_weight = [ ]
+        #net_edge_weight = [ f"rgba(0.5,0.5,0.5,{round(w/newMax, 3)})" for w in net_edge_weight ]
+        norm_net_edge_weight = [ ]
         for w in net_edge_weight:
             normalized = round(w/newMax, 3)
             if normalized > 1: normalized = 1
-            net_edge_weight.append(f"rgba(0.5,0.5,0.5,{normalized})")
+            norm_net_edge_weight.append(f"rgba(0.5,0.5,0.5,{normalized})")
         cmap=mpl.colormaps['Pastel1']
         node_ids = ig_net.vs['_nx_name']
         node_colors = [cmap(0)] * len(node_ids)
@@ -88,7 +88,7 @@ class Net_plotter:
             'bbox' : (1600, 1600),
             'vertex_size' : 7,
             'layout' : "drl",
-            'edge_color' : net_edge_weight,
+            'edge_color' : norm_net_edge_weight,
             'vertex_color': node_colors
         }
         opts.update(user_options)

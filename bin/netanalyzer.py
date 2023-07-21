@@ -110,6 +110,7 @@ parser.add_argument("-N","--no_autorelations", dest="no_autorelations", default=
 					help="Kernel operation to perform with the adjacency matrix")
 parser.add_argument("-z","--normalize_kernel_values", dest="normalize_kernel", default=False, action='store_true',
 					help="Apply cosine normalization to the obtained kernel")
+parser.add_argument("--coords2sim_type", dest="coords2sim_type", default="dotProduct", help= "Select the type of transformation from coords to similarity: dotProduct, normalizedScaling, infinity and int or float numbers")
 parser.add_argument("-g", "--graph_file", dest="graph_file", default=None,
 					help="Build a graphic representation of the network")
 parser.add_argument("--graph_options", dest="graph_options", default={'method': 'elgrapho', 'layout': 'forcedir', 'steps': '30'}, type= graph_options_parse,
@@ -221,7 +222,7 @@ if options.kernel is not None:
 	else:
 		layers2kernel = tuple(options.use_layers[0])
 
-	fullNet.get_kernel(layers2kernel, options.kernel, options.normalize_kernel, embedding_kwargs, add_to_object= True)
+	fullNet.get_kernel(layers2kernel, options.kernel, options.normalize_kernel, options.coords2sim_type, embedding_kwargs, add_to_object= True)
 	fullNet.write_kernel(layers2kernel, options.kernel, options.kernel_file)
 
 if options.graph_file is not None:

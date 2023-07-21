@@ -1,1 +1,0 @@
-Note: to be able to use all crisp methods, you need to install some additional packages:  {'infomap', 'wurlitzer'}

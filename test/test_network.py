@@ -58,6 +58,16 @@ class BaseNetTestCase(unittest.TestCase):
 		network_clone = self.network_obj.clone()
 		network_clone.add_node('M8', network_clone.set_layer(self.bipartite_layers, 'M8'))
 		self.assertNotEqual(self.network_obj, network_clone	)
+
+	def test_rows_cols_normalization(self):
+		self.monopartite_network.normalize_matrix(("adjacency_matrices",("main","main")), by="rows_cols")
+		test_result = self.monopartite_network.matrices["adjacency_matrices"][("main","main")][0]
+		expected_result = np.array([[0.        , 0.70710678, 0.5       , 0.        , 0.        ],
+       								[0.70710678, 0.        , 0.        , 0.        , 0.        ],
+       								[0.5       , 0.        , 0.        , 0.        , 0.5       ],
+       								[0.        , 0.        , 0.        , 0.        , 0.70710678],
+       								[0.        , 0.        , 0.5       , 0.70710678, 0.        ]])
+		self.assertTrue((expected_result.round(decimals=5) == test_result.round(decimals=5)).all())
 	
 	def test_generate_adjacency_matrix_monopartite(self):
 		test_values = self.monopartite_network.matrices["adjacency_matrices"]

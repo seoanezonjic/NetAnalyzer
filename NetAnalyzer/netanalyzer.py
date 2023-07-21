@@ -662,7 +662,7 @@ class NetAnalyzer:
     ## Kernel and similarity methods
     #------------------------------------
 
-    def get_kernel(self, layers, method, normalization=False, embedding_kwargs={}, output_filename=None, outFormat='matrix', add_to_object= False):
+    def get_kernel(self, layers, method, normalization=False, sim_type= "dotProduct", embedding_kwargs={}, output_filename=None, outFormat='matrix', add_to_object= False):
         #embedding_kwargs accept: dimensions, walk_length, num_walks, p, q, workers, window, min_count, seed, quiet, batch_words
 
         if method in Graph2sim.allowed_embeddings:
@@ -670,7 +670,7 @@ class NetAnalyzer:
             subgraph2embed = self.graph.subgraph(embedding_nodes)
             emb_coords = Graph2sim.get_embedding(subgraph2embed, embedding = method, **embedding_kwargs)
             
-            kernel = Graph2sim.emb_coords2kernel(emb_coords, normalization)
+            kernel = Graph2sim.emb_coords2kernel(emb_coords, normalization, sim_type= sim_type)
             rowIds = list(subgraph2embed.nodes())
             colIds = rowIds
         elif method[0:2] in Graph2sim.allowed_kernels:
@@ -780,22 +780,37 @@ class NetAnalyzer:
 
     def write_stats_from_matrix(self, mat_keys, output_filename="stats_from_matrix"): 
         matrix_data = self.matrices.dig(*mat_keys)
-        if matrix_data == None: logging.warning("keys for matrices which dont exist yet")
+        if matrix_data == None: raise Exception("keys for matrices which dont exist yet")
         matrix, _, _ = matrix_data
 
         stats = Adv_mat_calc.get_stats_from_matrix(matrix)
         self.write_obj(stats, output_filename, Format="pair")
 
+    def normalize_matrix(self, mat_keys, by= "rows_cols"):
+        matrix_data = self.matrices.dig(*mat_keys)
+        if matrix_data == None: raise Exception("keys for matrices which dont exist yet")
+        matrix, rowIds, colIds = matrix_data
+
+        if by == "rows_cols":
+            matrix = Adv_mat_calc.row_col_normalization(matrix)
+        elif by == "cosine":
+            matrix = Adv_mat_calc.cosine_normalization(matrix)
+
+        self.control_output(values = matrix, rowIds = rowIds, colIds = colIds, output_filename = None, outFormat = "matrix",
+            inFormat = "matrix", add_to_object = True, matrix_keys = mat_keys)
+
 
     def mat_vs_mat(self, mat1_rowcol, mat2_rowcol, operation="cutoff", options={"cutoff": 0, "cutoff_type": "greater"}):
+        default_options={"cutoff": 0, "cutoff_type": "greater"}
+        default_options.update(options)
         mat1, rows1, cols1 = mat1_rowcol
         mat2, rows2, cols2 = mat2_rowcol
 
         if operation == "filter":
-            if options["cutoff_type"] == "greater":
-                mat2 = mat2 >= options["cutoff"]
-            elif options["cutoff_type"] == "less":
-                mat2 = mat2 <= options["cutoff"]
+            if default_options["cutoff_type"] == "greater":
+                mat2 = mat2 >= default_options["cutoff"]
+            elif default_options["cutoff_type"] == "less":
+                mat2 = mat2 <= default_options["cutoff"]
             mat_result = mat1 * mat2
             rows_result, cols_result = rows1, cols1
             mat_result, rows_result, cols_result = Adv_mat_calc.remove_zero_lines(mat_result, rows_result, cols_result)
@@ -1269,7 +1284,7 @@ class NetAnalyzer:
                 obj, rowIds, colIds = self.pairs2matrix(self.nested_pairs2pairs(obj)) # Talk with PSZ about the trade-off combinatorial vs optimization
         return obj, rowIds, colIds
 
-    def control_output(self, values, output_filename, inFormat, outFormat, add_to_object, matrix_keys = None, rowIds = None, colIds = None):
+    def control_output(self, values, output_filename = None, inFormat = "pair", outFormat = "matrix" , add_to_object = False, matrix_keys = None, rowIds = None, colIds = None):
         if add_to_object: 
             matrix, rowIds, colIds = self.transform2obj(values, inFormat= inFormat, outFormat= "matrix", rowIds = rowIds, colIds = colIds) 
             path_keys = matrix_keys[:-1]

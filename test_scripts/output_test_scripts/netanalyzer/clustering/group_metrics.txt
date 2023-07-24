@@ -1,0 +1,4 @@
+group	comparative_degree	max_odf
+0	1.0	10
+1	1.0	8
+2	1.0	4

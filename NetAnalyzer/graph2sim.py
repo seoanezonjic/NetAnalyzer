@@ -5,24 +5,29 @@ from warnings import warn
 import networkx as nx
 from node2vec import Node2Vec
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
+from pecanpy import pecanpy
+from gensim.models import Word2Vec
 
 class Graph2sim:
 
 	allowed_embeddings = ['node2vec', 'deepwalk']
 	allowed_kernels = ['el', 'ct', 'rf', 'me', 'vn', 'rl', 'ka', 'md']
 
-	def get_embedding(graph, embedding, dimensions = 64, walk_length=30, num_walks = 200, p = 1, q = 1, workers = 16, window = 10, min_count=1, seed = None, quiet=False, batch_words=4):
+	def get_embedding(adj_mat, embedding_nodes, embedding = "node2vec", dimensions = 64, walk_length=30, num_walks = 200, p = 1, q = 1, workers = 16, window = 10, min_count=1, seed = None, quiet=False, batch_words=4):
+
 		emb_coords = None
 		if embedding in ['node2vec', 'deepwalk']: # TODO 'metapath2vec',
 			if embedding == 'node2vec' or embedding == "deepwalk":
 				if embedding == "deepwalk":
 					p = 1
 					q = 1 
-				node2vec = Node2Vec(graph, dimensions=dimensions, walk_length=walk_length, num_walks=num_walks, p = p, q = q, workers = workers, seed = seed, quiet=quiet)
-				model = node2vec.fit(window=window, min_count= min_count, batch_words=batch_words) # batch_words=10000
-				# min_count: is the minimun number of counts a word must have.
-				# batch_words: are Target size (in words) for batches of examples
-				list_arrays=[model.wv.get_vector(str(n)) for n in graph.nodes()]
+				verbose = not quiet
+				g = pecanpy.DenseOTF(p=p, q=q, workers=workers, verbose= verbose)
+				g = g.from_mat(adj_mat=adj_mat, node_ids=embedding_nodes)
+				walks = g.simulate_walks(num_walks=num_walks, walk_length=walk_length)
+				# use random walks to train embeddings
+				model = Word2Vec(walks, vector_size=dimensions, window=window, min_count=min_count, workers=workers) # point to extend
+				list_arrays=[model.wv.get_vector(str(n)) for n in embedding_nodes]
 				n_cols=list_arrays[0].shape[0] # Number of col
 				n_rows=len(list_arrays)# Number of rows
 				emb_coords = np.concatenate(list_arrays).reshape([n_rows,n_cols]) # Concat all the arrays at one.

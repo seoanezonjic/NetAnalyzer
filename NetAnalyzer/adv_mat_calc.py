@@ -71,6 +71,24 @@ class Adv_mat_calc:
 		if normalization: matrix_result = Adv_mat_calc.cosine_normalization(matrix_result)  #TODO: check implementation with Numo::array
 		return matrix_result
 
+
+	@staticmethod
+	def normalize_matrix(matrix, method="rows_cols"):
+	    if method == "rows_cols":
+	        normalized_matrix = Adv_mat_calc.row_col_normalization(matrix)
+	    elif method == "min_max":
+	        normalized_matrix = Adv_mat_calc.min_max_normalization_matrix(matrix)
+	    elif method == "cosine":
+	        normalized_matrix = Adv_mat_calc.cosine_normalization(matrix)
+	    return normalized_matrix
+
+	@staticmethod
+	def min_max_normalization_matrix(matrix):
+	    x_min = np.min(matrix)
+	    x_max = np.max(matrix)
+	    normalized_matrix = (matrix - x_min)/(x_max - x_min)
+	    return matrix
+
 	@staticmethod
 	def row_col_normalization(matrix):
 		D = np.zeros(matrix.shape)

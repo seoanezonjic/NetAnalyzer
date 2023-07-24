@@ -666,12 +666,10 @@ class NetAnalyzer:
         #embedding_kwargs accept: dimensions, walk_length, num_walks, p, q, workers, window, min_count, seed, quiet, batch_words
 
         if method in Graph2sim.allowed_embeddings:
-            embedding_nodes = [node for node, layer in self.graph.nodes('layer') if layer in list(layers)] 
-            subgraph2embed = self.graph.subgraph(embedding_nodes)
-            emb_coords = Graph2sim.get_embedding(subgraph2embed, embedding = method, **embedding_kwargs)
-            
+            adj_mat, embedding_nodes, _ = self.matrices["adjacency_matrices"][(layers[0],layers[0])]
+            emb_coords = Graph2sim.get_embedding(adj_mat, embedding = method, embedding_nodes=embedding_nodes, **embedding_kwargs)
             kernel = Graph2sim.emb_coords2kernel(emb_coords, normalization, sim_type= sim_type)
-            rowIds = list(subgraph2embed.nodes())
+            rowIds = embedding_nodes
             colIds = rowIds
         elif method[0:2] in Graph2sim.allowed_kernels:
             adj_mat, rowIds, colIds = self.matrices["adjacency_matrices"][(layers[0],layers[0])]
@@ -791,10 +789,7 @@ class NetAnalyzer:
         if matrix_data == None: raise Exception("keys for matrices which dont exist yet")
         matrix, rowIds, colIds = matrix_data
 
-        if by == "rows_cols":
-            matrix = Adv_mat_calc.row_col_normalization(matrix)
-        elif by == "cosine":
-            matrix = Adv_mat_calc.cosine_normalization(matrix)
+        matrix = Adv_mat_calc.normalize_matrix(matrix, by)
 
         self.control_output(values = matrix, rowIds = rowIds, colIds = colIds, output_filename = None, outFormat = "matrix",
             inFormat = "matrix", add_to_object = True, matrix_keys = mat_keys)

@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import graphviz
 import json
@@ -130,7 +131,7 @@ class Net_plotter:
         else:
             layout_custom_opts = {}
             custom_opts_string = opts.get('custom_opts')
-            if layout_custom_opts != None: layout_custom_opts = eval(custom_opts_string)
+            if layout_custom_opts != None: layout_custom_opts = eval(re.sub(';', ',', custom_opts_string))
             layout = igraph_obj.layout(layout_name, **layout_custom_opts)
         save_path = opts.get('save')
         if save_path != None:

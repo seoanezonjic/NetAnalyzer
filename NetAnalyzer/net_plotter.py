@@ -4,11 +4,12 @@ import graphviz
 import json
 import base64
 import igraph as ig
+from igraph.layout import Layout
 import matplotlib as mpl
 import random
 import numpy as np
+import pickle
 from py_report_html import Py_report_html
-
 class Net_plotter:
 
     TEMPLATES = os.path.join(os.path.dirname(__file__), 'templates')
@@ -112,7 +113,32 @@ class Net_plotter:
             'vertex_order': node_order
         }
         opts.update(user_options)
-        ig.plot(ig_net, target=user_options['output_file'] + '.png', **opts)
+        layout = self.get_igraph_layout(node_ids, ig_net, opts.pop('layout'), opts)
+        ig.plot(ig_net, layout=layout, target=user_options['output_file'] + '.png', **opts)
+
+    def get_igraph_layout(self, node_ids, igraph_obj, layout_name, opts):
+        layout = None
+        load_path = opts.get('load')
+        if load_path != None:
+            sorted_coords = []
+            with open(load_path, 'rb') as file: 
+                tagged_coordinates = pickle.load(file)
+                for nodeID in node_ids: # Reorder file loaded layout with the current node ordering in the igraph object
+                    coords = tagged_coordinates.get(nodeID)
+                    if coords != None: sorted_coords.append(coords)
+            layout = Layout(sorted_coords) # Create layout objet from reordered loaded node coords
+        else:
+            layout_custom_opts = {}
+            custom_opts_string = opts.get('custom_opts')
+            if layout_custom_opts != None: layout_custom_opts = eval(custom_opts_string)
+            layout = igraph_obj.layout(layout_name, **layout_custom_opts)
+        save_path = opts.get('save')
+        if save_path != None:
+            tagged_coordinates = {}
+            for i, n in enumerate(node_ids):
+                tagged_coordinates[n] = layout[i]
+            with open(save_path, 'wb') as file: pickle.dump(tagged_coordinates, file)
+        return layout
 
     ## CYTOSCAPE APP
     ###########################################################################

@@ -722,6 +722,7 @@ class NetAnalyzer:
 
 
     def get_node_attributes(self, attr_names, layers = "all", summary = False, output_filename = None):
+        if type(layers) == str: layers = [layers]
         if layers == "all": layers = self.layers
         node_universe = self.get_nodes_layer(layers)
 
@@ -735,7 +736,6 @@ class NetAnalyzer:
                 attrs["betweenness_centrality"] = self.get_betweenness_centrality(zscore=False)
             elif attr_name == "betweenness_centralityZ":
                 attrs["betweenness_centralityZ"] = self.get_betweenness_centrality()
-
         node_ids = attrs[attr_names[0]].keys() # TODO: This line of code should be replaced for an option to select node for each attr.
         node_ids = [node_id for node_id in node_ids if node_id in node_universe]
         
@@ -749,6 +749,8 @@ class NetAnalyzer:
                 n_attrs = [ attrs[at][n] for at in attr_names ]
                 node_attrs.append([n] + n_attrs)
 
+
+        print(node_attrs)
         self.control_output(values = node_attrs, output_filename=output_filename, inFormat="pair", outFormat="pair", add_to_object=False)
 
         return node_attrs

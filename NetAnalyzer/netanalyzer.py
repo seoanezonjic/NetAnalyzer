@@ -722,7 +722,7 @@ class NetAnalyzer:
 
 
     def get_node_attributes(self, attr_names, layers = "all", summary = False, output_filename = None):
-        if type(layers) == str: layers = [layers]
+        if type(layers) == str and layers != "all": layers = [layers]
         if layers == "all": layers = self.layers
         node_universe = self.get_nodes_layer(layers)
 
@@ -748,9 +748,7 @@ class NetAnalyzer:
             for n in node_ids:
                 n_attrs = [ attrs[at][n] for at in attr_names ]
                 node_attrs.append([n] + n_attrs)
-
-
-        print(node_attrs)
+                
         self.control_output(values = node_attrs, output_filename=output_filename, inFormat="pair", outFormat="pair", add_to_object=False)
 
         return node_attrs

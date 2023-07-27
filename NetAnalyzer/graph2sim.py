@@ -3,7 +3,6 @@ import numpy as np
 from scipy import linalg
 from warnings import warn
 import networkx as nx
-from node2vec import Node2Vec
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 from pecanpy import pecanpy
 from gensim.models import Word2Vec

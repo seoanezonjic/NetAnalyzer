@@ -41,8 +41,10 @@ parser.add_argument("-S", "--seed_sep", dest="seed_sep", default=",",
   help="Separator of seed genes. Only use when -s point to a file")
 parser.add_argument("-f", "--filter", dest="filter", default=None,
   help="PATH to file with seed_name and genes to keep in output")
-parser.add_argument("-l", "--leave_one_out", dest="leave_one_out", default=False, 
-  action='store_true', help="PATH to file with seed_name and genes to keep in output")
+parser.add_argument("-l", "--cross_validation", dest="cross_validation", default=False, 
+  action='store_true', help="To activate cross validation")
+parser.add_argument("-K", "--k_fold", dest="k_fold", default=None, type=int, 
+  help="Indicate the number of itrations needed, not used for leave one out cross validation (loocv)")
 parser.add_argument("-t", "--top_n", dest="top_n", default=None, type=int,
   help="Top N genes to print in output")
 parser.add_argument("--output_top", dest="output_top", default=None,
@@ -69,7 +71,8 @@ ranker.load_seeds(options.genes_seed, sep= options.seed_sep)
 options.filter is not None and ranker.load_references(options.filter, sep= ",") 
 exec('propagate_options = {' + options.propagate_options +'}')
 print(propagate_options)
-ranker.do_ranking(leave_one_out= options.leave_one_out, propagate = options.propagate, options = propagate_options)
+ranker.do_ranking(cross_validation= options.cross_validation, propagate = options.propagate,
+ k_fold= options.k_fold, options = propagate_options)
 rankings = ranker.ranking
 
 discarded_seeds = [seed_name for seed_name, ranks in rankings.items() if not ranks]

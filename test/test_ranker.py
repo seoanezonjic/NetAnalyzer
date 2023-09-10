@@ -69,9 +69,14 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertEqual(validate_seed_indexes, self.ranker.get_seed_indexes())
 
 	def test_leave_one_out(self):
-		self.ranker.do_ranking(leave_one_out = True)
+		self.ranker.do_ranking(cross_validation = True, k_fold = None)
 		test_ranked_genes = self.ranked_genes2array(self.ranker.ranking)
 		self.assertEqual(self.load_results('leave_one_out_by_seedgene_results'), test_ranked_genes)
+
+	def test_10Fold_CV(self):
+		self.ranker.do_ranking(cross_validation = True, k_fold = 2)
+		test_ranked_genes = self.ranked_genes2array(self.ranker.ranking)
+		self.assertEqual(self.load_results('cross_validation_by_seedgene_results'), test_ranked_genes)
 
 	def test_rank_by_seed(self):
 		self.ranker.do_ranking()

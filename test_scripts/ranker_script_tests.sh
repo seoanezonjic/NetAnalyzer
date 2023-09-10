@@ -24,6 +24,9 @@ ranker.py -k $test_data/kernel_for_validating -n $test_data/kernel_for_validatin
 # ranker leaving one out ----------------------------------------------------------------------------------------------------------------------------------------
 ranker.py -k $test_data/kernel_for_validating -n $test_data/kernel_for_validating.lst -s $test_data/seed_genes_for_validating -l -o $out/ranker_leave_one_out_by_seed_results
 
+# ranker 2-fold cross validation---------------------------------------------------------------------------------------------------------------------------------
+ranker.py -k $test_data/kernel_for_validating -n $test_data/kernel_for_validating.lst -s $test_data/seed_genes_for_validating -l -K 2 -o $out/ranker_cross_validation_by_seed_results
+
 # ranker with filter --------------------------------------------------------------------------------------------------------------------------------------------
 ranker.py -k $test_data/kernel_for_validating -n $test_data/kernel_for_validating.lst -s $test_data/seed_genes_for_validating -f $test_data/genes2filter_for_validating -o $out/ranker_filter_results
 

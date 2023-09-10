@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from itertools import combinations
+from sklearn.model_selection import KFold, LeaveOneOut
 
 
 class Ranker:
@@ -51,9 +52,33 @@ class Ranker:
       for line in f:
         self.nodes.append(line.rstrip())
 
-  def do_ranking(self, leave_one_out=False, propagate = False, options = {"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}): #TODO: Add thread option
-    if leave_one_out:
-      self.get_seed_leave_one_out()
+  def get_seed_cross_validation(self, k_fold = None):
+    new_seeds = {}
+    genes2predict = {}
+
+    for seed_name, seed in self.seeds.items():
+      if k_fold != None:
+        cv = KFold(n_splits=k_fold)
+      else:
+        cv = LeaveOneOut()
+
+      for indx, (train_index, test_index) in enumerate(cv.split(seed)):
+          seed_name_one_out = str(seed_name) + "_iteration_" + str(indx)
+          new_seeds[seed_name_one_out] = [ seed[i] for i in train_index ]
+          genes2predict[seed_name_one_out] = [ seed[i] for i in test_index ]
+          if self.reference_nodes.get(seed_name) is not None:
+            genes2predict[seed_name_one_out] += self.reference_nodes[seed_name]
+
+          genes2predict[seed_name_one_out] = list(
+            set(genes2predict[seed_name_one_out]))
+
+    self.seeds = new_seeds
+    self.reference_nodes = genes2predict
+
+
+  def do_ranking(self, cross_validation = False, k_fold = None, propagate = False, options = {"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}): #TODO: Add thread option
+    if cross_validation:
+      self.get_seed_cross_validation(k_fold=k_fold)
 
     seed_indexes = self.get_seed_indexes()
     #seed_groups = list(self.seeds)  # Array conversion needed for parallelization
@@ -61,36 +86,21 @@ class Ranker:
     # TODO: Implement parallelization in the process as ruby if needed.
     for seed_name, seed in self.seeds.items():
       # The code in this block CANNOT modify nothing outside
-      if leave_one_out and len(self.reference_nodes[seed_name]) == 1:
-         rank_list = self.get_individual_rank(seed, self.reference_nodes[seed_name][0], propagate = propagate, options= options)
-      else:
-         rank_list = self.rank_by_seed(seed_indexes, seed, propagate=propagate, options=options)  # Production mode
+      rank_list = self.rank_by_seed(seed_indexes, seed, propagate=propagate, options=options)  # Production mode
+      if cross_validation:
+        rank_list = self.delete_seed_from_rank(rank_list, seed)
+      # if cross_validation and len(self.reference_nodes[seed_name]) == 1:
+      #    rank_list = self.get_individual_rank(seed, self.reference_nodes[seed_name][0], propagate = propagate, options= options)
+      # else:
+      #    rank_list = self.rank_by_seed(seed_indexes, seed, propagate=propagate, options=options)  # Production mode
       ranked_lists.append([seed_name, rank_list])
 
     for seed_name, rank_list in ranked_lists:  # Transfer resuls to hash
       self.ranking[seed_name] = rank_list
 
-  def get_seed_leave_one_out(self):
-    new_seeds = {}
-    genes2predict = {}
-    all_genes = list(set(sum(self.seeds.values(), [])))
-
-    for seed_name, seeds in self.seeds.items():
-      group_number = len(seeds) - 1
-      one_out_seeds = [list(combination) for combination in combinations(seeds, group_number)]
-
-      for indx, one_out_seed in enumerate(one_out_seeds):
-        seed_name_one_out = str(seed_name) + "_iteration_" + str(indx)
-        new_seeds[seed_name_one_out] = one_out_seed
-        genes2predict[seed_name_one_out] = list(set(seeds) - set(one_out_seed))
-        if self.reference_nodes.get(seed_name) is not None:
-          genes2predict[seed_name_one_out] += self.reference_nodes[seed_name]
-
-        genes2predict[seed_name_one_out] = list(
-            set(genes2predict[seed_name_one_out]))
-
-    self.seeds = new_seeds
-    self.reference_nodes = genes2predict
+  def delete_seed_from_rank(self, rank_list, seed):
+    rank_list = [row for row in rank_list if row[0] not in seed]
+    return rank_list
 
   def propagate_seed(self, matrix, seed_attr, tol=1e-6, n = 1000, restart_factor = 0):
     seed_attr_old = seed_attr

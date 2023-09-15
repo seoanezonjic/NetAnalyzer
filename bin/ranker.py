@@ -19,6 +19,14 @@ def write_ranking(file, ranking_list):
       for ranked_gene in ranking:
         f.write('\t'.join(map(str,ranked_gene)) + "\t" + f"{seed_name}" + "\n")     
 
+def open_whitelist(file):
+  whitelist = []
+  with open(file, "r") as f:
+    for line in f:
+      node = line.strip()
+      whitelist.append(node)
+  return whitelist
+
 
 ########################### OPTPARSE ########################
 #############################################################
@@ -53,6 +61,8 @@ parser.add_argument("-o", "--output_name", dest="output_name", default="ranked_g
  help="PATH to file with seed_name and genes to keep in output")
 parser.add_argument("--type_of_candidates", dest="type_of_candidates", default=False, action="store_true",
  help="type of candidates to output in ranking list: all, new, seed.")
+parser.add_argument("--whitelist", dest="whitelist", default=None, type = open_whitelist, help= "File Path with the whitelist of nodes to take into account in the ranker process")
+
 
 # TODO: Add Threat section
 #parser.add_argument("-T", "--threads", dest="threads", default=0, type=threads_based_0,
@@ -67,6 +77,7 @@ ranker = Ranker()
 ranker.matrix = np.load(options.kernel_file)
 if options.normalize_matrix is not None: ranker.normalize_matrix(mode= options.normalize_matrix)
 ranker.load_nodes_from_file(options.input_nodes)
+if options.whitelist is not None: ranker.filter_matrix(options.whitelist) 
 ranker.load_seeds(options.genes_seed, sep= options.seed_sep)
 options.filter is not None and ranker.load_references(options.filter, sep= ",") 
 exec('propagate_options = {' + options.propagate_options +'}')

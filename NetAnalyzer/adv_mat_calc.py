@@ -423,6 +423,20 @@ class Adv_mat_calc:
 	    return matrix, rowIds, colIds
 
 	@staticmethod
+	def filter_rowcols_by_whitelist(matrix, rowIds, colIds, whitelist, symmetric = False):
+	    row_index = [ i for i, rowId in enumerate(rowIds) if rowId in whitelist ]
+	    if symmetric:
+	        col_index = row_index
+	    else:
+	        col_index = [ i for i, colId in enumerate(colIds) if colId in whitelist ]
+	    matrix = matrix[row_index]
+	    matrix = matrix[:,col_index]
+	    rowIds = [rowIds[i] for i in row_index]
+	    colIds = [colIds[i] for i in col_index]
+	    return matrix, rowIds, colIds
+
+
+	@staticmethod
 	def get_disparity_backbone_pval(matrix):
 	    # by the moment, implementetion square (?)
 	    # TODO: Add a warning when not square matrix.

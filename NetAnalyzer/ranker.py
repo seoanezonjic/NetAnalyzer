@@ -2,6 +2,7 @@ import numpy as np
 import os
 from itertools import combinations
 from sklearn.model_selection import KFold, LeaveOneOut
+from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 
 
 class Ranker:
@@ -23,6 +24,9 @@ class Ranker:
       self.matrix = inv_degree_matrix  @ self.matrix
     elif mode == "by_row_col":
       self.matrix = np.sqrt(inv_degree_matrix) @ self.matrix @ np.sqrt(inv_degree_matrix)
+
+  def filter_matrix(self, whitelist):
+    self.matrix, self.nodes, _ = Adv_mat_calc.filter_rowcols_by_whitelist(self.matrix, self.nodes, self.nodes, whitelist, symmetric = True)
 
   def load_seeds(self, node_groups, sep=',', uniq= True):
     self.seeds = self.load_nodes_by_group(node_groups, sep=sep)
@@ -89,10 +93,6 @@ class Ranker:
       rank_list = self.rank_by_seed(seed_indexes, seed, propagate=propagate, options=options)  # Production mode
       if cross_validation:
         rank_list = self.delete_seed_from_rank(rank_list, seed)
-      # if cross_validation and len(self.reference_nodes[seed_name]) == 1:
-      #    rank_list = self.get_individual_rank(seed, self.reference_nodes[seed_name][0], propagate = propagate, options= options)
-      # else:
-      #    rank_list = self.rank_by_seed(seed_indexes, seed, propagate=propagate, options=options)  # Production mode
       ranked_lists.append([seed_name, rank_list])
 
     for seed_name, rank_list in ranked_lists:  # Transfer resuls to hash

@@ -3,7 +3,8 @@ import numpy as np
 from scipy import linalg
 from warnings import warn
 import networkx as nx
-from NetAnalyzer.adv_mat_calc import Adv_mat_calc
+#from NetAnalyzer.adv_mat_calc import Adv_mat_calc
+import py_exp_calc.exp_calc as pxc
 from pecanpy import pecanpy
 from gensim.models import Word2Vec
 
@@ -37,11 +38,11 @@ class Graph2sim:
 		return emb_coords
 
 	def emb_coords2kernel(emb_coords, normalization = False, sim_type= "dotProduct"):
-		kernel = Adv_mat_calc.coords2sim(emb_coords, sim = sim_type)
-		if normalization: kernel = Adv_mat_calc.cosine_normalization(kernel)
+		kernel = pxc.coords2sim(emb_coords, sim = sim_type)
+		if normalization: kernel = pxc.cosine_normalization(kernel)
 		return kernel
 
-	def get_kernel(matrix, kernel, normalization=False):
+	def get_kernel(matrix, kernel, normalization=False): #2exp?
 		#I = identity matrix
 		#D = Diagonal matrix
 		#A = adjacency matrix
@@ -101,5 +102,5 @@ class Graph2sim:
 			matrix_result = matrix
 			warn('Warning: The kernel method was not specified or not exists. The adjacency matrix will be given as result')
 			# This allows process a previous kernel and perform the normalization in a separated step.
-		if normalization: matrix_result = Adv_mat_calc.cosine_normalization(matrix_result)  #TODO: check implementation with Numo::array
+		if normalization: matrix_result = pxc.cosine_normalization(matrix_result)  #TODO: check implementation with Numo::array
 		return matrix_result

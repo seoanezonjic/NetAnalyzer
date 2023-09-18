@@ -16,14 +16,16 @@ from cdlib import NodeClustering
 import py_semtools # For external_data
 from py_semtools import Ontology
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
+import py_exp_calc.exp_calc as pxc
 from NetAnalyzer.net_plotter import Net_plotter
 from NetAnalyzer.graph2sim import Graph2sim
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from scipy.stats import zscore
 # https://stackoverflow.com/questions/60392940/multi-layer-graph-in-networkx
 # http://mkivela.com/pymnet
 
-class NestedDict(dict):
+class NestedDict(dict): #2exp #Talk with PSZ about this implementatino with respect to pxc lib.
     def dig(self, *keys):
         try:
             for key in keys:
@@ -229,7 +231,8 @@ class NetAnalyzer:
 
     def znormalize_dic_by_values(self, dic2znormalize):
         data = np.array([d for n, d in dic2znormalize.items()])
-        data_z = Adv_mat_calc.zscore_normalize(data)
+        # data_z = Adv_mat_calc.zscore_normalize(data)
+        data_z = zscore(data, axis=None)
         znormalized_dic = {}
         count = 0
         for n, d in dic2znormalize.items():
@@ -393,11 +396,11 @@ class NetAnalyzer:
         matrix, rowIds, _ = biadj_matrix
         
         if corr_type == "pearson": 
-            corr_mat, corr_pvalue = Adv_mat_calc.get_corr(x=matrix.T, alternative=alternative, corr_type = "pearson")
+            corr_mat, corr_pvalue = pxc.get_corr(x=matrix.T, alternative=alternative, corr_type = "pearson")
         elif corr_type == "spearman":
-            corr_mat, corr_pvalue = Adv_mat_calc.get_corr(x=matrix.T, alternative= alternative, corr_type = "spearman")
+            corr_mat, corr_pvalue = pxc.get_corr(x=matrix.T, alternative= alternative, corr_type = "spearman")
 
-        relations = self.matrixes2pairs([corr_pvalue, corr_mat], rowIds, rowIds, symm = True)
+        relations = pxc.matrixes2pairs([corr_pvalue, corr_mat], rowIds, rowIds, symm = True)
         relations = [ relation for relation in relations if relation[0] != relation[1] and not np.isnan(relation[2]) and relation[3] != 0 ]
         if pvalue_adj_method is not None: self.adjust_pval_association(relations, pvalue_adj_method)
         relations = [[relation[0], relation[1], relation[3]] for relation in relations if relation[2] < pvalue]
@@ -409,8 +412,8 @@ class NetAnalyzer:
             biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
         data, rowIds, _ = biadj_matrix
         umap_coords = Adv_mat_calc.data2umap(data, n_neighbors=n_neighbors, min_dist=min_dist, n_components=n_components, metric=metric, random_seed = random_seed)
-        umap_sims = np.triu(Adv_mat_calc.coords2sim(umap_coords, sim="euclidean"), k = 1)
-        relations = self.matrix2relations(umap_sims, rowIds, rowIds)
+        umap_sims = np.triu(pxc.coords2sim(umap_coords, sim="euclidean"), k = 1)
+        relations = pxc.matrix2relations(umap_sims, rowIds, rowIds)
         relations = [relation for relation in relations if relation[2] != 0]
         return relations
 
@@ -425,8 +428,8 @@ class NetAnalyzer:
         x = StandardScaler().fit_transform(matrix)
         pca = PCA(n_components=n_components)
         pca_coords = pca.fit_transform(x)
-        pca_matrix_sim = Adv_mat_calc.coords2sim(pca_coords, sim = coords2sim_type)
-        relations = self.matrix2relations(pca_matrix_sim , rowIds, rowIds)
+        pca_matrix_sim = pxc.coords2sim(pca_coords, sim = coords2sim_type)
+        relations = pxc.matrix2relations(pca_matrix_sim , rowIds, rowIds)
         return relations
 
 
@@ -437,7 +440,7 @@ class NetAnalyzer:
         finalMatrix = Adv_mat_calc.tranference_resources(matrix1, matrix2, lambda_value1 = lambda_value1, lambda_value2 = lambda_value2)
         rowIds = self.matrices["adjacency_matrices"][firstPairLayers][1]
         colIds =  self.matrices["adjacency_matrices"][secondPairLayers][2]
-        relations = self.matrix2relations(finalMatrix, rowIds, colIds)
+        relations = pxc.matrix2relations(finalMatrix, rowIds, colIds)
         self.association_values['transference'] = relations
         return relations
 
@@ -520,10 +523,10 @@ class NetAnalyzer:
         node_rels = {}
 
         for node1, node2, assoc_index in pcc_relations:
-            self.add_nested_record(pcc_vals, node1, node2, np.abs(assoc_index))
-            self.add_nested_record(pcc_vals, node2, node1, np.abs(assoc_index))
-            self.add_record(node_rels, node1, node2)
-            self.add_record(node_rels, node2, node1)
+            pxc.add_nested_record(pcc_vals, node1, node2, np.abs(assoc_index))
+            pxc.add_nested_record(pcc_vals, node2, node1, np.abs(assoc_index))
+            pxc.add_record(node_rels, node1, node2)
+            pxc.add_record(node_rels, node2, node1)
         
         relations = []
         for node1, node2, assoc_index in pcc_relations:
@@ -742,7 +745,7 @@ class NetAnalyzer:
         node_attrs = []
         if summary: 
             for at in attr_names:
-                stats = Adv_mat_calc.get_stats_from_list(list(attrs[at].values()))
+                stats = pxc.get_stats_from_list(list(attrs[at].values()))
                 node_attrs += [[at] + stat for stat in stats]
         else:
             for n in node_ids:
@@ -781,7 +784,7 @@ class NetAnalyzer:
         if matrix_data == None: raise Exception("keys for matrices which dont exist yet")
         matrix, _, _ = matrix_data
 
-        stats = Adv_mat_calc.get_stats_from_matrix(matrix)
+        stats = pxc.get_stats_from_matrix(matrix)
         self.write_obj(stats, output_filename, Format="pair")
 
     def normalize_matrix(self, mat_keys, by= "rows_cols"):
@@ -789,13 +792,13 @@ class NetAnalyzer:
         if matrix_data == None: raise Exception("keys for matrices which dont exist yet")
         matrix, rowIds, colIds = matrix_data
 
-        matrix = Adv_mat_calc.normalize_matrix(matrix, by)
+        matrix = pxc.normalize_matrix(matrix, by)
 
         self.control_output(values = matrix, rowIds = rowIds, colIds = colIds, output_filename = None, outFormat = "matrix",
             inFormat = "matrix", add_to_object = True, matrix_keys = mat_keys)
 
 
-    def mat_vs_mat(self, mat1_rowcol, mat2_rowcol, operation="cutoff", options={"cutoff": 0, "cutoff_type": "greater"}):
+    def mat_vs_mat(self, mat1_rowcol, mat2_rowcol, operation="cutoff", options={"cutoff": 0, "cutoff_type": "greater"}): #2exp?
         default_options={"cutoff": 0, "cutoff_type": "greater"}
         default_options.update(options)
         mat1, rows1, cols1 = mat1_rowcol
@@ -808,7 +811,7 @@ class NetAnalyzer:
                 mat2 = mat2 <= default_options["cutoff"]
             mat_result = mat1 * mat2
             rows_result, cols_result = rows1, cols1
-            mat_result, rows_result, cols_result = Adv_mat_calc.remove_zero_lines(mat_result, rows_result, cols_result)
+            mat_result, rows_result, cols_result = pxc.remove_zero_lines(mat_result, rows_result, cols_result)
 
         return mat_result, rows_result, cols_result
 
@@ -844,18 +847,18 @@ class NetAnalyzer:
         if operation == "filter_cutoff":
             filtered_mat = mat1 >= options["cutoff"]
             mat_result = mat1 * filtered_mat
-            Adv_mat_calc.filter_cutoff_mat(mat1, cutoff = options["cutoff"])
+            pxc.filter_cutoff_mat(mat1, cutoff = options["cutoff"])
             rows_result, cols_result = rows1, cols1
         elif operation == "filter_disparity":
             mat_result, rows_result, cols_result = Adv_mat_calc.disparity_filter_mat(mat1, rows1, cols1, pval_threshold = options["pval_threshold"])
         elif operation == "filter_by_percentile":
-            mat_result = Adv_mat_calc.percentile_filter(mat1, options["percentile"]) # TODO: Check is this is valid for non-square matrix
+            mat_result = pxc.percentile_filter(mat1, options["percentile"]) # TODO: Check is this is valid for non-square matrix
             rows_result, cols_result = rows1, cols1
 
         if options.get("binarize"):
-            mat_result = Adv_mat_calc.binarize_mat(mat_result)
+            mat_result = pxc.binarize_mat(mat_result)
 
-        mat_result, rows_result, cols_result = Adv_mat_calc.remove_zero_lines(mat_result, rows_result, cols_result)
+        mat_result, rows_result, cols_result = pxc.remove_zero_lines(mat_result, rows_result, cols_result)
 
         self.control_output(values = mat_result, rowIds = rows_result, colIds = cols_result, output_filename = output_filename, 
             inFormat = "matrix", outFormat = outFormat, add_to_object = add_to_object, matrix_keys = mat_keys)
@@ -1169,119 +1172,9 @@ class NetAnalyzer:
     ## AUXILIAR METHODS
     #######################################################################################
 
-    def add_record(self, hash, node1, node2):
-        query = hash.get(node1)
-        if query is None:
-            hash[node1] = [node2]
-        else:
-            query.append(node2)
-
-    def add_nested_record(self, hash, node1, node2, val):
-        query_node1 = hash.get(node1)
-        if query_node1 is None:
-            hash[node1] = {node2: val}
-        else:
-            query_node1[node2] = val
-
-    
-    # TODO: Talk with PSZ: The next three methods are redundant, but i dont see an efficiente manner of making one generic function (Fred)
-    def matrix2relations(self, finalMatrix, rowIds, colIds, symm = False):
-        relations = []
-        if symm:
-            for rowPos, rowId in enumerate(rowIds):
-                for colPos, colId in enumerate(colIds[rowPos:]):
-                    colPos += rowPos
-                    associationValue = finalMatrix[rowPos, colPos]
-                    if associationValue >= 0: relations.append([rowId, colId, associationValue])
-        else:
-            for rowPos, rowId in enumerate(rowIds):
-                for colPos, colId in enumerate(colIds):
-                    associationValue = finalMatrix[rowPos, colPos]
-                    if associationValue >= 0: relations.append([rowId, colId, associationValue])
-        return relations
-
-    def matrix2pairs(self, matrix, rowIds, colIds, symm = False):
-        relations = []
-        if symm:
-            for rowPos, rowId in enumerate(rowIds):
-                for colPos, colId in enumerate(colIds[rowPos:]):
-                    colPos += rowPos
-                    relations.append([rowId, colId, matrix[rowPos, colPos]])
-        else:
-            for rowPos, rowId in enumerate(rowIds):
-                for colPos, colId in enumerate(colIds):
-                    relations.append([rowId, colId, matrix[rowPos, colPos]])
-        return relations
-
-    def matrixes2pairs(self, matrixes, rowIds, colIds, symm = False):
-        # When there are multiple matrix with the same rows and cols.
-        relations = []
-        if symm:
-            for rowPos, rowId in enumerate(rowIds):
-                for colPos, colId in enumerate(colIds[rowPos:]):
-                    colPos += rowPos
-                    associationValues = [matrix[rowPos, colPos] for matrix in matrixes]
-                    relations.append([rowId, colId, *associationValues])
-        else:
-            for rowPos, rowId in enumerate(rowIds):
-                for colPos, colId in enumerate(colIds):
-                    associationValues = [matrix[rowPos, colPos] for matrix in matrixes]
-                    relations.append([rowId, colId, associationValue])
-        return relations
-
-
-    def update_index(self, index, element, count):
-        if index.get(element) is None:
-            index[element] = count
-            count += 1
-        return count
-
-    def pairs2matrix(self, pairs, symm= True):
-        count_A = 0
-        index_A = {}
-        count_B = 0
-        index_B = {}
-        if symm:
-            for pair in pairs:
-                elementA, elementB, val = pair
-                count_A = self.update_index(index_A, elementA, count_A)
-                count_A = self.update_index(index_A, elementB, count_A)
-            index_B = index_A
-        else:
-            for pair in pairs:
-                elementA, elementB, val = pair
-                count_A = self.update_index(index_A, elementA, count_A)
-                count_B = self.update_index(index_B, elementB, count_B)
-
-        elementA_names = list(index_A.keys())
-        elementB_names = list(index_B.keys())
-
-        matrix = np.zeros((len(elementA_names), len(elementB_names)))
-        for pair in pairs:
-            elementA, elementB, val = pair
-            i = index_A[pair[0]] 
-            j = index_B[pair[1]] 
-            matrix[i, j] = val
-            if symm: matrix[j, i] = val
-
-        return matrix, elementA_names, elementB_names
-
-    def transform2obj(self, obj, inFormat=None, outFormat=None, rowIds= None, colIds= None):
-        if outFormat == 'pair':
-            if inFormat == 'matrix': 
-                obj = self.matrix2pairs(obj, rowIds=rowIds, colIds=colIds)
-            if inFormat == 'nested_pairs':
-                obj = self.nested_pairs2pairs(obj)
-        elif outFormat == 'matrix':
-            if inFormat == 'pair': 
-                obj, rowIds, colIds = self.pairs2matrix(obj)
-            if inFormat == 'nested_pairs':
-                obj, rowIds, colIds = self.pairs2matrix(self.nested_pairs2pairs(obj)) # Talk with PSZ about the trade-off combinatorial vs optimization
-        return obj, rowIds, colIds
-
     def control_output(self, values, output_filename = None, inFormat = "pair", outFormat = "matrix" , add_to_object = False, matrix_keys = None, rowIds = None, colIds = None):
         if add_to_object: 
-            matrix, rowIds, colIds = self.transform2obj(values, inFormat= inFormat, outFormat= "matrix", rowIds = rowIds, colIds = colIds) 
+            matrix, rowIds, colIds = pxc.transform2obj(values, inFormat= inFormat, outFormat= "matrix", rowIds = rowIds, colIds = colIds) 
             path_keys = matrix_keys[:-1]
             final_key = matrix_keys[-1]
             result_dic = self.matrices.dig(*path_keys)
@@ -1291,14 +1184,8 @@ class NetAnalyzer:
                 # This is posible just when len(matrix_keys) == 3
                 self.matrices[path_keys[0]][path_keys[1]] = {final_key: [matrix, rowIds, colIds]}
         elif output_filename != None: 
-            obj, rowIds, colIds = self.transform2obj(values, inFormat= inFormat, outFormat= outFormat, rowIds = rowIds, colIds = colIds)
+            obj, rowIds, colIds = pxc.transform2obj(values, inFormat= inFormat, outFormat= outFormat, rowIds = rowIds, colIds = colIds)
             self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
-
-    def nested_pairs2pairs(self, nested_dic_pairs):
-        pairs = []
-        for item_a, dat in nested_dic_pairs.items(): 
-            for item_b, val in dat.items(): pairs.append([item_a, item_b, val])
-        return pairs
 
 
     def write_obj(self, obj, output_filename, Format=None, rowIds=None, colIds=None):
@@ -1320,7 +1207,7 @@ class NetAnalyzer:
             for node in nodes:
                 f.write(node + "\n")
 
-    def replace_none_vals(self, val):
+    def replace_none_vals(self, val): #2exp?
         return 'NULL' if val == None else val
 
     def set_seed(self, seed):

@@ -5,9 +5,10 @@ import sys
 import os
 import glob
 import numpy as np
-ROOT_PATH=os.path.dirname(__file__)
-sys.path.insert(0, os.path.join(ROOT_PATH, '..'))
-from NetAnalyzer import Adv_mat_calc
+# ROOT_PATH=os.path.dirname(__file__)
+# sys.path.insert(0, os.path.join(ROOT_PATH, '..'))
+# from NetAnalyzer import Adv_mat_calc
+import py_exp_calc.exp_calc as pxc
 
 #############################################################################
 ## METHODS
@@ -118,16 +119,16 @@ if options.set_diagonal:
 
 
 if options.binarize is not None and options.cutoff is None:
-	matrix = Adv_mat_calc.filter_cutoff_mat(matrix, options.binarize)
-	matrix = Adv_mat_calc.binarize_mat(matrix)
+	matrix = pxc.filter_cutoff_mat(matrix, options.binarize)
+	matrix = pxc.binarize_mat(matrix)
 
 
 if options.cutoff is not None and options.binarize is None:
-	matrix = Adv_mat_calc.filter_cutoff_mat(matrix, options.cutoff)
+	matrix = pxc.filter_cutoff_mat(matrix, options.cutoff)
 
 
 if options.stats is not None:
-	stats = Adv_mat_calc.get_stats_from_matrix(matrix)
+	stats = pxc.get_stats_from_matrix(matrix)
 	with open(options.stats, 'w') as f:
 		for row in stats: f.write("\t".join([str(item) for item in row]) + "\n")
 

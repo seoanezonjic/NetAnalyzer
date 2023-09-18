@@ -3,6 +3,7 @@ import os
 from itertools import combinations
 from sklearn.model_selection import KFold, LeaveOneOut
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
+# import py_exp_calc.exp_calc as pxc
 
 
 class Ranker:
@@ -259,7 +260,7 @@ class Ranker:
 
     return filtered_ranked_genes
 
-  def array2hash(self, arr, key, values):
+  def array2hash(self, arr, key, values): #2exp?
     h={}
     for els in arr:
       h[els[0]]=[els[value] for value in values]

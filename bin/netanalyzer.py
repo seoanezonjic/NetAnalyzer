@@ -145,6 +145,8 @@ parser.add_argument("--seed", dest="seed", default=None, type = lambda x: x,
 					help="sepecify seed for clusterin processes")
 parser.add_argument("-A", "--attributes", dest="get_attributes", default=[], type =string_list,
 					help="String separated by commas with the name of network attribute")
+parser.add_argument("--graph_attributes", dest="get_graph_attributes", default=[], type =string_list,
+					help="String separated by commas with the name of network attribute")
 parser.add_argument("--attributes_summarize", dest="attributes_summarize", default= False, action = "store_true", help="If the attribtes needs to be obtained summarized") 
 parser.add_argument("--dsl_script", dest="dsl_script", default=None,
 					help="Path to dsl script to perform complex analysis")
@@ -263,4 +265,5 @@ if options.expand_clusters is not None:
 
 if len(options.get_attributes) > 0:
   fullNet.get_node_attributes(options.get_attributes, summary=options.attributes_summarize, output_filename= "node_attributes.txt")
-
+if len(options.get_graph_attributes) > 0:
+  fullNet.get_graph_attributes(options.get_graph_attributes, output_filename= "graph_attributes.txt")

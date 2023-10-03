@@ -37,13 +37,16 @@ netanalyzer.py -i $data_to_test/tripartite_network_for_validating.txt -a $out/pr
 # dsl option
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --dsl_script $data_test_scripts/dsl/jaccard_dsl
 
-# ----------------------------------- Nodes Attributes ----------------------------------------
+# ----------------------------------- Nodes Graph Attributes ----------------------------------------
 # # Summarize 
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -a $out/projections/jaccard_results.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' -A "get_degree,get_degreeZ" --attributes_summarize
 mv node_attributes.txt $out/attributes/node_attributes_summ.txt
 # # Not Summary
 netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -a $out/projections/jaccard_results.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' -A "get_degree,get_degreeZ"
 mv node_attributes.txt $out/attributes/node_attributes_nonsumm.txt
+# # Graph
+netanalyzer.py -i $data_to_test/bipartite_network_for_validating.txt -a $out/projections/jaccard_results.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_attributes "size,edge_density"
+mv graph_attributes.txt $out/attributes/graph_attributes.txt
 
 #  ---------------------------------- Obtaining kernels ----------------------------------------
 # Non normalized kernels.

@@ -9,7 +9,7 @@ get_degree	Standard Deviation	2.5
 get_degree	Q1	3.0
 get_degree	Median	4.5
 get_degree	Q3	6.0
-get_degree	Min Non Zero	10
+get_degree	Min Non Zero	2
 get_degree	Average Non Zero	5.0
 get_degree	Variance Non Zero	6.25
 get_degree	Standard Deviation Non Zero	2.5
@@ -27,7 +27,7 @@ get_degreeZ	Standard Deviation	1.0
 get_degreeZ	Q1	-0.8
 get_degreeZ	Median	-0.2
 get_degreeZ	Q3	0.4
-get_degreeZ	Min Non Zero	2.0
+get_degreeZ	Min Non Zero	-1.2
 get_degreeZ	Average Non Zero	1.586032892321652e-17
 get_degreeZ	Variance Non Zero	1.1428571428571428
 get_degreeZ	Standard Deviation Non Zero	1.0690449676496976

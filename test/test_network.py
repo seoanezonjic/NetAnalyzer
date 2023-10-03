@@ -238,6 +238,11 @@ class BaseNetTestCase(unittest.TestCase):
 		expected_result = [['A', 0.8164965809277259, 2], ['C', -1.2247448713915894, 1], ['E', 0.8164965809277259, 2],['B', -1.2247448713915894, 1], ['D', 0.8164965809277259, 2]]
 		self.assertEqual(expected_result, node_attribute_test)
 
+	def test_get_graph_attributes(self):
+		test = self.monopartite_network.get_graph_attributes(['size','edge_density','global_clustering', 'assorciativity'])
+		expected_values = [['size', 5], ['edge_density', 0.4], ['global_clustering', 0], ['assorciativity', -0.3333333333333333]]
+		self.assertEqual(expected_values, test)
+
 	def test_get_corr_association(self):
 		test_association = self.network_obj.get_corr_associations(['main'], 'projection', corr_type = "pearson", pvalue = 0.5)
 		test_association = [ [association[0], association[1], np.round(association[2],4)] for association in test_association ]

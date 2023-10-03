@@ -739,7 +739,8 @@ class NetAnalyzer:
                 attrs["betweenness_centrality"] = self.get_betweenness_centrality(zscore=False)
             elif attr_name == "betweenness_centralityZ":
                 attrs["betweenness_centralityZ"] = self.get_betweenness_centrality()
-        node_ids = attrs[attr_names[0]].keys() # TODO: This line of code should be replaced for an option to select node for each attr.
+
+        node_ids = attrs[list(attrs.keys())[0]].keys() # TODO: This line of code should be replaced for an option to select node for each attr.
         node_ids = [node_id for node_id in node_ids if node_id in node_universe]
         
         node_attrs = []
@@ -755,6 +756,34 @@ class NetAnalyzer:
         self.control_output(values = node_attrs, output_filename=output_filename, inFormat="pair", outFormat="pair", add_to_object=False)
 
         return node_attrs
+
+    def get_graph_attributes(self, attr_names, layers = "all", summary = False, output_filename = None):
+        if type(layers) == str and layers != "all": layers = [layers]
+        if layers == "all": 
+            subgraph = self.graph
+        else:
+            node_universe = self.get_nodes_layer(layers)
+            subgraph = self.graph.subgraph(node_universe) 
+
+        attrs = {}
+        for attr_name in attr_names:
+           if attr_name == 'size': 
+               attrs[attr_name] = len(subgraph.nodes())
+           elif attr_name == 'edge_density':
+               attrs[attr_name] = nx.density(subgraph)
+           elif attr_name == 'transitivity' or attr_name == 'global_clustering':
+               attrs[attr_name] = nx.transitivity(subgraph)
+           elif attr_name == "assorciativity":
+               attrs[attr_name] =  nx.degree_assortativity_coefficient(subgraph)
+
+        graph_attrs = []
+        for attr_name, attr_value in attrs.items():
+                graph_attrs.append([attr_name, attr_value])
+
+        self.control_output(values = graph_attrs, output_filename=output_filename, inFormat="pair", outFormat="pair", add_to_object=False)
+        return graph_attrs
+
+
 
     ## Ploting method 
     #----------------

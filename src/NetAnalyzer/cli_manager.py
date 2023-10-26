@@ -25,22 +25,7 @@ def list_str(values): return values.split(',')
 def string_list(string): return string.split(",")
 def layer_parse(string): return [sublst.split(",") for sublst in string.split(";")]
 def list_parse(string): return [sublst.split(":") for sublst in string.split(";")]
-def string2dic(string):
-    dic = {}
-    print(string.split(','))
-    for pair in string.split(','):
-        print(pair)
-        fields = pair.split(':')
-        print(fields)
-        key = fields[0].strip().replace("'", "")
-        value = fields[1].strip()
-        if value.isnumeric():
-            dic[key] = int(value)
-        elif value.replace('.', '', 1).isdigit():
-            dic[key] = float(value)
-        else:
-            dic[key] = value
-    return dic
+
 #def string2nestedlist(string, lev1=",", lev2=":"): return [sublst.split(lev2) for sublst in string.split(lev1)]
 def group_nodes_parse(string):
 	group_nodes = {}
@@ -151,7 +136,7 @@ def netanalyzer(args=None):
                         help="Control file name")
     parser.add_argument("-k","--kernel_method", dest="kernel", default=None,
                         help="Kernel operation to perform with the adjacency matrix")
-    parser.add_argument("--embedding_add_options", dest="embedding_add_options", default={}, type= string2dic,
+    parser.add_argument("--embedding_add_options", dest="embedding_add_options", default="",
                         help="Additional options for embedding kernel methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...' ")
     parser.add_argument("-N","--no_autorelations", dest="no_autorelations", default=False, action='store_true',
                         help="Kernel operation to perform with the adjacency matrix")
@@ -173,7 +158,7 @@ def netanalyzer(args=None):
     parser.add_argument("-b", "--build_clusters_alg", dest="build_cluster_alg", default=None,
                         help="Type of cluster algorithm")
     parser.add_argument("--output_build_clusters", dest="output_build_clusters", default=None, help= "output name for discovered clusters")
-    parser.add_argument("-B", "--build_clusters_add_options", dest="build_clusters_add_options", default={}, type= string2dic,
+    parser.add_argument("-B", "--build_clusters_add_options", dest="build_clusters_add_options", default="",
                         help="Additional options for clustering methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...'")
     parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lambda x: x.split(";"),
                         help="Remove nodes from file. If PATH;r then nodes not included in file are removed")
@@ -199,6 +184,7 @@ def netanalyzer(args=None):
                         help="Path to dsl script to perform complex analysis")
     parser.add_argument("-O", "--ontology", dest="ontologies", default=[], type=list_parse,
                         help="String that define which ontologies must be used with each layer. String definition:'layer_name1:path_to_obo_file1;layer_name2:path_to_obo_file2'")
+
     opts = parser.parse_args(args)
 
     main_netanalyzer(opts)
@@ -272,7 +258,8 @@ def main_netanalyzer(options):
 
     if options.kernel is not None:
         # This allows inject custom arguments for each embedding method
-        print(options.embedding_add_options)
+        embedding_kwargs = eval('{' +options.embedding_add_options +'}')
+        #exec('embedding_kwargs = {' + options.embedding_add_options +'}', globals()) # This allows inject custom arguments for each embedding method
         if len(options.use_layers) == 1:
             # we use only a layer to perform the kernel, so only one item it is selected.
             layers2kernel = (options.use_layers[0][0], options.use_layers[0][0])
@@ -281,7 +268,7 @@ def main_netanalyzer(options):
 
 
         fullNet.get_kernel(layers2kernel, options.kernel, options.normalize_kernel,
-                           options.coords2sim_type, options.embedding_add_options, add_to_object=True)
+                           options.coords2sim_type, embedding_kwargs, add_to_object=True)
         fullNet.write_kernel(layers2kernel, options.kernel, options.kernel_file)
 
     if options.graph_file is not None:
@@ -290,8 +277,9 @@ def main_netanalyzer(options):
 
     # Group creation
     if options.build_cluster_alg is not None:
+        clust_kwargs = eval('{' + options.build_clusters_add_options +'}')
         fullNet.discover_clusters(
-            options.build_cluster_alg, options.build_clusters_add_options, **{'seed': options.seed})
+            options.build_cluster_alg, clust_kwargs, **{'seed': options.seed})
 
         if options.output_build_clusters is None:
             options.output_build_clusters = options.build_cluster_alg + \
@@ -452,7 +440,7 @@ def main_ranker(options):
         ranker.filter_matrix(options.whitelist)
     ranker.load_seeds(options.genes_seed, sep=options.seed_sep)
     options.filter is not None and ranker.load_references(options.filter, sep=",")
-    exec('propagate_options = {' + options.propagate_options + '}') # TODO: CHeck this section in cli_manager
+    propagate_options = eval('{' + options.propagate_options +'}')
     print(propagate_options)
     ranker.do_ranking(cross_validation=options.cross_validation, propagate=options.propagate,
                       k_fold=options.k_fold, options=propagate_options)

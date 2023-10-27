@@ -342,8 +342,11 @@ def randomize_clustering(args=None):
                         help="Output file")
     parser.add_argument("-a", "--aggregate_sep", dest="aggregate_sep", default = None, 
                         help="This option activates aggregation in output. Separator character must be provided")
+    parser.add_argument("-d", "--seed", dest="seed", default= 123, type=int, 
+            help="Allows to set a seed for the randomization process. Set to a number. Otherwise results are not reproducible.")
 
     opts = parser.parse_args(args)
+    print("AMEEEEEEEEEEEEEEEEEEEEEN")
     main_randomize_clustering(opts)
 
 def main_randomize_clustering(options):
@@ -351,14 +354,15 @@ def main_randomize_clustering(options):
     clusters = load_clusters(options)
 
     nodes = [ n for cl in clusters.values() for n in cl ] # Get list of nodes
-    if options['random_type'][0] != "full_size": nodes = set(nodes)
+    if options['random_type'][0] != "full_size": nodes = pxc.uniq(nodes)
 
     if "size" in options['random_type'][0] and len(options['random_type']) == 1:
         all_sizes = [ len(nodes) for cluster_id, nodes in clusters.items() ]
     elif options['random_type'][0] == "fixed" and len(options['random_type']) == 3:
         all_sizes = [int(options['random_type'][2])] * int(options['random_type'][2]) # cluster_size * n clusters
 
-    random_clusters = random_sample(nodes, options['replacement'], all_sizes, 123) #TODO: Add a flag to specify seed.
+    print("EYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY", options['seed'])
+    random_clusters = random_sample(nodes, options['replacement'], all_sizes, options['seed']) #TODO: Add a flag to specify seed.
     write_clusters(random_clusters, options['output_file'], options['aggregate_sep'])
      
 def randomize_network(args=None):
@@ -381,6 +385,7 @@ def randomize_network(args=None):
     parser.add_argument("-d", "--seed", dest="seed", default= None, 
             help="Allows to set a seed for the randomization process. Set to a number. Otherwise results are not reproducible.")
     opts = parser.parse_args(args)
+    print("AMEEEEEEEEEEEEEEEEEEEEEN")
 
     main_randomize_network(opts)
 
@@ -598,15 +603,16 @@ def load_clusters(options):
 	return clusters
 
 def random_sample(nodes, replacement, all_sizes, seed):
-	random_clusters = {}
-	uniq_node_list = set(nodes)
-	random.seed(seed)
-	for counter, cluster_size in enumerate(all_sizes):
-		if cluster_size > len(uniq_node_list) and not replacement: sys.exit("Not enough nodes to generate clusters. Please activate replacement or change random mode") 
-		random_nodes = random.sample(uniq_node_list, cluster_size)
-		if not replacement: uniq_node_list = [n for n in uniq_node_list if n not in random_nodes]
-		random_clusters[f"{counter}_random"] = random_nodes
-	return random_clusters
+    random_clusters = {}
+    uniq_node_list = pxc.uniq(nodes)
+    random.seed(seed)
+    print("The seed is like this:", seed)
+    for counter, cluster_size in enumerate(all_sizes):
+        if cluster_size > len(uniq_node_list) and not replacement: sys.exit("Not enough nodes to generate clusters. Please activate replacement or change random mode") 
+        random_nodes = random.sample(uniq_node_list, cluster_size)
+        if not replacement: uniq_node_list = [n for n in uniq_node_list if n not in random_nodes]
+        random_clusters[f"{counter}_random"] = random_nodes
+    return random_clusters
 
 def write_clusters(clusters, output_file, sep):
 	with open(output_file, "w") as outfile:

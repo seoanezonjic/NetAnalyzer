@@ -1,1 +1,1 @@
-get_association_values ['gen'] 'pathway' 'jaccard' output_filename='output_test_scripts/netanalyzer/dsl/jaccard_results.txt' outFormat='pair'
+get_association_values ['gen'] 'pathway' 'jaccard' output_filename='./tests/data/input_scripts/netanalyzer/dsl/output/jaccard_results.txt' outFormat='pair'

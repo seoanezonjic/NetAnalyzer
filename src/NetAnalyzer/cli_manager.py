@@ -208,7 +208,7 @@ def main_netanalyzer(options):
         fullNet.set_groups(options.group_nodes)
 
     if options.delete_nodes:
-        node_list = load_file(options.delete_nodes[0])
+        node_list = CmdTabs.load_input_data(options.delete_nodes[0])
         node_list = [item for sublist in node_list for item in sublist]
         mode = options.delete_nodes[1] if len(options.delete_nodes) > 1 else 'd'
         fullNet.delete_nodes(node_list, mode)
@@ -346,7 +346,6 @@ def randomize_clustering(args=None):
             help="Allows to set a seed for the randomization process. Set to a number. Otherwise results are not reproducible.")
 
     opts = parser.parse_args(args)
-    print("AMEEEEEEEEEEEEEEEEEEEEEN")
     main_randomize_clustering(opts)
 
 def main_randomize_clustering(options):
@@ -361,7 +360,6 @@ def main_randomize_clustering(options):
     elif options['random_type'][0] == "fixed" and len(options['random_type']) == 3:
         all_sizes = [int(options['random_type'][2])] * int(options['random_type'][2]) # cluster_size * n clusters
 
-    print("EYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY", options['seed'])
     random_clusters = random_sample(nodes, options['replacement'], all_sizes, options['seed']) #TODO: Add a flag to specify seed.
     write_clusters(random_clusters, options['output_file'], options['aggregate_sep'])
      
@@ -385,7 +383,6 @@ def randomize_network(args=None):
     parser.add_argument("-d", "--seed", dest="seed", default= None, 
             help="Allows to set a seed for the randomization process. Set to a number. Otherwise results are not reproducible.")
     opts = parser.parse_args(args)
-    print("AMEEEEEEEEEEEEEEEEEEEEEN")
 
     main_randomize_network(opts)
 
@@ -445,8 +442,8 @@ def main_ranker(options):
         ranker.filter_matrix(options.whitelist)
     ranker.load_seeds(options.genes_seed, sep=options.seed_sep)
     options.filter is not None and ranker.load_references(options.filter, sep=",")
+    print(options.propagate_options)
     propagate_options = eval('{' + options.propagate_options +'}')
-    print(propagate_options)
     ranker.do_ranking(cross_validation=options.cross_validation, propagate=options.propagate,
                       k_fold=options.k_fold, options=propagate_options)
     rankings = ranker.ranking
@@ -552,13 +549,6 @@ def main_text2binary_matrix(options):
 # METHODS FOR NETANALYZER
 #########################
 
-def load_file(path):
-	data = []
-	with open(path, 'r') as file:
-		for line in file:
-			data.append(line.rstrip().split("\t"))
-	return data
-
 def get_args(dsl_args):
 	"""return args, kwargs"""
 	args = []
@@ -606,7 +596,6 @@ def random_sample(nodes, replacement, all_sizes, seed):
     random_clusters = {}
     uniq_node_list = pxc.uniq(nodes)
     random.seed(seed)
-    print("The seed is like this:", seed)
     for counter, cluster_size in enumerate(all_sizes):
         if cluster_size > len(uniq_node_list) and not replacement: sys.exit("Not enough nodes to generate clusters. Please activate replacement or change random mode") 
         random_nodes = random.sample(uniq_node_list, cluster_size)

@@ -50,12 +50,21 @@ def sort_table(table, sort_by, transposed=False):
 	return table
 
 @capture_stdout
+def text2binary_matrix(lsargs):
+    return NetAnalyzer.text2binary_matrix(lsargs)
+
+
+@capture_stdout
+def ranker(lsargs):
+    return NetAnalyzer.ranker(lsargs)
+
+@capture_stdout
 def randomize_clustering(lsargs):
-     return NetAnalyzer.randomize_clustering(lsargs)
+    return NetAnalyzer.randomize_clustering(lsargs)
 
 @capture_stdout
 def randomize_network(lsargs):
-     return NetAnalyzer.randomize_network(lsargs)
+    return NetAnalyzer.randomize_network(lsargs)
 
 @capture_stdout
 def netanalyzer(lsargs):
@@ -71,7 +80,6 @@ def compare_exec(ref_file, output_file, args, dsl = False, matrix = False, round
         _, printed = netanalyzer_dsl(args)
     else:
         _, printed = netanalyzer(args)
-    #print(printed)
     diff(ref_file, output_file, matrix, roundTo)
 
 def diff(file1, file2, matrix=False, roundTo=3):
@@ -100,10 +108,18 @@ def test_projections(tmp_dir):
     args = f"-i {input_file} -a {output_file} -f pair -l gen,M[0-9]+;pathway,P[0-9]+ -m counts -u gen;pathway".split(" ")
     compare_exec(ref_file, output_file, args)
 
+    #-d M1;M2
+    filter_node = os.path.join(tmp_dir, "filter")
+    CmdTabs.write_output_data(["M1","M2"], output_path=filter_node, sep="\t")
+    ref_file = os.path.join(DATA_PATH, "counts_results_with_deleted.txt")
+    output_file = os.path.join(tmp_dir, "counts_results.txt")
+    args = f"-i {input_file} -a {output_file} -f pair -l gen,M[0-9]+;pathway,P[0-9]+ -d {filter_node};d -m counts -u gen;pathway".split(" ")
+    compare_exec(ref_file, output_file, args)
+
     input_file = os.path.join(DATA_PATH, "tripartite_network_for_validating.txt")
     ref_file = os.path.join(DATA_PATH, "transference_results.txt")
     output_file = os.path.join(tmp_dir, "transference_results.txt")
-    args = f"-i {input_file} -a {output_file} -f pair -lgen,M[0-9]+;pathway,P[0-9]+;salient,S[0-9]+ -m transference -u gen,salient;pathway".split(" ")
+    args = f"-i {input_file} -a {output_file} -f pair -l gen,M[0-9]+;pathway,P[0-9]+;salient,S[0-9]+ -m transference -u gen,salient;pathway".split(" ")
     compare_exec(ref_file, output_file, args)
 
     input_file = os.path.join(DATA_PATH, "bipartite_network_for_validating.txt")
@@ -152,26 +168,33 @@ def test_get_node_graph_attrs(tmp_dir):
 
 def test_get_kernels(tmp_dir):
     input_file = os.path.join(DATA_PATH, "data_kernel", "adj_mat")
-    ref_file = os.path.join(DATA_PATH, "data_kernel", "ct.npy")
-    output_file = os.path.join(tmp_dir, "ct.npy")
+    ref_file = os.path.join(DATA_PATH, "data_kernel", "ct")
+    output_file = os.path.join(tmp_dir, "ct")
     args = f"-i {input_file}.npy -f bin -l genes -K {output_file} -n {input_file}.lst -u genes -k ct".split(" ")
     netanalyzer(args)
-    diff(output_file, ref_file, matrix=True)
+    diff(output_file + ".npy", ref_file + ".npy", matrix=True)
+    diff(output_file + "_colIds", ref_file + "_colIds")
+    diff(output_file + "_rowIds", ref_file + "_rowIds")
 
-    ref_file = os.path.join(DATA_PATH, "data_kernel", "ka_normalized.npy")
-    output_file = os.path.join(tmp_dir, "ka_normalized.npy")
+    ref_file = os.path.join(DATA_PATH, "data_kernel", "ka_normalized")
+    output_file = os.path.join(tmp_dir, "ka_normalized")
     args = f"-i {input_file}.npy -f bin -l genes -K {output_file} -n {input_file}.lst -u genes -k ka -z".split(" ")
     netanalyzer(args)
-    diff(output_file, ref_file, matrix=True)
+    diff(output_file + ".npy", ref_file + ".npy", matrix=True)
+    diff(output_file + "_colIds", ref_file + "_colIds")
+    diff(output_file + "_rowIds", ref_file + "_rowIds")
 
-    ref_file = os.path.join(NETANALYZER, "dsl", "ct.npy")
-    output_file = os.path.join(NETANALYZER, "dsl","output", "ct.npy")
+    ref_file = os.path.join(NETANALYZER, "dsl", "ct")
+    output_file = os.path.join(NETANALYZER, "dsl","output", "ct")
     dsl = os.path.join(NETANALYZER, "dsl","kernel_dsl")
     args = f"-i {input_file}.npy -f bin -l genes -n {input_file}.lst --dsl_script {dsl}".split(" ")
     netanalyzer_dsl(args)
-    diff(output_file, ref_file, matrix=True)
+    diff(output_file + ".npy", ref_file + ".npy", matrix=True)
+    diff(output_file + "_colIds", ref_file + "_colIds")
+    diff(output_file + "_rowIds", ref_file + "_rowIds")
 
 def test_filtering(tmp_dir):
+
     # netanalyzer -i {input_file} -f pair -l main --dsl_script {dsl}
     input_file = os.path.join(DATA_PATH, "monopartite_network_weights_for_validating.txt")
     ref_file = os.path.join(NETANALYZER, "dsl", "filter_cutoff")
@@ -215,6 +238,7 @@ def test_communities(tmp_dir):
     group_file = os.path.join(NETANALYZER, "clustering", "clusters_toy.txt")
     output_file = os.path.join(tmp_dir, "group_metrics_summarized.txt")
     ref_file = os.path.join(NETANALYZER, "clustering", "group_metrics_summarized.txt")
+    #--output_metrics_by_cluster
     args=f"-i {input_file} -G {group_file} --output_summarized_metrics {output_file} -f pair -l genes -S max_odf;avg_transitivity;conductance".split(" ")
     netanalyzer(args)
     diff(ref_file, output_file)
@@ -244,7 +268,7 @@ def test_communities(tmp_dir):
     # Comparing group families
     input_file = os.path.join(DATA_PATH, "bipartite_network_for_validating.txt")
     group_reference_file = os.path.join(NETANALYZER, "clustering","rber_pots_discovered_clusters.txt")
-    args=f"-i {input_file} -G {group_file} -R {group_reference_file} -f pair -l genes -M comparative_degree;max_odf;avg_sht_path".split(" ")
+    args=f"-i {input_file} -G {group_file} -R {group_reference_file} -f pair -l genes".split(" ")
     _, printed = netanalyzer(args)
     assert 0.348 == round(float(printed.split("\n")[-2]),3)
 
@@ -276,26 +300,107 @@ def test_randomize(tmp_dir):
     randomize_network(args)
     diff(ref_file, output_file)
 
+def test_text2binary_matrix(tmp_dir):
+    input_file = os.path.join(TEXT2BINARY_MATRIX, "test_matrix_bin.npy")
+    output_file = os.path.join(tmp_dir, "output_text2binary")
+
+    ref_name = ["cutoff_no_binarizado", "cutoff_binarizado", "set_diagonal_matrix", "test_matrix_bin"]
+    args_basic=f"-i {input_file} -t bin -o {output_file}".split(" ")
+    args_specific = ["-c 0.5".split(" "), "-B 0.5".split(" "), ["-d"], "-O bin".split(" ")]
+    for i in range(0, len(ref_name)):
+        args= args_basic + args_specific[i]
+        ref_file = os.path.join(TEXT2BINARY_MATRIX, ref_name[i])
+        _, printed = text2binary_matrix(args)
+        diff(output_file + ".npy", ref_file +".npy", matrix=True)
+         
+    statistics_file= os.path.join(tmp_dir, "statistics_from_text2bin")
+    args=f"-i {input_file} -t bin -s {statistics_file} -o {output_file}".split(" ")
+    ref_file = os.path.join(TEXT2BINARY_MATRIX, "statistics_from_text2bin")
+    _, printed = text2binary_matrix(args)
+    diff(statistics_file, ref_file)
+
+    input_file = os.path.join(TEXT2BINARY_MATRIX, "test_matrix")
+    args=f"-i {input_file} -t matrix -O mat -o {output_file}".split(" ")
+    ref_file = os.path.join(TEXT2BINARY_MATRIX, "test_matrixfrommatrix")
+    _, printed = text2binary_matrix(args)
+    diff(output_file, ref_file)
+
+    input_file = os.path.join(TEXT2BINARY_MATRIX, "test_pairs")
+    args=f"-i {input_file} -t pair -O mat -o {output_file}".split(" ")
+    ref_file = os.path.join(TEXT2BINARY_MATRIX, "matrix_from_pairs")
+    _, printed = text2binary_matrix(args)
+    diff(output_file, ref_file)
+
+
+
+def test_ranker(tmp_dir):
+    kernel_file = os.path.join(DATA_PATH, 'data_ranker', 'kernel_for_validating')
+    output_file = os.path.join(tmp_dir, "output_ranker")
+    seeds_file= os.path.join(DATA_PATH, 'data_ranker', 'seed_genes_for_validating')
+    filter_file = os.path.join(DATA_PATH, 'data_ranker', 'genes2filter_for_validating')
+    whitelist = os.path.join(RANKER, "whitelist")
+    top_output = os.path.join(tmp_dir, "ranker_top_results")
+    ref_name = ["ranker_by_seed_string_results",
+                "ranker_by_seed_file_results",
+                "ranker_by_seed_file_results_type_added",
+                "ranker_leave_one_out_by_seed_results",
+                "ranker_cross_validation_by_seed_results",
+                "ranker_filter_results",
+                "ranker_whitelist_results",
+                "ranker_propagate_normalized",
+                "ranker_propagate_not_normalized",
+                "ranker_propagate_with_restart"]
+    args_basic=f"-k {kernel_file} -n {kernel_file}.lst -o {output_file}".split(" ")
+    args_specific = ["-s A,B".split(" "), 
+                     f"-s {seeds_file}".split(" "), 
+                     f"-s {seeds_file} --type_of_candidates".split(" "),
+                     f"-s {seeds_file} -l".split(" "),
+                     f"-s {seeds_file} -l -K 2".split(" "),
+                     f"-s {seeds_file} -f {filter_file} -o {output_file}".split(" "),
+                     f"-s {seeds_file} --whitelist {whitelist} -o {output_file}".split(" "),
+                     f"-s {seeds_file} -p -N by_column".split(" "),
+                     f"-s {seeds_file} -p".split(" "),
+                     f"-s {seeds_file} -p --propagate_options 'tolerance':1e-5,'iteration_limit':100,'with_restart':0.7".split(" ")]
+    
+    for i in range(0, len(ref_name)):
+        args= args_basic + args_specific[i]
+        ref_file = os.path.join(RANKER, ref_name[i])
+        _, printed = ranker(args)
+        diff(output_file+"_all_candidates", ref_file+"_all_candidates")
+
+    # Specific case for top
+    args= args_basic + f"-s {seeds_file} --output_top {top_output} -t 2 -o {output_file}".split(" ")
+    ref_file = os.path.join(RANKER, "ranker_top_results")
+    ranker(args)
+    diff(top_output, ref_file)
+
+    args= args_basic + f"-s JK,LL -o {output_file}".split(" ")
+    ref_file = os.path.join(RANKER, "output_ranker")
+    ranker(args)
+    diff(output_file +"_discarded", ref_file + "_discarded")
 
 @capture_stdout
-def text2binary_matrix(lsargs):
-     return NetAnalyzer.text2binary_matrix(lsargs)
+def integrate_kernels(lsargs):
+    return NetAnalyzer.integrate_kernels(lsargs)
 
-# def test_text2binary_matrix(tmp_dir):
-#     input_file = os.path.join(DATA_PATH, "test_matrix_bin.npy")
-#     output_file = os.path.join(tmp_dir, "output_text2binary")
+def test_integration(tmp_dir):
+    output_file = os.path.join(tmp_dir, "outputfile_integration")
+    ref_file = os.path.join(INTEGRATE_KERNELS, "int_mean")
+    kernel1 = os.path.join(INTEGRATE_KERNELS, "kernel1")
+    kernel2 = os.path.join(INTEGRATE_KERNELS, "kernel2")
+    args=f"-i mean -t {kernel1}.npy;{kernel2}.npy -n {kernel1}.lst;{kernel2}.lst -o {output_file}".split(" ")
+    _, printed = integrate_kernels(args)
+    diff(ref_file + ".npy", output_file + ".npy", matrix=True)
+    diff(ref_file + ".lst", output_file + ".lst")
 
-#     ref_name = ["statistics_from_text2bin", "cutoff_no_binarizado", "cutoff_binarizado", "set_diagonal_matrix", "test_matrix_bin.npy"]
-#     args_basic="-i {input_file} -t bin -o {output_file}".split(" ")
-#     args_specific = ["-c 0.5".split(" "), "-B 0.5".split(" "), ["-d"], "-O bin".split(" ")]
-#     for i in range(0, len(ref_name)):
-#         args= args_basic + args_specific[i]
-#         ref_file = os.path.join(TEXT2BINARY_MATRIX, ref_name[i])
-#         text2binary_matrix(args)
-#         diff(output_file, ref_file)
-         
+    ref_file = os.path.join(INTEGRATE_KERNELS, "int_mean_asym")
+    asym_kernel1 = os.path.join(INTEGRATE_KERNELS, "asym_kernel1")
+    asym_kernel2 = os.path.join(INTEGRATE_KERNELS, "asym_kernel2")
+    args=f"--asym -i mean -t {asym_kernel1}.npy;{asym_kernel2}.npy -n {kernel1}.lst;{kernel2}.lst -o {output_file}".split(" ")
+    _, printed = integrate_kernels(args)
+    diff(ref_file + ".npy", output_file + ".npy", matrix=True)
+    diff(ref_file + ".lst", output_file + ".lst")
 
 
-# -i $data_to_test/test_matrix -t "matrix" -O "mat" -o $out/test_matrixfrommatrix
-# -i $data_to_test/test_pairs -t "pair" -O "mat" -o $out/matrix_from_pairs
+
 

@@ -25,17 +25,6 @@ from scipy.stats import zscore
 # https://stackoverflow.com/questions/60392940/multi-layer-graph-in-networkx
 # http://mkivela.com/pymnet
 
-class NestedDict(dict): #2exp #Talk with PSZ about this implementatino with respect to pxc lib.
-    def dig(self, *keys):
-        try:
-            for key in keys:
-                self = self[key]
-            return self
-        except KeyError:
-            return None
-
-
-
 class NetAnalyzer:
 
     def __init__(self, layers):
@@ -45,12 +34,11 @@ class NetAnalyzer:
         self.association_values = {}
         self.compute_autorelations = True
         self.compute_pairs = 'conn'
-        self.matrices = NestedDict(
-        {"adjacency_matrices": {}, # {layers => Mat, rowIds, colIds}
+        self.matrices = {"adjacency_matrices": {}, # {layers => Mat, rowIds, colIds}
          "kernels": {},            # {layers => {method_type => Mat, rowIds, colIds}}
          "associations": {},       # {layers => {method_type => Mat, rowIds, colIds}}
          "semantic_sims": {},      # {layers => {method_type => Mat, rowIds, colIds}}
-         })
+         }
         self.embedding_coords = {} 
         self.group_nodes = {} # Communities are lists {community_id : [Node1, Node2,...]}
         self.reference_nodes = []
@@ -360,17 +348,17 @@ class NetAnalyzer:
 
     def get_matrix_from_keys(self, matrix_keys, symm = True): # TODO: Implement this option in the code.
         layers = matrix_keys[1]
-        matrix = self.matrices.dig(*matrix_keys)
+        matrix = pxc.dig(self.matrices,*matrix_keys)
         if matrix is None and symm: 
             matrix_keys = list(matrix_keys)
             matrix_keys[1] = (layers[1], layers[0])
             matrix_keys = tuple(matrix_keys)
-            matrix = self.matrices.dig(*matrix_keys)
+            matrix = pxc.dig(self.matrices,*matrix_keys)
         return matrix
 
     def get_bicm_associations(self, layers, base_layer, pvalue = 0.05, pvalue_adj_method = 'fdr'):
         # TODO: Need test.
-        biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))
+        biadj_matrix = pxc.dig(self.matrices, "adjacency_matrices",tuple(layers),base_layer)
         if biadj_matrix is None:
             biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
 
@@ -389,7 +377,7 @@ class NetAnalyzer:
 
 
     def get_corr_associations(self, layers, base_layer, corr_type = "pearson", pvalue = 0.05, pvalue_adj_method = None, alternative = 'greater'): 
-        biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))
+        biadj_matrix = pxc.dig(self.matrices,"adjacency_matrices",tuple(layers),base_layer)
         if biadj_matrix is None:
             biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
 
@@ -407,7 +395,7 @@ class NetAnalyzer:
         return relations
 
     def get_umap_associations(self, layers, base_layer, n_neighbors = 15, min_dist = 0.1, n_components = 2, metric = 'euclidean', random_seed = None):
-        biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))
+        biadj_matrix = pxc.dig(self.matrices,"adjacency_matrices",tuple(layers),base_layer)
         if biadj_matrix is None:
             biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
         data, rowIds, _ = biadj_matrix
@@ -419,7 +407,7 @@ class NetAnalyzer:
 
     def get_pca_associations(self, layers, base_layer, n_components = 2, coords2sim_type = "dotProduct"):
         # TODO: Try to select the correct number of n_componentes (automatically)
-        biadj_matrix = self.matrices.dig(("adjacency_matrices",(*layers,base_layer)))
+        biadj_matrix = pxc.dig(self.matrices,"adjacency_matrices",tuple(layers),base_layer)
         if biadj_matrix is None:
             biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
 
@@ -625,7 +613,7 @@ class NetAnalyzer:
         elif outFormat == "matrix":
             if self.matrices["adjacency_matrices"].get(layers) is None:
                 self.generate_adjacency_matrix(layers[0], layers[1])
-            matrix, rowIds, colIds = self.matrices.dig("adjacency_matrices", layers)
+            matrix, rowIds, colIds = pxc.dig(self.matrices,"adjacency_matrices", layers)
             self.write_obj(matrix, output_filename=output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
 
 
@@ -801,7 +789,7 @@ class NetAnalyzer:
     #-------------------------------------
 
     def write_matrix(self, mat_keys, output_filename):
-        matrix_row_col = self.matrices.dig(*mat_keys)
+        matrix_row_col = pxc.dig(self.matrices,*mat_keys)
         if matrix_row_col is not None:
             mat, rowIds, colIds = matrix_row_col
             self.write_obj(mat, output_filename, Format= "matrix", rowIds=rowIds, colIds=colIds)
@@ -809,7 +797,7 @@ class NetAnalyzer:
             raise Exception("keys for matrices which dont exist yet")
 
     def write_stats_from_matrix(self, mat_keys, output_filename="stats_from_matrix"): 
-        matrix_data = self.matrices.dig(*mat_keys)
+        matrix_data = pxc.dig(self.matrices,*mat_keys)
         if matrix_data == None: raise Exception("keys for matrices which dont exist yet")
         matrix, _, _ = matrix_data
 
@@ -817,7 +805,7 @@ class NetAnalyzer:
         self.write_obj(stats, output_filename, Format="pair")
 
     def normalize_matrix(self, mat_keys, by= "rows_cols"):
-        matrix_data = self.matrices.dig(*mat_keys)
+        matrix_data = pxc.dig(self.matrices,*mat_keys)
         if matrix_data == None: raise Exception("keys for matrices which dont exist yet")
         matrix, rowIds, colIds = matrix_data
 
@@ -848,8 +836,8 @@ class NetAnalyzer:
     def mat_vs_mat_operation(self, mat1_keys, mat2_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False):
         result = (None, None, None)
 
-        mat1 = self.matrices.dig(*mat1_keys)
-        mat2 = self.matrices.dig(*mat2_keys)
+        mat1 = pxc.dig(self.matrices,*mat1_keys)
+        mat2 = pxc.dig(self.matrices,*mat2_keys)
 
         if mat1 is None or mat2 is None:
             raise Exception("keys for matrices which dont exist yet")
@@ -865,7 +853,7 @@ class NetAnalyzer:
     def filter_matrix(self, mat_keys, operation, options, output_filename=None, outFormat='matrix', add_to_object= False):
         result = (None, None, None)
 
-        mat1 = self.matrices.dig(*mat_keys)
+        mat1 = pxc.dig(self.matrices,*mat_keys)
 
         if mat1 is None:      
             raise Exception("keys for matrices which dont exist yet")
@@ -1206,7 +1194,7 @@ class NetAnalyzer:
             matrix, rowIds, colIds = pxc.transform2obj(values, inFormat= inFormat, outFormat= "matrix", rowIds = rowIds, colIds = colIds) 
             path_keys = matrix_keys[:-1]
             final_key = matrix_keys[-1]
-            result_dic = self.matrices.dig(*path_keys)
+            result_dic = pxc.dig(self.matrices,*path_keys)
             if result_dic is not None:
                 result_dic[final_key] = [matrix, rowIds, colIds]
             else:

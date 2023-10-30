@@ -5,6 +5,7 @@ import math
 import numpy as np
 import networkx as nx
 import random
+import py_exp_calc.exp_calc as pxc
 from NetAnalyzer import NetAnalyzer
 from NetAnalyzer import Net_parser
 from statsmodels.stats.multitest import multipletests
@@ -501,7 +502,7 @@ class BaseNetTestCase(unittest.TestCase):
 		outFormat = "matrix"
 		output_filename = "subgraph"
 		self.monopartite_network_weights.write_subgraph(("main","main"), output_filename, outFormat)	
-		self.assertEqual(self.monopartite_network_weights.matrices.dig("adjacency_matrices",("main","main"))[0].tolist(), np.load("subgraph.npy").tolist())
+		self.assertEqual(pxc.dig(self.monopartite_network_weights.matrices,*("adjacency_matrices",("main","main")))[0].tolist(), np.load("subgraph.npy").tolist())
 		self.assertTrue(os.path.exists(output_filename+"_colIds"))
 		self.assertTrue(os.path.exists(output_filename+"_rowIds"))
 		os.remove(output_filename+"_colIds")

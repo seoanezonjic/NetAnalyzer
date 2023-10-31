@@ -7,7 +7,7 @@ import math
 import numpy as np
 import scipy.stats as stats
 import pandas as pd
-import statsmodels
+import statsmodels.api as sm
 import itertools
 import warnings
 import logging
@@ -559,7 +559,7 @@ class NetAnalyzer:
 
     def adjust_pval_association(self, associations, method): # TODO TEST
         pvals = np.array([val[2] for val in associations])
-        adj_pvals = statsmodels.stats.multitest.multipletests(pvals, method=method, is_sorted=False, returnsorted=False)[1]
+        adj_pvals =  sm.stats.multipletests(pvals, method=method, is_sorted=False, returnsorted=False)[1] #2expcalc?
         for idx, adj_pval in enumerate(adj_pvals):
             associations[idx][2] = adj_pval
 

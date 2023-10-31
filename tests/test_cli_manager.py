@@ -20,8 +20,12 @@ TEXT2BINARY_MATRIX = os.path.join(INPUT_PATH, 'text2binary_matrix')
 
 
 @pytest.fixture(scope="session")
-def tmp_dir(tmpdir_factory):
+def tmp_dir(tmpdir_factory, request):
     fn = tmpdir_factory.mktemp("./tmp_output")
+    def finalizer():
+        if fn.exists():
+            shutil.rmtree(str(fn))
+    request.addfinalizer(finalizer)
     return fn
 
 def capture_stdout(func):
@@ -97,6 +101,7 @@ def diff(file1, file2, matrix=False, roundTo=3):
 # Netanalyzer bin.
 
 def test_projections(tmp_dir):
+    print(tmp_dir)
     input_file = os.path.join(DATA_PATH, "bipartite_network_for_validating.txt")
     ref_file = os.path.join(DATA_PATH, "jaccard_results.txt")
     output_file = os.path.join(tmp_dir, "jaccard_results.txt")
@@ -129,42 +134,41 @@ def test_projections(tmp_dir):
     args = f"-i {input_file} -f pair -l gen,M[0-9]+;pathway,P[0-9]+ --dsl_script {dsl}".split(" ")
     compare_exec(ref_file, output_file, args, dsl=True)
 
-def test_get_node_graph_attrs(tmp_dir):
-
-    input_file = os.path.join(DATA_PATH, "bipartite_network_for_validating.txt")
-    ref_file = os.path.join(NETANALYZER, "attributes", "node_attributes_summ.txt")
-    output_file = os.path.join(tmp_dir, "jaccard_results.txt")
-    args = f"-i {input_file} -a {output_file} -f pair -l gen,M[0-9]+;pathway,P[0-9]+ -A get_degree,get_degreeZ --attributes_summarize".split(" ")
-    output_file = os.path.join(tmp_dir, "node_attributes.txt")
+@pytest.mark.parametrize("input_file, ref_file, output_file1, output_file2check, args", [
+    (
+        "bipartite_network_for_validating.txt",
+        "node_attributes_summ.txt",
+        "jaccard_results.txt",
+        "node_attributes.txt",
+        "-f pair -l gen,M[0-9]+;pathway,P[0-9]+ -A get_degree,get_degreeZ --attributes_summarize".split(" ")
+    ),
+    (
+        "bipartite_network_for_validating.txt",
+        "node_attributes_nonsumm.txt",
+        "jaccard_results.txt",
+        "node_attributes.txt",
+        "-f pair -l gen,M[0-9]+;pathway,P[0-9]+ -A get_degree,get_degreeZ".split(" ")
+    ),
+    (
+        "bipartite_network_for_validating.txt",
+        "graph_attributes.txt",
+        "jaccard_results.txt",
+        "graph_attributes.txt",
+        "-f pair -l gen,M[0-9]+;pathway,P[0-9]+ --graph_attributes size,edge_density".split(" ")
+    ),
+])
+def test_get_node_graph_attrs(tmp_dir, input_file, ref_file, output_file1, output_file2check, args):
+    input_file = os.path.join(DATA_PATH, input_file)
+    ref_file = os.path.join(NETANALYZER, "attributes", ref_file)
+    output_file1 = os.path.join(tmp_dir,  output_file1)
+    args_base = f"-i {input_file} -a {output_file1}".split(" ")
+    args = args_base + args
+    output_file_check = os.path.join(tmp_dir,  output_file2check)
     netanalyzer(args)
-    shutil.move("node_attributes.txt", output_file)
-    test_result = CmdTabs.load_input_data(output_file)
+    shutil.move(output_file2check, output_file_check)
+    test_result = CmdTabs.load_input_data(output_file_check)
     expected_result = CmdTabs.load_input_data(ref_file)
     assert expected_result == test_result
-
-    input_file = os.path.join(DATA_PATH, "bipartite_network_for_validating.txt")
-    ref_file = os.path.join(NETANALYZER, "attributes", "node_attributes_nonsumm.txt")
-    output_file = os.path.join(tmp_dir, "jaccard_results.txt")
-    args = f"-i {input_file} -a {output_file} -f pair -l gen,M[0-9]+;pathway,P[0-9]+ -A get_degree,get_degreeZ".split(" ")
-    output_file = os.path.join(tmp_dir, "node_attributes.txt")
-    netanalyzer(args)
-    shutil.move("node_attributes.txt", output_file)
-    test_result = CmdTabs.load_input_data(output_file)
-    expected_result = CmdTabs.load_input_data(ref_file)
-    assert expected_result == test_result
-
-    input_file = os.path.join(DATA_PATH, "bipartite_network_for_validating.txt")
-    ref_file = os.path.join(NETANALYZER, "attributes", "graph_attributes.txt")
-    output_file = os.path.join(tmp_dir, "jaccard_results.txt")
-    #netanalyzer -i $data_to_test/bipartite_network_for_validating.txt -a $out/projections/jaccard_results.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --graph_attributes "size,edge_density"
-    args = f"-i {input_file} -a {output_file} -f pair -l gen,M[0-9]+;pathway,P[0-9]+ --graph_attributes size,edge_density".split(" ")
-    output_file = os.path.join(tmp_dir, "graph_attributes.txt")
-    netanalyzer(args)
-    shutil.move("graph_attributes.txt", output_file)
-    test_result = CmdTabs.load_input_data(output_file)
-    expected_result = CmdTabs.load_input_data(ref_file)
-    assert expected_result == test_result
-
 
 def test_get_kernels(tmp_dir):
     input_file = os.path.join(DATA_PATH, "data_kernel", "adj_mat")
@@ -211,7 +215,6 @@ def test_filtering(tmp_dir):
     dsl = os.path.join(NETANALYZER, "dsl", "jaccard_count_filter_dsl")
     args = f"-i {input_file} -f pair -l gen,M[0-9]+;pathway,P[0-9]+ --dsl_script {dsl}".split(" ")
     _, printed = netanalyzer_dsl(args)
-    print(printed)
     for tag in ["_colIds", "_rowIds"]:
         diff(ref_file+tag, output_file+tag, matrix=False)
     tag = ".npy"

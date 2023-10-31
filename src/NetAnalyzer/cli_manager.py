@@ -18,9 +18,12 @@ from NetAnalyzer.performancer import Performancer
 
 ## TYPES 
 def based_0(string): return int(string) - 1
+
 def list_based_0(string): return CmdTabs.parse_column_indices(",", string)
+
 def single_split(string, sep = ","):
     return string.strip().split(sep)
+
 def double_split(string, sep1=";", sep2=","):
     return [sublst.split(sep2) for sublst in string.strip().split(sep1)]
 

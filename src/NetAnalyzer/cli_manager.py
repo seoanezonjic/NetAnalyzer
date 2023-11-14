@@ -107,7 +107,7 @@ def netanalyzer(args=None):
     parser.add_argument("-c","--control_file", dest="control_file", default=None,
                         help="Control file name")
     parser.add_argument("-m","--association_method", dest="meth", default=None,
-                        help="Control file name")
+                        help="select association method to perform the projections")
     parser.add_argument("-k","--kernel_method", dest="kernel", default=None,
                         help="Kernel operation to perform with the adjacency matrix")
     parser.add_argument("--embedding_add_options", dest="embedding_add_options", default="",

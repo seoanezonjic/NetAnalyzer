@@ -336,6 +336,7 @@ def test_text2binary_matrix(tmp_dir, ref_name, ref_output, args, matrix):
 @pytest.mark.parametrize("ref_file, args, output2check, tag", [
       ('ranker_by_seed_string_results', '-s A,B -k {kernel_file} -n {kernel_file}.lst -o {output_file}', '{output_file}', '_all_candidates'), # set seed from terminal
       ('ranker_by_seed_file_results', '-s {seeds_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # seed from file
+      ('ranker_by_seed_file_weighted_results', '-s {seeds_file_weighted} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # probando
       ('ranker_by_seed_file_results_type_added', '-s {seeds_file} --type_of_candidates -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # if candidates are in seeds or not
       ('ranker_leave_one_out_by_seed_results', '-s {seeds_file} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # leave one out option
       ('ranker_cross_validation_by_seed_results', '-s {seeds_file} -l -K 2 -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
@@ -351,10 +352,11 @@ def test_ranker(tmp_dir, ref_file, args, output2check, tag):
     kernel_file = os.path.join(DATA_PATH, 'data_ranker', 'kernel_for_validating')
     output_file = os.path.join(tmp_dir, "output_ranker")
     seeds_file= os.path.join(DATA_PATH, 'data_ranker', 'seed_genes_for_validating')
+    seeds_file_weighted = os.path.join(DATA_PATH, 'data_ranker', 'seed_weighted_for_validating')
     filter_file = os.path.join(DATA_PATH, 'data_ranker', 'genes2filter_for_validating')
     whitelist = os.path.join(RANKER, "whitelist")
     top_output = os.path.join(tmp_dir, "ranker_top_results")
-    args = args.format(kernel_file=kernel_file, output_file=output_file, seeds_file=seeds_file, filter_file=filter_file, whitelist=whitelist, top_output=top_output).split(" ")
+    args = args.format(kernel_file=kernel_file, output_file=output_file, seeds_file=seeds_file, filter_file=filter_file, whitelist=whitelist, top_output=top_output,seeds_file_weighted=seeds_file_weighted).split(" ")
     ref_file = os.path.join(RANKER, ref_file)
     _, printed = ranker(args)
     diff(output2check.format(output_file=output_file,top_output=top_output)+tag, ref_file+tag)

@@ -458,7 +458,7 @@ def main_ranker(options):
     ranker.load_nodes_from_file(options.input_nodes)
     if options.whitelist is not None:
         ranker.filter_matrix(options.whitelist)
-    ranker.load_seeds(options.genes_seed, sep=options.seed_sep)
+    ranker.load_seeds(options.genes_seed, sep=options.seed_sep) # TODO: Add when 3 columns is needed for weigths
     options.filter is not None and ranker.load_references(options.filter, sep=",")
     print(options.propagate_options)
     propagate_options = eval('{' + options.propagate_options +'}')

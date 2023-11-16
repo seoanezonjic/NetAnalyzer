@@ -59,7 +59,7 @@ class Ranker:
                 group_nodes[set_name] = nodes.split(sep)
                 if weights:
                     weights = weights[0].split(sep)
-                    weights_nodes[set_name] = {group_nodes[set_name][i]: float(weight) for i, weight in enumerate(weights)}
+                    weights_nodes[set_name] = {group_nodes[set_name][i]: float(weight) for i, weight in enumerate(weights)} # TODO: check this section
         return group_nodes, weights_nodes
 
     def load_nodes_from_file(self, file):
@@ -153,7 +153,7 @@ class Ranker:
             gen_list = updated_seed
         else:
             subsets_gen_values = self.matrix[genes_pos, :]
-            if weights:
+            if weights is not None:
                 integrated_gen_values = weights @ subsets_gen_values
                 gen_list = (1/weights.sum()) * integrated_gen_values
             else:
@@ -165,7 +165,8 @@ class Ranker:
     def rank_by_seed(self, seed_indexes, seed, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         ordered_gene_score = []
         genes_pos = [seed_indexes.get(s) for s in seed if seed_indexes.get(s) is not None]
-        if weights: weights = [weights[s] for s in seed]
+        print(self.weights)
+        if weights: weights = np.array([weights[s] for s in seed])
         number_of_seed_genes = len(genes_pos)
         number_of_all_nodes = len(self.nodes)
 

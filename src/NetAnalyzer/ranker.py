@@ -165,7 +165,6 @@ class Ranker:
     def rank_by_seed(self, seed_indexes, seed, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         ordered_gene_score = []
         genes_pos = [seed_indexes.get(s) for s in seed if seed_indexes.get(s) is not None]
-        print(self.weights)
         if weights: weights = np.array([weights[s] for s in seed])
         number_of_seed_genes = len(genes_pos)
         number_of_all_nodes = len(self.nodes)

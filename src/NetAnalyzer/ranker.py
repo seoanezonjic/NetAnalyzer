@@ -16,6 +16,7 @@ class Ranker:
         self.reference_nodes = {}
         self.ranking = {}  # ranked_genes
         self.weights = {}
+        self.discarded_seeds = {}
 
     def normalize_matrix(self, mode="by_column"):
         degree_matrix = self.matrix.sum(0)
@@ -36,6 +37,22 @@ class Ranker:
         self.seeds, self.weights = self.load_nodes_by_group(node_groups, sep=sep)
         if uniq:
             self.seeds = {seed: pxc.uniq(nodes) for seed, nodes in self.seeds.items()}
+
+    def clean_seeds(self):
+        cleaned_seeds = {}
+        cleaned_weights = {}
+        for seed_name, seed in self.seeds.items():
+            cleaned_seed = [ node for node in seed if node in self.nodes ]
+            if len(cleaned_seed) == 0:
+                self.discarded_seeds[seed_name] = seed
+            else:
+                cleaned_seeds[seed_name] = cleaned_seed
+            if self.weights.get(seed_name) is not None: 
+                cleaned_weights[seed_name] = { node: self.weights[seed_name][node] for node in cleaned_seed }
+
+
+        self.seeds = cleaned_seeds
+        self.weights = cleaned_weights
 
     def load_references(self, node_groups, sep=','):
         self.reference_nodes, _ = self.load_nodes_by_group(node_groups, sep=sep)
@@ -164,7 +181,7 @@ class Ranker:
 
     def rank_by_seed(self, seed_indexes, seed, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         ordered_gene_score = []
-        genes_pos = [seed_indexes.get(s) for s in seed if seed_indexes.get(s) is not None]
+        genes_pos = [ seed_indexes.get(s) for s in seed ]
         if weights: weights = np.array([weights[s] for s in seed])
         number_of_seed_genes = len(genes_pos)
         number_of_all_nodes = len(self.nodes)
@@ -314,12 +331,6 @@ class Ranker:
         indexes = {}
         for node in sum(self.seeds.values(), []):
             if indexes.get(node) is None:
-                if node in self.nodes:
-                    indx = self.nodes.index(node)
-                else:
-                    indx = None
-
-                if indx is not None:
-                    indexes[node] = indx
-
+                indx = self.nodes.index(node)
+                indexes[node] = indx
         return indexes

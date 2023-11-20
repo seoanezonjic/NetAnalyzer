@@ -459,6 +459,7 @@ def main_ranker(options):
     if options.whitelist is not None:
         ranker.filter_matrix(options.whitelist)
     ranker.load_seeds(options.genes_seed, sep=options.seed_sep) # TODO: Add when 3 columns is needed for weigths
+    ranker.clean_seeds()
     options.filter is not None and ranker.load_references(options.filter, sep=",")
     print(options.propagate_options)
     propagate_options = eval('{' + options.propagate_options +'}')
@@ -466,14 +467,13 @@ def main_ranker(options):
                       k_fold=options.k_fold, options=propagate_options)
     rankings = ranker.ranking
 
-    discarded_seeds = [seed_name for seed_name,
-                       ranks in rankings.items() if not ranks]
+    discarded_seeds = [ [seed_name, seed] for seed_name, seed in ranker.discarded_seeds.items()]
 
     if discarded_seeds:
         with open(options.output_name + "_discarded", "w") as f:
-            for seed_name in discarded_seeds:
+            for seed_name, seed in discarded_seeds:
                 f.write(
-                    f"{seed_name}\t{options.seed_sep.join(ranker.seeds[seed_name])}")
+                    f"{seed_name}\t{options.seed_sep.join(seed)}")
 
     if options.top_n is not None:
         top_n = ranker.get_top(options.top_n)

@@ -3,8 +3,11 @@ import sys
 import os
 import glob
 import numpy as np
-from py_cmdtabs.cmdtabs import CmdTabs
 import random
+import copy
+from multiprocessing import Process, Manager
+
+from py_cmdtabs.cmdtabs import CmdTabs
 import py_exp_calc.exp_calc as pxc
 
 """ ROOT_PATH=os.path.dirname(__file__)
@@ -241,10 +244,8 @@ def ranker(args=None):
     parser.add_argument("--type_of_candidates", dest="type_of_candidates", default=False, action="store_true",
     help="type of candidates to output in ranking list: all, new, seed.")
     parser.add_argument("--whitelist", dest="whitelist", default=None, type = open_whitelist, help= "File Path with the whitelist of nodes to take into account in the ranker process")
-
-    # TODO: Add Threat section
-    #parser.add_argument("-T", "--threads", dest="threads", default=0, type=based_0,
-    # help="Number of threads to use in computation, one thread will be reserved as manager.")
+    parser.add_argument("-T", "--threads", dest="threads", default=1, type=int,
+     help="Number of threads to use in computation, one thread will be reserved as manager.")
     opts = parser.parse_args(args)
     main_ranker(opts)
 
@@ -450,30 +451,71 @@ def main_randomize_network(options):
         for e in randomNet.graph.edges:
             outfile.write(f"{e[0]}\t{e[1]}\n")
 
+def worker_ranker(seed_groups, opts, nodes, all_rankings):
+    ranker = Ranker()
+    ranker.nodes = nodes
+    for sg_id, sg in seed_groups: ranker.seeds[sg_id] = sg
+    # LOAD KERNEL
+    ranker.matrix = np.load(opts["kernel_file"])
+    if opts.get('normalize_matrix') is not None:
+        ranker.normalize_matrix(mode=opts["normalize_matrix"])
+    if opts.get('whitelist') is not None:
+        ranker.filter_matrix(opts["whitelist"])
+    # DO RANKING
+    propagate_options = eval('{' + opts["propagate_options"] +'}')
+    ranker.do_ranking(cross_validation=opts.get("cross_validation"), propagate=opts["propagate"],
+                      k_fold=opts.get("k_fold"), options=propagate_options)
+    for sg_id, ranking in ranker.ranking.items(): all_rankings[sg_id] = ranking
+
+def get_records(records, chunk_size):
+    recs = []
+    slices = int(chunk_size/2)
+    r = chunk_size % 2
+    for i in range(slices):
+        recs.append(records.pop(0))
+        if i == slices -1 and r == 0: recs.append(records.pop())
+    return recs
+
 def main_ranker(options):
     ranker = Ranker()
-    ranker.matrix = np.load(options.kernel_file)
-    if options.normalize_matrix is not None:
-        ranker.normalize_matrix(mode=options.normalize_matrix)
+    # LOAD SEEDS
     ranker.load_nodes_from_file(options.input_nodes)
-    if options.whitelist is not None:
-        ranker.filter_matrix(options.whitelist)
     ranker.load_seeds(options.genes_seed, sep=options.seed_sep) # TODO: Add when 3 columns is needed for weigths
     ranker.clean_seeds()
-    options.filter is not None and ranker.load_references(options.filter, sep=",")
-    print(options.propagate_options)
-    propagate_options = eval('{' + options.propagate_options +'}')
-    ranker.do_ranking(cross_validation=options.cross_validation, propagate=options.propagate,
-                      k_fold=options.k_fold, options=propagate_options)
-    rankings = ranker.ranking
-
     discarded_seeds = [ [seed_name, seed] for seed_name, seed in ranker.discarded_seeds.items()]
-
     if discarded_seeds:
         with open(options.output_name + "_discarded", "w") as f:
-            for seed_name, seed in discarded_seeds:
-                f.write(
-                    f"{seed_name}\t{options.seed_sep.join(seed)}")
+            for seed_name, seed in discarded_seeds: f.write(f"{seed_name}\t{options.seed_sep.join(seed)}")
+    
+    # DO PARALLEL RANKING
+    chunk_size = int(len(ranker.seeds)/options.threads)
+    seeds = list(ranker.seeds.items())
+    seeds.sort(reverse=True, key=lambda x: len(x[1]))
+    opts = vars(options)
+    with Manager() as manager:
+        all_rankings = manager.dict()
+        processes = []
+        for i in range(options.threads):
+            records = get_records(seeds, chunk_size)
+            if len(seeds) < chunk_size: records.extend(seeds) # There is no enough record for other chunk so we merge the remanent records t this chunk
+            p = Process(target=worker_ranker, args=(records, opts, ranker.nodes, all_rankings))
+            processes.append(p)
+            p.start()
+        for p in processes: p.join() # first we have to start ALL the processes before ask to wait for their termination. For this reason, the join MUST be in an independent loop
+        ranker.ranking.update(all_rankings) # COPY RESULTS OUT OF THE MEMORY MAP MANAGER!!!
+
+    # WRITE RANKING
+    rankings = ranker.ranking
+    if options.type_of_candidates: # CHANGE TO RANKER METHOD
+        for seed_name, rankings_by_seed in rankings.items():
+            added_ranking_column = []
+            for ranking in rankings_by_seed:
+                if ranking[0] in ranker.seeds[seed_name]:
+                    ranking.insert(5, "seed")
+                else:
+                    ranking.insert(5, "new")
+                added_ranking_column.append(ranking)
+            rankings[seed_name] = added_ranking_column
 
     if options.top_n is not None:
         top_n = ranker.get_top(options.top_n)
@@ -483,21 +525,12 @@ def main_ranker(options):
             write_ranking(options.output_top, top_n)
 
     if options.filter is not None:
+        ranker.load_references(options.filter, sep=",")
         rankings = ranker.get_reference_ranks()
 
     if rankings:
-        if options.type_of_candidates:
-            for seed_name, rankings_by_seed in rankings.items():
-                added_ranking_column = []
-                for ranking in rankings_by_seed:
-                    if ranking[0] in ranker.seeds[seed_name]:
-                        ranking.insert(5, "seed")
-                    else:
-                        ranking.insert(5, "new")
-                    added_ranking_column.append(ranking)
-                rankings[seed_name] = added_ranking_column
-
         write_ranking(f"{options.output_name}_all_candidates", rankings)
+
 
 def main_text2binary_matrix(options):
     if options.input_file == '-':

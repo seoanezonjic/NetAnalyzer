@@ -5,7 +5,7 @@ import glob
 import numpy as np
 import random
 import copy
-from multiprocessing import Process, Manager
+from multiprocessing import Process, Manager, Lock
 
 from py_cmdtabs.cmdtabs import CmdTabs
 import py_exp_calc.exp_calc as pxc
@@ -451,7 +451,7 @@ def main_randomize_network(options):
         for e in randomNet.graph.edges:
             outfile.write(f"{e[0]}\t{e[1]}\n")
 
-def worker_ranker(seed_groups, opts, nodes, all_rankings):
+def worker_ranker(seed_groups, opts, nodes, all_rankings, lock):
     ranker = Ranker()
     ranker.nodes = nodes
     for sg_id, sg in seed_groups: ranker.seeds[sg_id] = sg
@@ -465,7 +465,7 @@ def worker_ranker(seed_groups, opts, nodes, all_rankings):
     propagate_options = eval('{' + opts["propagate_options"] +'}')
     ranker.do_ranking(cross_validation=opts.get("cross_validation"), propagate=opts["propagate"],
                       k_fold=opts.get("k_fold"), options=propagate_options)
-    for sg_id, ranking in ranker.ranking.items(): all_rankings[sg_id] = ranking
+    with lock: all_rankings.update(ranker.ranking) # lock avoids that several processes write at same time in the dictionary
 
 def get_records(records, chunk_size):
     recs = []
@@ -492,13 +492,14 @@ def main_ranker(options):
     seeds = list(ranker.seeds.items())
     seeds.sort(reverse=True, key=lambda x: len(x[1]))
     opts = vars(options)
+    lock = Lock()
     with Manager() as manager:
         all_rankings = manager.dict()
         processes = []
-        for i in range(options.threads):
+        for i in range(options.threads -1):
             records = get_records(seeds, chunk_size)
             if len(seeds) < chunk_size: records.extend(seeds) # There is no enough record for other chunk so we merge the remanent records t this chunk
-            p = Process(target=worker_ranker, args=(records, opts, ranker.nodes, all_rankings))
+            p = Process(target=worker_ranker, args=(records, opts, ranker.nodes, all_rankings, lock))
             processes.append(p)
             p.start()
         for p in processes: p.join() # first we have to start ALL the processes before ask to wait for their termination. For this reason, the join MUST be in an independent loop

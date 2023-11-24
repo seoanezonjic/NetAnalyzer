@@ -4,16 +4,27 @@ from itertools import combinations
 from sklearn.model_selection import KFold, LeaveOneOut
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 import py_exp_calc.exp_calc as pxc
-# import py_exp_calc.exp_calc as pxc
+import py_exp_calc.exp_calc as pxc
+from timeit import default_timer as timer
 
-
+# def timing(func):
+#     def wrapper(*args, **kwargs):
+#         start = timer()
+#         result = func(*args, **kwargs)
+#         end = timer()
+#         total_time = end - start
+#         print(f"Function {func.__name__} Took {total_time:.4f} seconds")
+#         return result
+#     return wrapper
+    
 class Ranker:
 
     def __init__(self):
         self.matrix = None
         self.nodes = []  # kernel_nodes
-        self.seeds = {}  # genes_seed
-        self.reference_nodes = {}
+        self.seeds = {}  # node seeds 
+        self.seed_nodes2idx = {} 
+        self.reference_nodes = {} # TODO Check this when needed.
         self.ranking = {}  # ranked_genes
         self.weights = {}
         self.discarded_seeds = {}
@@ -38,12 +49,12 @@ class Ranker:
         if uniq:
             self.seeds = {seed: pxc.uniq(nodes) for seed, nodes in self.seeds.items()}
 
-    def clean_seeds(self):
+    def clean_seeds(self, minimum_size = 1):
         cleaned_seeds = {}
         cleaned_weights = {}
         for seed_name, seed in self.seeds.items():
             cleaned_seed = [ node for node in seed if node in self.nodes ]
-            if len(cleaned_seed) == 0:
+            if len(cleaned_seed) < minimum_size:
                 self.discarded_seeds[seed_name] = seed
             else:
                 cleaned_seeds[seed_name] = cleaned_seed
@@ -84,6 +95,22 @@ class Ranker:
             for line in f:
                 self.nodes.append(line.rstrip())
 
+    def translate2idx(self):
+        for seed_name, seed in self.seeds.items():
+            self.seeds[seed_name] = self.get_nodes_indexes(seed)
+        for seed_name, node2weight in self.weights.items():
+            node2weight = { self.seed_nodes2idx[node]: weight for node, weight in node2weight.items()}
+            self.weights[seed_name] = node2weight
+
+    def translate2names(self):
+        for seed_name, seed in self.seeds.items():
+            self.seeds[seed_name] = [self.nodes[node] for node in seed]
+        for seed_name, node2weight in self.weights.items():
+            node2weight = { self.nodes[node]: weight for node, weight in node2weight.items()}
+            self.weights[seed_name] = node2weight
+
+
+
     def get_seed_cross_validation(self, k_fold=None):
         new_seeds = {}
         new_weights = {}
@@ -97,11 +124,14 @@ class Ranker:
 
             for indx, (train_index, test_index) in enumerate(cv.split(seed)):
                 seed_name_one_out = str(seed_name) + "_iteration_" + str(indx)
+                #print("train index is:", train_index)
                 new_seeds[seed_name_one_out] = [seed[i] for i in train_index]
+
                 if self.weights.get(seed_name):
                     new_weights[seed_name_one_out] = {node: self.weights[seed_name][node] for node in new_seeds[seed_name_one_out]}
-                genes2predict[seed_name_one_out] = [seed[i]
-                                                    for i in test_index]
+
+                genes2predict[seed_name_one_out] = [seed[i] for i in test_index]
+                genes2predict[seed_name_one_out] = [self.nodes[idx] for idx in genes2predict[seed_name_one_out]]
                 if self.reference_nodes.get(seed_name) is not None:
                     genes2predict[seed_name_one_out] += self.reference_nodes[seed_name]
 
@@ -113,24 +143,67 @@ class Ranker:
         self.weights = new_weights
 
     # TODO: Add thread option
+    #@timing
     def do_ranking(self, cross_validation=False, k_fold=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
-        if cross_validation:
+        self.get_seed_indexes()
+        self.translate2idx()
+
+        if cross_validation and k_fold is not None:
             self.get_seed_cross_validation(k_fold=k_fold)
 
-        seed_indexes = self.get_seed_indexes()
         # seed_groups = list(self.seeds)  # Array conversion needed for parallelization
         ranked_lists = []
         # TODO: Implement parallelization in the process as ruby if needed.
         for seed_name, seed in self.seeds.items():
             # The code in this block CANNOT modify nothing outside
-            rank_list = self.rank_by_seed(
-                seed_indexes, seed, weights=self.weights.get(seed_name), propagate=propagate, options=options)  # Production mode
-            if cross_validation:
-                rank_list = self.delete_seed_from_rank(rank_list, seed)
-            ranked_lists.append([seed_name, rank_list])
+            if cross_validation and k_fold is None:
+                rank_list = self.get_loo_ranking(seed_name, seed)
+                ranked_lists.append([seed_name, rank_list])
+            else:
+                rank_list = self.rank_by_seed(seed, weights=self.weights.get(seed_name), propagate=propagate, options=options)  # Production mode
+                if cross_validation and k_fold is not None:
+                    rank_list = self.delete_seed_from_rank(rank_list, self.seeds[seed_name])
+                ranked_lists.append([seed_name, rank_list])
 
         for seed_name, rank_list in ranked_lists:  # Transfer resuls to hash
             self.ranking[seed_name] = rank_list
+
+        self.translate2names()
+
+    #@timing
+    def get_loo_ranking(self, seed_name, seed):
+         # Generar los seeds nuevos con el loo
+         # Obtenemos la matriz de carga
+         cv = LeaveOneOut()
+         ncols= len(self.nodes)
+         nrows = len(seed)
+         W = np.zeros((nrows,ncols))
+         nodes2predict_pos = []
+         nodes2predict_names = []
+         new_seed_names = []
+         for indx, (train_index, test_index) in enumerate(cv.split(seed)):
+            new_seed_names.append(str(seed_name) + "_iteration_" + str(indx))
+            nodes = [seed[i] for i in train_index]
+            if self.weights.get(seed_name):
+                w = [self.weights[seed_name][node] for node in nodes]
+                W[indx, nodes] = w
+            else:
+                W[indx, nodes] = 1
+            #print(W)
+            node2predict = seed[test_index[0]]
+            nodes2predict_pos.append(node2predict)
+            nodes2predict_names.append(self.nodes[node2predict])
+         # recoger los valores correspondientes
+         # Calcular los score
+         R = W @ self.matrix
+         scores = R[range(0,nrows), nodes2predict_pos] / (nrows - 1)
+         # Calcular los members_below
+         members_below = (R >= scores.reshape(nrows,1)).sum(1)
+         # Calcular los porcentage
+         rank_percentage = members_below/ncols
+         # Calcular los absolute rank
+         return list(zip(nodes2predict_names, scores, rank_percentage, members_below))
+
 
     def delete_seed_from_rank(self, rank_list, seed):
         rank_list = [row for row in rank_list if row[0] not in seed]
@@ -158,6 +231,7 @@ class Ranker:
 
         return seed_attr_old
 
+    #@timing
     def update_seed(self, genes_pos, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         number_of_seed_genes = len(genes_pos)
         number_of_all_nodes = len(self.nodes)
@@ -179,9 +253,10 @@ class Ranker:
 
         return gen_list
 
-    def rank_by_seed(self, seed_indexes, seed, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
+    #@timing
+    def rank_by_seed(self, seed, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         ordered_gene_score = []
-        genes_pos = [ seed_indexes.get(s) for s in seed ]
+        genes_pos = seed
         if weights: weights = np.array([weights[s] for s in seed])
         number_of_seed_genes = len(genes_pos)
         number_of_all_nodes = len(self.nodes)
@@ -244,45 +319,47 @@ class Ranker:
                 ranking_with_new_column.append(new_row)
         return ranking_with_new_column
 
-    # def get_individual_rank(self, seed_genes, node_of_interest, propagate, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
-    #     genes_pos = self.get_nodes_indexes(seed_genes)
-    #     if node_of_interest in self.nodes:
-    #         node_of_interest_pos = self.nodes.index(node_of_interest)
-    #     else:
-    #         node_of_interest_pos = None
+    #@timing
+    def get_individual_rank(self, seed_genes, node_of_interest, propagate, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
+        genes_pos = seed_genes
+        if node_of_interest in self.nodes:
+            node_of_interest_pos = self.nodes.index(node_of_interest) # se puede reajustar
+        else:
+            node_of_interest_pos = None
 
-    #     ordered_gene_score = []
-    #     if genes_pos and node_of_interest_pos is not None:
-    #         integrated_gen_values = self.update_seed(
-    #             genes_pos, propagate=propagate, options=options)
+        ordered_gene_score = []
+        if genes_pos and node_of_interest_pos is not None:
+            integrated_gen_values = self.update_seed(
+                genes_pos, propagate=propagate, options=options)
 
-    #         ref_value = integrated_gen_values[node_of_interest_pos]
+            ref_value = integrated_gen_values[node_of_interest_pos]
 
-    #         members_below_test = 0
-    #         for gen_value in integrated_gen_values:
-    #             if gen_value >= ref_value:
-    #                 members_below_test += 1
+            members_below_test = 0
+            for gen_value in integrated_gen_values:
+                if gen_value >= ref_value:
+                    members_below_test += 1
 
-    #         rank_percentage = members_below_test/len(self.nodes)
-    #         rank = members_below_test
-    #         rank_absolute = self.get_individual_absolute_rank(
-    #             list(integrated_gen_values), ref_value)
+            rank_percentage = members_below_test/len(self.nodes)
+            rank = members_below_test
+            rank_absolute = self.get_individual_absolute_rank(
+                list(integrated_gen_values), ref_value)
 
-    #         ordered_gene_score.append(
-    #             [node_of_interest, ref_value, rank_percentage, rank, rank_absolute])
+            ordered_gene_score.append(
+                [node_of_interest, ref_value, rank_percentage, rank, rank_absolute])
 
-    #     return ordered_gene_score
+        return ordered_gene_score
 
-    # def get_individual_absolute_rank(self, values_list, ref_value):
-    #     ref_pos = None
-    #     values_list = sorted(list(set(values_list)), reverse=True)
+    #@timing
+    def get_individual_absolute_rank(self, values_list, ref_value):
+        ref_pos = None
+        values_list = sorted(list(set(values_list)), reverse=True)
 
-    #     for pos, value in enumerate(values_list):
-    #         if value == ref_value:
-    #             ref_pos = pos+1
-    #             break
+        for pos, value in enumerate(values_list):
+            if value == ref_value:
+                ref_pos = pos+1
+                break
 
-    #     return ref_pos
+        return ref_pos
 
     def get_reference_ranks(self):
         filtered_ranked_genes = {}
@@ -318,12 +395,13 @@ class Ranker:
                 top_ranked_genes[seed_name] = ranking[0:top_n]
         return top_ranked_genes
 
+    #@timing
     def get_nodes_indexes(self, nodes):
         node_indxs = []
+        #if type(nodes) == int: nodes = [nodes]
         for node in nodes:
-            if node in self.nodes:
-                index_node = self.nodes.index(node)
-                node_indxs.append(index_node)
+            index_node = self.seed_nodes2idx[node]
+            node_indxs.append(index_node)
 
         return node_indxs
 
@@ -333,4 +411,4 @@ class Ranker:
             if indexes.get(node) is None:
                 indx = self.nodes.index(node)
                 indexes[node] = indx
-        return indexes
+        self.seed_nodes2idx = indexes

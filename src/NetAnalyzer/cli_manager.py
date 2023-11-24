@@ -451,10 +451,12 @@ def main_randomize_network(options):
         for e in randomNet.graph.edges:
             outfile.write(f"{e[0]}\t{e[1]}\n")
 
-def worker_ranker(seed_groups, opts, nodes, all_rankings, lock):
+def worker_ranker(seed_groups, seed_weight, opts, nodes, all_rankings, lock):
     ranker = Ranker()
     ranker.nodes = nodes
     for sg_id, sg in seed_groups: ranker.seeds[sg_id] = sg
+    for sg_id, ws in seed_weight:
+        if ws is not None: ranker.weights[sg_id] = ws
     # LOAD KERNEL
     ranker.matrix = np.load(opts["kernel_file"])
     if opts.get('normalize_matrix') is not None:
@@ -496,10 +498,15 @@ def main_ranker(options):
     with Manager() as manager:
         all_rankings = manager.dict()
         processes = []
-        for i in range(options.threads -1):
+        if options.threads == 1:
+            worker_threads = 1
+        else:
+            worker_threads = options.threads - 1
+        for i in range(worker_threads):
             records = get_records(seeds, chunk_size)
             if len(seeds) < chunk_size: records.extend(seeds) # There is no enough record for other chunk so we merge the remanent records t this chunk
-            p = Process(target=worker_ranker, args=(records, opts, ranker.nodes, all_rankings, lock))
+            records_weight = [ (record[0], ranker.weights.get(record[0])) for record in records ]
+            p = Process(target=worker_ranker, args=(records, records_weight, opts, ranker.nodes, all_rankings, lock))
             processes.append(p)
             p.start()
         for p in processes: p.join() # first we have to start ALL the processes before ask to wait for their termination. For this reason, the join MUST be in an independent loop

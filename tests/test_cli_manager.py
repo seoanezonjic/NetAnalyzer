@@ -334,19 +334,19 @@ def test_text2binary_matrix(tmp_dir, ref_name, ref_output, args, matrix):
 ##########
 
 @pytest.mark.parametrize("ref_file, args, output2check, tag", [
-      ('ranker_by_seed_string_results', '-s A,B -k {kernel_file} -n {kernel_file}.lst -o {output_file}', '{output_file}', '_all_candidates'), # set seed from terminal
-      ('ranker_by_seed_file_results', '-s {seeds_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # seed from file
-      ('ranker_by_seed_file_weighted_results', '-s {seeds_file_weighted} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # probando
-      ('ranker_by_seed_file_results_type_added', '-s {seeds_file} --type_of_candidates -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # if candidates are in seeds or not
-      ('ranker_leave_one_out_by_seed_results', '-s {seeds_file} -f {seeds_file} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # leave one out option
-      ('ranker_cross_validation_by_seed_results', '-s {seeds_file} -l -K 2 -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
-      ('ranker_filter_results', '-s {seeds_file} -f {filter_file} -o {output_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Filter ranking to select genes to keep in output
-      ('ranker_whitelist_results', '-s {seeds_file} --whitelist {whitelist} -o {output_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Whitelist to filter in matrix
-      ('ranker_propagate_normalized', '-s {seeds_file} -p -N by_column -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Propagate with normalization by column
-      ('ranker_propagate_not_normalized', '-s {seeds_file} -p -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Propagate with no normalization
-      ('ranker_propagate_with_restart', "-s {seeds_file} -p --propagate_options 'tolerance':1e-5,'iteration_limit':100,'with_restart':0.7 -k {kernel_file} -n {kernel_file}.lst -o {output_file}", '{output_file}', '_all_candidates'), # Propagate with restart
-      ('ranker_top_results', "-s {seeds_file} --output_top {top_output} -t 2 -o {output_file} -k {kernel_file} -n {kernel_file}.lst", '{top_output}', ''), # Select top results
-      ('output_ranker', "-s JK,LL -o {output_file} -k {kernel_file} -n {kernel_file}.lst", '{output_file}', '_discarded'), # Check the discarded seeds
+       ('ranker_by_seed_string_results', '-s A,B -k {kernel_file} -n {kernel_file}.lst -o {output_file}', '{output_file}', '_all_candidates'), # set seed from terminal
+       ('ranker_by_seed_file_results', '-s {seeds_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # seed from file
+       ('ranker_by_seed_file_weighted_results', '-s {seeds_file_weighted} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # probando
+       ('ranker_by_seed_file_results_type_added', '-s {seeds_file} --type_of_candidates -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # if candidates are in seeds or not
+       ('ranker_leave_one_out_by_seed_results', '-s {seeds_file} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # leave one out option
+       ('ranker_cross_validation_by_seed_results', '-s {seeds_file} -l -K 2 -k {kernel_file} -f {filter_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
+       ('ranker_filter_results', '-s {seeds_file} -f {filter_file} -o {output_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Filter ranking to select genes to keep in output
+       ('ranker_whitelist_results', '-s {seeds_file} --whitelist {whitelist} -o {output_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Whitelist to filter in matrix
+       ('ranker_propagate_normalized', '-s {seeds_file} -p -N by_column -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Propagate with normalization by column
+       ('ranker_propagate_not_normalized', '-s {seeds_file} -p -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Propagate with no normalization
+       ('ranker_propagate_with_restart', "-s {seeds_file} -p --propagate_options 'tolerance':1e-5,'iteration_limit':100,'with_restart':0.7 -k {kernel_file} -n {kernel_file}.lst -o {output_file}", '{output_file}', '_all_candidates'), # Propagate with restart
+       ('ranker_top_results', "-s {seeds_file} --output_top {top_output} -t 2 -o {output_file} -k {kernel_file} -n {kernel_file}.lst", '{top_output}', ''), # Select top results
+       ('output_ranker', "-s JK,LL -o {output_file} -k {kernel_file} -n {kernel_file}.lst", '{output_file}', '_discarded'), # Check the discarded seeds
     ])
 def test_ranker(tmp_dir, ref_file, args, output2check, tag):
     kernel_file = os.path.join(DATA_PATH, 'data_ranker', 'kernel_for_validating')

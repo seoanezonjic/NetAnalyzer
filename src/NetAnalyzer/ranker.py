@@ -6,16 +6,6 @@ from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 import py_exp_calc.exp_calc as pxc
 import py_exp_calc.exp_calc as pxc
 from timeit import default_timer as timer
-
-# def timing(func):
-#     def wrapper(*args, **kwargs):
-#         start = timer()
-#         result = func(*args, **kwargs)
-#         end = timer()
-#         total_time = end - start
-#         print(f"Function {func.__name__} Took {total_time:.4f} seconds")
-#         return result
-#     return wrapper
     
 class Ranker:
 
@@ -28,6 +18,7 @@ class Ranker:
         self.ranking = {}  # ranked_genes
         self.weights = {}
         self.discarded_seeds = {}
+        self.attributes = {"header": ["candidates", "score", "normalized_rank", "rank", "uniq_rank"]}
 
     def normalize_matrix(self, mode="by_column"):
         degree_matrix = self.matrix.sum(0)
@@ -109,8 +100,6 @@ class Ranker:
             node2weight = { self.nodes[node]: weight for node, weight in node2weight.items()}
             self.weights[seed_name] = node2weight
 
-
-
     def get_seed_cross_validation(self, k_fold=None):
         new_seeds = {}
         new_weights = {}
@@ -142,8 +131,9 @@ class Ranker:
         self.reference_nodes = genes2predict
         self.weights = new_weights
 
-    # TODO: Add thread option
-    #@timing
+    #def write_ranking(add_header=True):
+
+
     def do_ranking(self, cross_validation=False, k_fold=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         self.get_seed_indexes()
         self.translate2idx()
@@ -151,9 +141,7 @@ class Ranker:
         if cross_validation and k_fold is not None:
             self.get_seed_cross_validation(k_fold=k_fold)
 
-        # seed_groups = list(self.seeds)  # Array conversion needed for parallelization
         ranked_lists = []
-        # TODO: Implement parallelization in the process as ruby if needed.
         for seed_name, seed in self.seeds.items():
             # The code in this block CANNOT modify nothing outside
             if cross_validation and k_fold is None:
@@ -170,7 +158,6 @@ class Ranker:
 
         self.translate2names()
 
-    #@timing
     def get_loo_ranking(self, seed_name, seed):
          # Generar los seeds nuevos con el loo
          # Obtenemos la matriz de carga
@@ -231,7 +218,6 @@ class Ranker:
 
         return seed_attr_old
 
-    #@timing
     def update_seed(self, genes_pos, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         number_of_seed_genes = len(genes_pos)
         number_of_all_nodes = len(self.nodes)
@@ -253,7 +239,6 @@ class Ranker:
 
         return gen_list
 
-    #@timing
     def rank_by_seed(self, seed, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         ordered_gene_score = []
         genes_pos = seed
@@ -319,7 +304,6 @@ class Ranker:
                 ranking_with_new_column.append(new_row)
         return ranking_with_new_column
 
-    #@timing
     def get_individual_rank(self, seed_genes, node_of_interest, propagate, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         genes_pos = seed_genes
         if node_of_interest in self.nodes:
@@ -349,7 +333,6 @@ class Ranker:
 
         return ordered_gene_score
 
-    #@timing
     def get_individual_absolute_rank(self, values_list, ref_value):
         ref_pos = None
         values_list = sorted(list(set(values_list)), reverse=True)
@@ -395,7 +378,6 @@ class Ranker:
                 top_ranked_genes[seed_name] = ranking[0:top_n]
         return top_ranked_genes
 
-    #@timing
     def get_nodes_indexes(self, nodes):
         node_indxs = []
         #if type(nodes) == int: nodes = [nodes]

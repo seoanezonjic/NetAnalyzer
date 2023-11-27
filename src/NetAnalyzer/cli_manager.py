@@ -458,16 +458,20 @@ def worker_ranker(seed_groups, seed_weight, opts, nodes, all_rankings, lock):
     for sg_id, ws in seed_weight:
         if ws is not None: ranker.weights[sg_id] = ws
     # LOAD KERNEL
-    ranker.matrix = np.load(opts["kernel_file"])
-    if opts.get('normalize_matrix') is not None:
-        ranker.normalize_matrix(mode=opts["normalize_matrix"])
-    if opts.get('whitelist') is not None:
-        ranker.filter_matrix(opts["whitelist"])
+    load_kernel(ranker, opts)
     # DO RANKING
     propagate_options = eval('{' + opts["propagate_options"] +'}')
     ranker.do_ranking(cross_validation=opts.get("cross_validation"), propagate=opts["propagate"],
                       k_fold=opts.get("k_fold"), options=propagate_options)
     with lock: all_rankings.update(ranker.ranking) # lock avoids that several processes write at same time in the dictionary
+
+def load_kernel(ranker, opts):
+    ranker.matrix = np.load(opts["kernel_file"])
+    if opts.get('normalize_matrix') is not None:
+        ranker.normalize_matrix(mode=opts["normalize_matrix"])
+    if opts.get('whitelist') is not None:
+        ranker.filter_matrix(opts["whitelist"])
+        ranker.clean_seeds()
 
 def get_records(records, chunk_size):
     recs = []
@@ -492,16 +496,16 @@ def main_ranker(options):
     # DO PARALLEL RANKING
     chunk_size = int(len(ranker.seeds)/options.threads)
     seeds = list(ranker.seeds.items())
-    seeds.sort(reverse=True, key=lambda x: len(x[1]))
     opts = vars(options)
     lock = Lock()
     with Manager() as manager:
         all_rankings = manager.dict()
         processes = []
-        if options.threads == 1:
-            worker_threads = 1
-        else:
+        if options.threads > 1:
             worker_threads = options.threads - 1
+            seeds.sort(reverse=True, key=lambda x: len(x[1]))
+        else:
+            worker_threads = options.threads 
         for i in range(worker_threads):
             records = get_records(seeds, chunk_size)
             if len(seeds) < chunk_size: records.extend(seeds) # There is no enough record for other chunk so we merge the remanent records t this chunk

@@ -463,7 +463,17 @@ def worker_ranker(seed_groups, seed_weight, opts, nodes, all_rankings, lock):
     propagate_options = eval('{' + opts["propagate_options"] +'}')
     ranker.do_ranking(cross_validation=opts.get("cross_validation"), propagate=opts["propagate"],
                       k_fold=opts.get("k_fold"), options=propagate_options)
-    with lock: all_rankings.update(ranker.ranking) # lock avoids that several processes write at same time in the dictionary
+    with lock: # lock avoids that several processes write at same time in the dictionary
+        data_package = {} # Create chunks of results to reduce using too much RAM in pickle process and process piping overload
+        added_records = 0
+        for key, vals in ranker.ranking.items():
+            data_package[key] = vals
+            added_records += len(vals)
+            if added_records > 10000:
+                all_rankings.update(data_package)
+                data_package = {} 
+        if len(data_package) > 0: all_rankings.update(data_package) # Write buffered records not writed during loop execution
+
 
 def load_kernel(ranker, opts):
     ranker.matrix = np.load(opts["kernel_file"])
@@ -473,13 +483,13 @@ def load_kernel(ranker, opts):
         ranker.filter_matrix(opts["whitelist"])
         ranker.clean_seeds()
 
-def get_records(records, chunk_size):
+def sort_records_by_load(records):
     recs = []
     slices = int(chunk_size/2)
     r = chunk_size % 2
-    for i in range(slices):
+    while len(records) > 0:
         recs.append(records.pop(0))
-        if i == slices -1 and r == 0: recs.append(records.pop())
+        if len(records) > 0: recs.append(records.pop())
     return recs
 
 def main_ranker(options):
@@ -504,10 +514,14 @@ def main_ranker(options):
         if options.threads > 1:
             worker_threads = options.threads - 1
             seeds.sort(reverse=True, key=lambda x: len(x[1]))
+            seeds = sort_records_by_load(seeds)
         else:
             worker_threads = options.threads 
         for i in range(worker_threads):
-            records = get_records(seeds, chunk_size)
+            length = len(seeds)
+            offset = length-chunk_size
+            records = seeds[offset:length]
+            seeds = seeds[0:offset]
             if len(seeds) < chunk_size: records.extend(seeds) # There is no enough record for other chunk so we merge the remanent records t this chunk
             records_weight = [ (record[0], ranker.weights.get(record[0])) for record in records ]
             p = Process(target=worker_ranker, args=(records, records_weight, opts, ranker.nodes, all_rankings, lock))

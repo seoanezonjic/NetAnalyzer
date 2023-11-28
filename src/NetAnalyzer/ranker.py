@@ -182,8 +182,8 @@ class Ranker:
             nodes2predict_names.append(self.nodes[node2predict])
          # recoger los valores correspondientes
          # Calcular los score
-         R = W @ self.matrix
-         scores = R[range(0,nrows), nodes2predict_pos] / (nrows - 1)
+         R = W @ self.matrix / (nrows - 1)
+         scores = R[range(0,nrows), nodes2predict_pos]
          # Calcular los members_below
          members_below = (R >= scores.reshape(nrows,1)).sum(1)
          # Calcular los porcentage

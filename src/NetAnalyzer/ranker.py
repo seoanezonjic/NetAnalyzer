@@ -13,10 +13,11 @@ class Ranker:
         self.matrix = None
         self.nodes = []  # kernel_nodes
         self.seeds = {}  # node seeds 
+        self.weights = {}
+        self.negatives = None # Could be 'all' or a dict with the negative nodes
         self.seed_nodes2idx = {} 
         self.reference_nodes = {} # TODO Check this when needed.
         self.ranking = {}  # ranked_genes
-        self.weights = {}
         self.discarded_seeds = {}
         self.attributes = {"header": ["candidates", "score", "normalized_rank", "rank", "uniq_rank"]}
 
@@ -58,6 +59,12 @@ class Ranker:
 
     def load_references(self, node_groups, sep=','):
         self.reference_nodes, _ = self.load_nodes_by_group(node_groups, sep=sep)
+
+    def load_negatives(self, negative_file, sep=','):
+        if  os.path.exists(negative_file):
+            self.negatives, _ = self.load_node_groups_from_file(negative_file, sep=sep)
+        elif negative_file == "all":
+            self.negatives = negative_file
 
     def load_nodes_by_group(self, node_groups, sep= ','):
         group_nodes = {}
@@ -131,8 +138,6 @@ class Ranker:
         self.reference_nodes = genes2predict
         self.weights = new_weights
 
-    #def write_ranking(add_header=True):
-
 
     def do_ranking(self, cross_validation=False, k_fold=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         self.get_seed_indexes()
@@ -145,6 +150,7 @@ class Ranker:
         for seed_name, seed in self.seeds.items():
             # The code in this block CANNOT modify nothing outside
             if cross_validation and k_fold is None:
+                self.attributes["header"] = ["candidates", "score", "normalized_rank", "rank"]
                 rank_list = self.get_loo_ranking(seed_name, seed)
                 ranked_lists.append([seed_name, rank_list])
             else:
@@ -157,6 +163,7 @@ class Ranker:
             self.ranking[seed_name] = rank_list
 
         self.translate2names()
+
 
     def get_loo_ranking(self, seed_name, seed):
          # Generar los seeds nuevos con el loo
@@ -344,7 +351,7 @@ class Ranker:
 
         return ref_pos
 
-    def get_reference_ranks(self):
+    def get_filtered_ranks_by_reference(self):
         filtered_ranked_genes = {}
 
         for seed_name, ranking in self.ranking.items():
@@ -364,6 +371,33 @@ class Ranker:
                 filtered_ranked_genes[seed_name], key=lambda rank: -rank[1])
 
         return filtered_ranked_genes
+
+    def write_ranking(self, output_name, add_header=True, top_n=None): 
+        if add_header:
+            header = self.attributes["header"]
+            header.append("seed_group")
+        if top_n is not None:
+            rankings = self.get_top(top_n)
+        else:
+            rankings = self.ranking
+        with open(output_name, 'w') as f:
+            if add_header: f.write('\t'.join(header)+"\n")
+            for seed_name, ranking in rankings.items():
+                for row in ranking:
+                    f.write('\t'.join(map(str,row)) + "\t" + f"{seed_name}" + "\n")  
+
+    def add_candidate_tag_types(self):
+        rankings = {}
+        for seed_name, rankings_by_seed in self.ranking.items():
+            added_ranking_column = []
+            for ranking in rankings_by_seed:
+                if ranking[0] in self.seeds[seed_name]:
+                    ranking.insert(5, "seed")
+                else:
+                    ranking.insert(5, "new")
+                added_ranking_column.append(ranking)
+            rankings[seed_name] = added_ranking_column
+        self.ranking = rankings
 
     def array2hash(self, arr, key, values):  # 2exp?
         h = {}

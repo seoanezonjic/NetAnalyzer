@@ -246,6 +246,9 @@ def ranker(args=None):
     parser.add_argument("--whitelist", dest="whitelist", default=None, type = open_whitelist, help= "File Path with the whitelist of nodes to take into account in the ranker process")
     parser.add_argument("-T", "--threads", dest="threads", default=1, type=int,
      help="Number of threads to use in computation, one thread will be reserved as manager.")
+    parser.add_argument("--minimum_size", dest="minimum_size", default=1, type=int)
+    parser.add_argument("--header", dest="header", default=False, 
+        action='store_true', help="Select this option if header needed")
     opts = parser.parse_args(args)
     main_ranker(opts)
 
@@ -497,7 +500,7 @@ def main_ranker(options):
     # LOAD SEEDS
     ranker.load_nodes_from_file(options.input_nodes)
     ranker.load_seeds(options.genes_seed, sep=options.seed_sep) # TODO: Add when 3 columns is needed for weigths
-    ranker.clean_seeds()
+    ranker.clean_seeds(options.minimum_size)
     discarded_seeds = [ [seed_name, seed] for seed_name, seed in ranker.discarded_seeds.items()]
     if discarded_seeds:
         with open(options.output_name + "_discarded", "w") as f:
@@ -531,31 +534,21 @@ def main_ranker(options):
         ranker.ranking.update(all_rankings) # COPY RESULTS OUT OF THE MEMORY MAP MANAGER!!!
 
     # WRITE RANKING
-    rankings = ranker.ranking
-    if options.type_of_candidates: # CHANGE TO RANKER METHOD
-        for seed_name, rankings_by_seed in rankings.items():
-            added_ranking_column = []
-            for ranking in rankings_by_seed:
-                if ranking[0] in ranker.seeds[seed_name]:
-                    ranking.insert(5, "seed")
-                else:
-                    ranking.insert(5, "new")
-                added_ranking_column.append(ranking)
-            rankings[seed_name] = added_ranking_column
+    if options.type_of_candidates: 
+        ranker.add_candidate_tag_types()
 
     if options.top_n is not None:
-        top_n = ranker.get_top(options.top_n)
         if options.output_top is None:
-            rankings = top_n
+            ranker.ranking = ranker.get_top(options.top_n)
         else:
-            write_ranking(options.output_top, top_n)
+            ranker.write_ranking(options.output_top, add_header=options.header, top_n=options.top_n)
 
     if options.filter is not None:
         ranker.load_references(options.filter, sep=",")
-        rankings = ranker.get_reference_ranks()
+        ranker.ranking = ranker.get_filtered_ranks_by_reference()
 
-    if rankings:
-        write_ranking(f"{options.output_name}_all_candidates", rankings)
+    if ranker.ranking:
+        ranker.write_ranking(f"{options.output_name}_all_candidates", add_header=options.header)
 
 
 def main_text2binary_matrix(options):
@@ -664,12 +657,6 @@ def write_clusters(clusters, output_file, sep): #2expcalc
                         
 # METHODS FOR RANKER
 #####################
-
-def write_ranking(file, ranking_list): #2expcalc
-  with open(file, 'w') as f:
-    for seed_name, ranking in ranking_list.items():
-      for ranked_gene in ranking:
-        f.write('\t'.join(map(str,ranked_gene)) + "\t" + f"{seed_name}" + "\n")     
 
 def open_whitelist(file):
   whitelist = []

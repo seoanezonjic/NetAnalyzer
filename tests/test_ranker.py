@@ -76,7 +76,7 @@ class BaseNetTestCase(unittest.TestCase):
 
 	def test_10Fold_CV(self):
 		self.ranker.do_ranking(cross_validation = True, k_fold = 2)
-		test_ranked_genes = self.ranker.get_reference_ranks()
+		test_ranked_genes = self.ranker.get_filtered_ranks_by_reference()
 		test_ranked_genes = self.ranked_genes2array(test_ranked_genes)
 		self.assertEqual(self.load_results('cross_validation_by_seedgene_results'), test_ranked_genes)
 
@@ -86,7 +86,7 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertEqual(self.load_results('rank_by_seedgene_results'), test_ranked_genes)
 
 	def test_get_filtered(self):
-		test_filtered_ranked_genes = self.ranked_genes2array(self.ranker_with_ranking.get_reference_ranks())
+		test_filtered_ranked_genes = self.ranked_genes2array(self.ranker_with_ranking.get_filtered_ranks_by_reference())
 		self.assertEqual(self.load_results('filter_results'), test_filtered_ranked_genes)
 
 	def test_get_top(self):
@@ -94,7 +94,7 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertEqual(self.load_results('top_results'),test_top_ranked_genes)
 
 	def test_filtered_top_compatibility(self):
-		filtered_ranked_genes = self.ranked_genes2array(self.ranker_with_ranking.get_reference_ranks())
+		filtered_ranked_genes = self.ranked_genes2array(self.ranker_with_ranking.get_filtered_ranks_by_reference())
 		test_top_ranked_genes = self.ranked_genes2array(self.ranker_with_ranking.get_top(2))
 		self.assertEqual(self.load_results('top_results'),test_top_ranked_genes)
 

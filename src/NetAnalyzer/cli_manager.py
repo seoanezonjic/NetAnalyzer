@@ -511,6 +511,11 @@ def main_ranker(options):
     seeds = list(ranker.seeds.items())
     opts = vars(options)
     lock = Lock()
+    if options.cross_validation and options.k_fold is None:
+        header = ["candidates", "score", "normalized_rank", "rank"]
+    else:
+        header = ["candidates", "score", "normalized_rank", "rank", "uniq_rank"]
+        
     with Manager() as manager:
         all_rankings = manager.dict()
         processes = []
@@ -532,6 +537,7 @@ def main_ranker(options):
             p.start()
         for p in processes: p.join() # first we have to start ALL the processes before ask to wait for their termination. For this reason, the join MUST be in an independent loop
         ranker.ranking.update(all_rankings) # COPY RESULTS OUT OF THE MEMORY MAP MANAGER!!!
+        ranker.attributes["header"] = header
 
     # WRITE RANKING
     if options.type_of_candidates: 
@@ -545,6 +551,8 @@ def main_ranker(options):
 
     if options.filter is not None:
         ranker.load_references(options.filter, sep=",")
+        if options.cross_validation and options.k_fold is not None:
+            ranker.get_seed_cross_validation(k_fold=options.k_fold)
         ranker.ranking = ranker.get_filtered_ranks_by_reference()
 
     if ranker.ranking:

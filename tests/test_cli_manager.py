@@ -341,6 +341,7 @@ def test_text2binary_matrix(tmp_dir, ref_name, ref_output, args, matrix):
        ('ranker_leave_one_out_by_seed_results_bigseed', '-s {bigseed} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # leave one out option
        ('ranker_leave_one_out_by_seed_results', '-s {seeds_file} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # leave one out option
        ('ranker_cross_validation_by_seed_results', '-s {seeds_file} -l -K 2 -k {kernel_file} -f {filter_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
+       ('ranker_cross_validation_all_by_seed_results', '-s {seeds_file} -l -K 2 -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
        ('ranker_filter_results', '-s {seeds_file} -f {filter_file} -o {output_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Filter ranking to select genes to keep in output
        ('ranker_whitelist_results', '-s {seeds_file} --whitelist {whitelist} -o {output_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Whitelist to filter in matrix
        ('ranker_propagate_normalized', '-s {seeds_file} -p -N by_column -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Propagate with normalization by column
@@ -360,6 +361,7 @@ def test_ranker(tmp_dir, ref_file, args, output2check, tag):
     top_output = os.path.join(tmp_dir, "ranker_top_results")
     args = args.format(kernel_file=kernel_file, output_file=output_file, seeds_file=seeds_file, filter_file=filter_file, bigseed=bigseed,whitelist=whitelist, top_output=top_output,seeds_file_weighted=seeds_file_weighted).split(" ")
     ref_file = os.path.join(RANKER, ref_file)
+    print(args)
     ranker(args)
     diff(output2check.format(output_file=output_file,top_output=top_output)+tag, ref_file+tag)
 

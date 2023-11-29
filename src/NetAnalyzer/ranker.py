@@ -19,6 +19,7 @@ class Ranker:
         self.reference_nodes = {} # TODO Check this when needed.
         self.ranking = {}  # ranked_genes
         self.discarded_seeds = {}
+        self.in_names = True
         self.attributes = {"header": ["candidates", "score", "normalized_rank", "rank", "uniq_rank"]}
 
     def normalize_matrix(self, mode="by_column"):
@@ -94,6 +95,7 @@ class Ranker:
                 self.nodes.append(line.rstrip())
 
     def translate2idx(self):
+        self.in_names = False
         for seed_name, seed in self.seeds.items():
             self.seeds[seed_name] = self.get_nodes_indexes(seed)
         for seed_name, node2weight in self.weights.items():
@@ -101,6 +103,7 @@ class Ranker:
             self.weights[seed_name] = node2weight
 
     def translate2names(self):
+        self.in_names = True
         for seed_name, seed in self.seeds.items():
             self.seeds[seed_name] = [self.nodes[node] for node in seed]
         for seed_name, node2weight in self.weights.items():
@@ -126,8 +129,11 @@ class Ranker:
                 if self.weights.get(seed_name):
                     new_weights[seed_name_one_out] = {node: self.weights[seed_name][node] for node in new_seeds[seed_name_one_out]}
 
-                genes2predict[seed_name_one_out] = [seed[i] for i in test_index]
-                genes2predict[seed_name_one_out] = [self.nodes[idx] for idx in genes2predict[seed_name_one_out]]
+                if self.in_names:
+                    genes2predict[seed_name_one_out] = [seed[i] for i in test_index]
+                else:
+                    genes2predict[seed_name_one_out] = [seed[i] for i in test_index]
+                    genes2predict[seed_name_one_out] = [self.nodes[idx] for idx in genes2predict[seed_name_one_out]]
                 if self.reference_nodes.get(seed_name) is not None:
                     genes2predict[seed_name_one_out] += self.reference_nodes[seed_name]
 
@@ -156,7 +162,7 @@ class Ranker:
             else:
                 rank_list = self.rank_by_seed(seed, weights=self.weights.get(seed_name), propagate=propagate, options=options)  # Production mode
                 if cross_validation and k_fold is not None:
-                    rank_list = self.delete_seed_from_rank(rank_list, self.seeds[seed_name])
+                    rank_list = self.delete_seed_from_rank(rank_list, [self.nodes[pos] for pos in self.seeds[seed_name]])
                 ranked_lists.append([seed_name, rank_list])
 
         for seed_name, rank_list in ranked_lists:  # Transfer resuls to hash
@@ -243,7 +249,6 @@ class Ranker:
             else:
                 integrated_gen_values = subsets_gen_values.sum(0)
                 gen_list = (1/number_of_seed_genes) * integrated_gen_values
-
         return gen_list
 
     def rank_by_seed(self, seed, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):

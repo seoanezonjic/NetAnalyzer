@@ -194,7 +194,6 @@ class Ranker:
             nodes2predict_pos.append(node2predict)
             nodes2predict_names.append(self.nodes[node2predict])
          # recoger los valores correspondientes
-         print(W)
          # Calcular los score
          R = W @ self.matrix / (nrows - 1)
          scores = R[range(0,nrows), nodes2predict_pos]

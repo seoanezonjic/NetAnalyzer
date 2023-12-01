@@ -7,3 +7,4 @@ from NetAnalyzer.ranker import Ranker
 from NetAnalyzer.performancer import Performancer
 from NetAnalyzer.integration import Kernels
 from NetAnalyzer.cli_manager import *
+from NetAnalyzer.seed_parser import SeedParser

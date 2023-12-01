@@ -194,6 +194,7 @@ class Ranker:
             nodes2predict_pos.append(node2predict)
             nodes2predict_names.append(self.nodes[node2predict])
          # recoger los valores correspondientes
+         print(W)
          # Calcular los score
          R = W @ self.matrix / (nrows - 1)
          scores = R[range(0,nrows), nodes2predict_pos]
@@ -403,6 +404,7 @@ class Ranker:
                 added_ranking_column.append(ranking)
             rankings[seed_name] = added_ranking_column
         self.ranking = rankings
+        self.attributes["header"].insert(5,"type")
 
     def array2hash(self, arr, key, values):  # 2exp?
         h = {}

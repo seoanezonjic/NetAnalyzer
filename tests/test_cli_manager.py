@@ -70,8 +70,8 @@ def diff(file1, file2, matrix=False, roundTo=3):
         assert (expected_result == test_result).all()
     else:
         expected_result = CmdTabs.load_input_data(file1)
-        test_result = CmdTabs.load_input_data(file2)
         print(expected_result)
+        test_result = CmdTabs.load_input_data(file2)
         print(test_result)
         assert expected_result == test_result
 
@@ -336,12 +336,16 @@ def test_text2binary_matrix(tmp_dir, ref_name, ref_output, args, matrix):
 @pytest.mark.parametrize("ref_file, args, output2check, tag", [
        ('ranker_by_seed_string_results', '-s A,B -k {kernel_file} -n {kernel_file}.lst -o {output_file}', '{output_file}', '_all_candidates'), # set seed from terminal
        ('ranker_by_seed_file_results', '-s {seeds_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # seed from file
+       ('ranker_by_seed_file_results_header', '-s {seeds_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file} --header','{output_file}', '_all_candidates'), # seed from file
        ('ranker_by_seed_file_weighted_results', '-s {seeds_file_weighted} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # probando
        ('ranker_by_seed_file_results_type_added', '-s {seeds_file} --type_of_candidates -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # if candidates are in seeds or not
+       ('ranker_by_seed_file_results_type_added_header', '-s {seeds_file} --type_of_candidates -k {kernel_file} -n {kernel_file}.lst -o {output_file} --header','{output_file}', '_all_candidates'), # seed from file
        ('ranker_leave_one_out_by_seed_results_bigseed', '-s {bigseed} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # leave one out option
        ('ranker_leave_one_out_by_seed_results', '-s {seeds_file} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # leave one out option
+       ('ranker_leave_one_out_by_seed_results_header', '-s {seeds_file} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file} --header','{output_file}', '_all_candidates'), # leave one out option
        ('ranker_cross_validation_by_seed_results', '-s {seeds_file} -l -K 2 -k {kernel_file} -f {filter_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
        ('ranker_cross_validation_all_by_seed_results', '-s {seeds_file} -l -K 2 -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
+       ('ranker_cross_validation_by_seed_results_bigseed', '-s {bigseed} -l -K 3 -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
        ('ranker_filter_results', '-s {seeds_file} -f {filter_file} -o {output_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Filter ranking to select genes to keep in output
        ('ranker_whitelist_results', '-s {seeds_file} --whitelist {whitelist} -o {output_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Whitelist to filter in matrix
        ('ranker_propagate_normalized', '-s {seeds_file} -p -N by_column -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Propagate with normalization by column
@@ -353,7 +357,7 @@ def test_text2binary_matrix(tmp_dir, ref_name, ref_output, args, matrix):
 def test_ranker(tmp_dir, ref_file, args, output2check, tag):
     kernel_file = os.path.join(DATA_PATH, 'data_ranker', 'kernel_for_validating')
     output_file = os.path.join(tmp_dir, "output_ranker")
-    seeds_file= os.path.join(DATA_PATH, 'data_ranker', 'seed_genes_for_validating')
+    seeds_file= os.path.join(DATA_PATH, 'data_ranker', 'seed_genes_for_validating_withNotInkernels')
     bigseed = os.path.join(DATA_PATH, 'data_ranker', "bigseed")
     seeds_file_weighted = os.path.join(DATA_PATH, 'data_ranker', 'seed_weighted_for_validating')
     filter_file = os.path.join(DATA_PATH, 'data_ranker', 'genes2filter_for_validating')
@@ -361,7 +365,6 @@ def test_ranker(tmp_dir, ref_file, args, output2check, tag):
     top_output = os.path.join(tmp_dir, "ranker_top_results")
     args = args.format(kernel_file=kernel_file, output_file=output_file, seeds_file=seeds_file, filter_file=filter_file, bigseed=bigseed,whitelist=whitelist, top_output=top_output,seeds_file_weighted=seeds_file_weighted).split(" ")
     ref_file = os.path.join(RANKER, ref_file)
-    print(args)
     ranker(args)
     diff(output2check.format(output_file=output_file,top_output=top_output)+tag, ref_file+tag)
 

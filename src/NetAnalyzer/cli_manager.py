@@ -504,7 +504,7 @@ def main_ranker(options):
     discarded_seeds = [ [seed_name, seed] for seed_name, seed in ranker.discarded_seeds.items()]
     if discarded_seeds:
         with open(options.output_name + "_discarded", "w") as f:
-            for seed_name, seed in discarded_seeds: f.write(f"{seed_name}\t{options.seed_sep.join(seed)}")
+            for seed_name, seed in discarded_seeds: f.write(f"{seed_name}\t{options.seed_sep.join(seed)}"+"\n")
     
     # DO PARALLEL RANKING
     chunk_size = int(len(ranker.seeds)/options.threads)

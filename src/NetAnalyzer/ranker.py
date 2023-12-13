@@ -5,8 +5,6 @@ from sklearn.model_selection import KFold, LeaveOneOut
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 from NetAnalyzer.seed_parser import SeedParser
 import py_exp_calc.exp_calc as pxc
-import py_exp_calc.exp_calc as pxc
-from timeit import default_timer as timer
     
 class Ranker:
 
@@ -209,35 +207,11 @@ class Ranker:
         genes_pos = seed
         if weights: weights = np.array([weights[s] for s in seed])
         number_of_seed_genes = len(genes_pos)
-        number_of_all_nodes = len(self.nodes)
 
         if number_of_seed_genes > 0:
-
             gen_list = self.update_seed(
                 genes_pos, weights=weights, propagate=propagate, options=options)
-
-            ordered_indexes = np.argsort(gen_list)  # from smallest to largest
-
-            last_val = None
-            n_elements = ordered_indexes.shape[0]
-
-            for pos in range(n_elements):
-                order_index = ordered_indexes[pos]
-                val = gen_list[order_index]
-                node_name = self.nodes[order_index]
-
-                rank = self.get_position_for_items_with_same_score(
-                    pos, val, last_val, gen_list, n_elements, ordered_gene_score)  # number of items behind
-                rank = n_elements - rank  # number of nodes below or equal
-                rank_percentage = rank/number_of_all_nodes
-
-                ordered_gene_score.append(
-                    [node_name, val, rank_percentage, rank])
-                last_val = val
-
-            ordered_gene_score.reverse()  # from largest to smallest
-            ordered_gene_score = self.add_absolute_rank_column(
-                ordered_gene_score)
+            ordered_gene_score = pxc.get_rank_metrics(gen_list, ids=self.nodes)
 
         return ordered_gene_score
 
@@ -282,33 +256,6 @@ class Ranker:
             print("Convergence not achieved")
 
         return seed_attr_old
-
-    def get_position_for_items_with_same_score(self, pos, val, prev_val, gen_list, n_elements, ordered_gene_score):
-        members_behind = 0
-        if prev_val is not None:
-            if prev_val < val:
-                members_behind = pos
-            else:
-                members_behind = n_elements - ordered_gene_score[-1][3]
-        return members_behind
-
-    def add_absolute_rank_column(self, ranking):
-        ranking_with_new_column = []
-        absolute_rank = 1
-        n_rows = len(ranking)
-        for row_pos in range(n_rows):
-            if row_pos == 0:
-                new_row = ranking[row_pos] + [absolute_rank]
-                ranking_with_new_column.append(new_row)
-            else:
-                prev_val = ranking[row_pos-1][2]
-                val = ranking[row_pos][2]
-                if val > prev_val:
-                    absolute_rank += 1
-
-                new_row = ranking[row_pos] + [absolute_rank]
-                ranking_with_new_column.append(new_row)
-        return ranking_with_new_column
 
     # Output and parsing ranking
 

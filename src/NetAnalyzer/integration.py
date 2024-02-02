@@ -4,6 +4,7 @@ import glob
 import numpy as np
 import concurrent.futures
 import itertools
+import logging
 
 class Kernels:
 
@@ -16,13 +17,14 @@ class Kernels:
 
 	def move2zero_reference(self):
 		moved_kernels = []
-		for kernel in self.kernels_raw:
+		for idx, kernel in enumerate(self.kernels_raw):
 			min_kernel = np.min(kernel)
 			if min_kernel < 0:
+				logging.warning(f"Fixing negative values on matrix {idx}")
 				kernel -= min_kernel
 			moved_kernels.append(kernel)
 		self.kernels_raw = moved_kernels
-		
+
 
 	def load_kernels_by_bin_matrixes(self, input_matrix, input_nodes, kernels_names):
 		for pos, kernel_name in enumerate(kernels_names):

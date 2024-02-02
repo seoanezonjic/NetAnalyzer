@@ -290,7 +290,6 @@ def main_integrate_kernels(options):
         kernels.create_general_index()
 
     if not options.raw_values:
-        print("eyyyyyyyyyyyyy")
         kernels.move2zero_reference()
 
     if options.integration_type is not None:

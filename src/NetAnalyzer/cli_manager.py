@@ -74,7 +74,8 @@ def integrate_kernels(args=None):
     parser.add_argument("--cpu",dest= "n_workers", default=8,  type = int,
                         help= "It specifies the number of cpus available for the process parallelization")
     parser.add_argument("--asym",dest= "symmetric", default=True, action='store_false',
-                        help= "It specifies if the kernel matrixes are or not symmetric")
+                        help= "It specifies if the kernel matrixes are or not symmetric"),
+    parser.add_argument("--raw_values", dest="raw_values", default=False, action='store_true',help="Select this option to use the negatives and positives values, without translation")
     parser.add_argument("-o","--output_matrix",dest= "output_matrix_file", default="general_matrix", 
                         help= "The name of the matrix output")
     
@@ -287,6 +288,10 @@ def main_integrate_kernels(options):
     if options.input_format == "bin":
         kernels.load_kernels_by_bin_matrixes(options.kernel_files, options.node_files, options.kernel_ids)
         kernels.create_general_index()
+
+    if not options.raw_values:
+        print("eyyyyyyyyyyyyy")
+        kernels.move2zero_reference()
 
     if options.integration_type is not None:
         print(options.n_workers)

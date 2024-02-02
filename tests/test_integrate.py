@@ -17,11 +17,14 @@ class KernelTestCase(unittest.TestCase):
 
 		self.kernels = Kernels()
 		self.asym_kernels = Kernels()
+		self.negatives_kernels = Kernels()
 		matrixes_path = [os.path.join(DATA_TEST_PATH, "kernel1.npy"),os.path.join(DATA_TEST_PATH, "kernel2.npy")]
 		asym_matrixes_path = [os.path.join(DATA_TEST_PATH, "asym_kernel1.npy"),os.path.join(DATA_TEST_PATH, "asym_kernel2.npy")]
+		negatives_matrixes_path = [os.path.join(DATA_TEST_PATH, "negative_kernel1.npy"),os.path.join(DATA_TEST_PATH, "negative_kernel2.npy")]
 		nodes_path = [os.path.join(DATA_TEST_PATH, "kernel1.lst"),os.path.join(DATA_TEST_PATH, "kernel2.lst")]
 		self.kernels.load_kernels_by_bin_matrixes(matrixes_path, nodes_path, ["1", "2"])
 		self.asym_kernels.load_kernels_by_bin_matrixes(asym_matrixes_path, nodes_path, ["1", "2"])
+		self.negatives_kernels.load_kernels_by_bin_matrixes(negatives_matrixes_path, nodes_path, ["1", "2"])
 	
 	def test_load_kernels_by_bin_matrixes(self):
 		#Testing loading symmetric kernels
@@ -107,6 +110,14 @@ class KernelTestCase(unittest.TestCase):
 		time1cpu = profiler(big_kernels.integrate_matrix, "mean", 1, True)
 		time16cpu  = profiler(big_kernels.integrate_matrix, "mean", 16, True)
 		self.assertLessEqual(time16cpu, time1cpu)
+
+	def test_integrate_negatives(self):
+		self.negatives_kernels.create_general_index()
+		self.negatives_kernels.move2zero_reference()
+		self.negatives_kernels.integrate_matrix("mean")
+		self.assertTrue((np.array([[0.5, 1.5, 1.5, 0], [1.5, 2.5, 1, 0], [1.5, 1, 6., 4.], [0, 0, 4., 0]]) == self.negatives_kernels.integrated_kernel[0]).all())
+		self.assertEqual(['Node1', 'Node2', 'Node3', 'Node4'], self.negatives_kernels.integrated_kernel[1])
+
 
 """
 	def test_speed_all_combinations(self):

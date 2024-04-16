@@ -242,8 +242,8 @@ def ranker(args=None):
     help="File to save Top N genes")
     parser.add_argument("-o", "--output_name", dest="output_name", default="ranked_genes",
     help="PATH to file with seed_name and genes to keep in output")
-    parser.add_argument("--type_of_candidates", dest="type_of_candidates", default=False, action="store_true",
-    help="type of candidates to output in ranking list: all, new, seed.")
+    parser.add_argument("--seed_presence", dest="seed_presence", default=None,
+    help="Seed presence on list: 'remove', when seed is not added on the ranker calculation; 'annotate', when just tag on output is needed, and calculation is obtained inclusing the seeds: new, seed.")
     parser.add_argument("--whitelist", dest="whitelist", default=None, type = open_whitelist, help= "File Path with the whitelist of nodes to take into account in the ranker process")
     parser.add_argument("-T", "--threads", dest="threads", default=1, type=int,
      help="Number of threads to use in computation, one thread will be reserved as manager.")
@@ -460,6 +460,8 @@ def main_randomize_network(options):
 
 def worker_ranker(seed_groups, seed_weight, opts, nodes, all_rankings, lock):
     ranker = Ranker()
+    if opts["seed_presence"] == "remove":
+        ranker.seed_presence = False
     ranker.nodes = nodes
     for sg_id, sg in seed_groups: ranker.seeds[sg_id] = sg
     for sg_id, ws in seed_weight:
@@ -500,7 +502,10 @@ def sort_records_by_load(records):
     return recs
 
 def main_ranker(options):
+    # LOAD RANKER
     ranker = Ranker()
+    if options.seed_presence == "remove": # TODO: Probably, this is not necessary right here but on worker_ranker
+        ranker.seed_presence = False
     # LOAD SEEDS
     ranker.load_nodes_from_file(options.input_nodes)
     ranker.load_seeds(options.genes_seed, sep=options.seed_sep) # TODO: Add when 3 columns is needed for weigths
@@ -544,7 +549,7 @@ def main_ranker(options):
         ranker.attributes["header"] = header
 
     # WRITE RANKING
-    if options.type_of_candidates: 
+    if options.seed_presence == "annotate": 
         ranker.add_candidate_tag_types()
 
     if options.top_n is not None:

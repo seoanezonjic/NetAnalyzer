@@ -19,6 +19,7 @@ class Ranker:
         self.ranking = {} 
         self.discarded_seeds = {}
         self.in_names = True
+        self.seed_presence = True
         self.attributes = {"header": ["candidates", "score", "normalized_rank", "rank", "uniq_rank"]}
 
     # Normalization and filtering matrix
@@ -144,8 +145,8 @@ class Ranker:
         self.weights = new_weights
 
     def get_loo_ranking(self, seed_name, seed):
-         # Generar los seeds nuevos con el loo
-         # Obtenemos la matriz de carga
+         # Generate new seeds
+         # Get matrix values
          cv = LeaveOneOut()
          ncols= len(self.nodes)
          nrows = len(seed)
@@ -170,9 +171,14 @@ class Ranker:
          R = W @ self.matrix / (nrows - 1)
          scores = R[range(0,nrows), nodes2predict_pos]
          # Calcular los members_below
-         members_below = (R >= scores.reshape(nrows,1)).sum(1)
-         # Calcular los porcentage
-         rank_percentage = members_below/ncols
+         if self.seed_presence:
+           members_below = (R >= scores.reshape(nrows,1)).sum(1)
+           # Calcular los porcentage
+           rank_percentage = members_below/ncols
+         else:
+            R[W != 0] =  np.min(scores) -1
+            members_below = (R >= scores.reshape(nrows, 1)).sum(1)
+            rank_percentage = members_below/(ncols-nrows+1)
          # Calcular los absolute rank
          return list(zip(nodes2predict_names, scores, rank_percentage, members_below))
 
@@ -205,28 +211,40 @@ class Ranker:
     def rank_by_seed(self, seed, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         ordered_gene_score = []
         genes_pos = seed
+        number_of_all_nodes = len(self.nodes)
+        if self.seed_presence:
+            genes_of_interest = list(range(0,number_of_all_nodes))
+            nodes = self.nodes
+        else:
+            genes_of_interest = list(set(range(0,number_of_all_nodes))-set(genes_pos))
+            nodes = [self.nodes[idx] for idx in genes_of_interest]
         if weights: weights = np.array([weights[s] for s in seed])
         number_of_seed_genes = len(genes_pos)
 
         if number_of_seed_genes > 0:
             gen_list = self.update_seed(
-                genes_pos, weights=weights, propagate=propagate, options=options)
-            ordered_gene_score = pxc.get_rank_metrics(gen_list, ids=self.nodes)
+                genes_pos, genes_of_interest, weights=weights, propagate=propagate, options=options)
+            ordered_gene_score = pxc.get_rank_metrics(gen_list, ids=nodes)
 
         return ordered_gene_score
 
-    def update_seed(self, genes_pos, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
+    def update_seed(self, genes_pos, genes_of_interest, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         number_of_seed_genes = len(genes_pos)
         number_of_all_nodes = len(self.nodes)
+
         if propagate:
             # TODO: Weight extension on this area
+            # TODO: This option soe not accept remove the seeds.
             seed_vector = np.zeros((number_of_all_nodes))
             seed_vector[genes_pos] = 1
             updated_seed = self.propagate_seed(
                 self.matrix, seed_attr=seed_vector, tol=options["tolerance"], n=options["iteration_limit"], restart_factor=options["with_restart"])
-            gen_list = updated_seed
+            gen_list = updated_seed[genes_of_interest]
         else:
-            subsets_gen_values = self.matrix[genes_pos, :]
+            print(genes_pos)
+            print(genes_of_interest)
+            subsets_gen_values = self.matrix[genes_pos,:][:,genes_of_interest]
+
             if weights is not None:
                 integrated_gen_values = weights @ subsets_gen_values
                 gen_list = (1/weights.sum()) * integrated_gen_values

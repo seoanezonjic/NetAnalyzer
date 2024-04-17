@@ -241,8 +241,6 @@ class Ranker:
                 self.matrix, seed_attr=seed_vector, tol=options["tolerance"], n=options["iteration_limit"], restart_factor=options["with_restart"])
             gen_list = updated_seed[genes_of_interest]
         else:
-            print(genes_pos)
-            print(genes_of_interest)
             subsets_gen_values = self.matrix[genes_pos,:][:,genes_of_interest]
 
             if weights is not None:

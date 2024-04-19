@@ -703,9 +703,13 @@ class NetAnalyzer:
                 source = com.pop()
                 for target in com:
                     path_lens.append(nx.shortest_path_length(self.graph, source, target, weight= weight_attr_name))
-            asp_com = np.mean(path_lens)
+            if path_lens:
+                asp_com = np.mean(path_lens)
+            else:
+                asp_com = None
         except nx.exception.NetworkXNoPath:
             asp_com = None
+        if asp_com and pd.isna(asp_com): raise Exception("Na value not expected on avg sht path")
         return asp_com 
 
     def shortest_paths(self, community):

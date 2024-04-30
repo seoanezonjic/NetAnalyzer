@@ -5,7 +5,7 @@ ${plotter.create_title(f"Group of genes: {seed}", id='net_study', hlevel=2, inde
 % for net, subgraph in net2subgraph.items():
 ${plotter.create_title(f"<b>{net}</b>", id='net_study', hlevel=3, indexable=True, clickable=False)}
 <% key = net+"_"+seed
-plotter.hash_vars[key] = {"graph": subgraph, "layers": ["layer", "layer"], "reference_nodes": [], "group_nodes": []}  %>
+plotter.hash_vars[key] = {"graph": subgraph, "layers": ["layer", "layer"], "reference_nodes": plotter.hash_vars["seeds2explore"][seed], "group_nodes": []}  %>
 ${plotter.network(id = key, method = 'pyvis')} 
 %endfor
 %endfor

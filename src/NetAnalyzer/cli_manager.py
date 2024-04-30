@@ -295,6 +295,8 @@ def net_explorer(args=None):
                         help="Output name of the file")
     parser.add_argument("-N","--no_autorelations", dest="no_autorelations", default=False, action='store_true',
                         help="Kernel operation to perform with the adjacency matrix")
+    parser.add_argument("-l", "--neigh_level", dest="neigh_level", default=0, type = lambda x: int(x),
+                        help="Defining the level of neighbourhood on the initial set of nodes")
     opts = parser.parse_args(args)
     main_net_explorer(opts)
 
@@ -324,8 +326,10 @@ def main_net_explorer(options):
     for seed, nodes in seeds2explore.items():
         seeds2subgraph[seed] = {}
         for net_id, net in multinet.items():
-            seeds2subgraph[seed][net_id] = net.graph.subgraph(nodes)
-
+            # get neighbor from node
+            nodes_with_neigh = set(nodes)
+            for i in range(0, options["neigh_level"]): nodes_with_neigh = get_neigh_set(net, nodes_with_neigh)
+            seeds2subgraph[seed][net_id] = net.graph.subgraph(nodes_with_neigh)
 
     # # If mention, add node2vec coordinates with a tnse proyection.
     net2umap = None
@@ -345,6 +349,14 @@ def main_net_explorer(options):
     report.build(template)
     report.write(options["output_file"]+".html")
 
+def get_neigh_set(net, nodes):
+    neigh = set(nodes)
+    for i,n in enumerate(nodes):
+        try:
+            neigh = neigh | set(net.graph.neighbors(n))
+        except:
+            continue
+    return list(neigh)
 
 
 def main_integrate_kernels(options):

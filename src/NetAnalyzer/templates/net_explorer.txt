@@ -1,0 +1,11 @@
+<% plotter.set_header() %>
+${plotter.create_title("Network study on every group of genes", id='net_study', hlevel=1, indexable=True, clickable=False)}
+% for seed, net2subgraph in plotter.hash_vars["seeds2subgraph"].items():
+${plotter.create_title(f"Group of genes: {seed}", id='net_study', hlevel=2, indexable=True, clickable=False)}
+% for net, subgraph in net2subgraph.items():
+${plotter.create_title(f"<b>{net}</b>", id='net_study', hlevel=3, indexable=True, clickable=False)}
+<% key = net+"_"+seed
+plotter.hash_vars[key] = {"graph": subgraph, "layers": ["layer", "layer"], "reference_nodes": [], "group_nodes": []}  %>
+${plotter.network(id = key, method = 'pyvis')} 
+%endfor
+%endfor

@@ -9,7 +9,7 @@ from multiprocessing import Process, Manager, Lock
 
 from py_cmdtabs.cmdtabs import CmdTabs
 import py_exp_calc.exp_calc as pxc
-
+from py_report_html import Py_report_html
 """ ROOT_PATH=os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(ROOT_PATH, '..')) """
 from NetAnalyzer import Net_parser, NetAnalyzer
@@ -17,6 +17,7 @@ from NetAnalyzer import Kernels
 from NetAnalyzer import Net_parser, NetAnalyzer
 from NetAnalyzer import Ranker
 from NetAnalyzer.performancer import Performancer
+from NetAnalyzer.seed_parser import SeedParser
 
 
 ## TYPES 
@@ -29,6 +30,9 @@ def single_split(string, sep = ","):
 
 def double_split(string, sep1=";", sep2=","):
     return [sublst.split(sep2) for sublst in string.strip().split(sep1)]
+
+def loading_dic(string, sep1=";", sep2=","):
+    return {key: value for key, value in double_split(string, sep1=";", sep2=",")}
 
 def group_nodes_parse(string):
 	group_nodes = {}
@@ -276,6 +280,72 @@ def text2binary_matrix(args=None):
     
     opts = parser.parse_args(args)
     main_text2binary_matrix(opts)
+
+def net_explorer(args=None):
+    parser = argparse.ArgumentParser(description="Transforming matrix format and obtaining statistics")
+    parser.add_argument("-i", "--input_file", dest="input_file", default= None, type = lambda string: loading_dic(string, sep1=";", sep2=","), 
+                        help="Input file to create networks for further analysis")
+    parser.add_argument("-n","--node_names_file", dest="node_files", default=None, type = lambda string: loading_dic(string, sep1=";", sep2=","),
+                        help="Files with node names corresponding to the input matrix, only use when -i is set to bin or matrix, could be two paths, indicating rows and cols, respectively. If just one path added, it is assumed to be for rows and cols")
+    parser.add_argument("-s", "--genes_seed", dest="genes_seed", default=None,
+        help="The name of the gene to look for backups")
+    parser.add_argument('-c', '--layer_cutoff', dest="layer_cutoff", default={}, type = lambda string: loading_dic(string, sep1=";", sep2=","),
+                        help='Cutoff to apply to every layer in the multiplexed one')
+    parser.add_argument('-o', '--output_file', dest="output_file", default="output_file",
+                        help="Output name of the file")
+    parser.add_argument("-N","--no_autorelations", dest="no_autorelations", default=False, action='store_true',
+                        help="Kernel operation to perform with the adjacency matrix")
+    opts = parser.parse_args(args)
+    main_net_explorer(opts)
+
+
+def main_net_explorer(options):
+    # TODO: Los dic 
+    # TODO: los layers
+
+    # loading gene seeds.
+    options = vars(options)
+    seeds2explore, _ = SeedParser.load_nodes_by_group(options["genes_seed"], sep=",")
+
+    # Loading multinet operations
+    multinet = {}
+    for net_id, net_file in options["input_file"].items():
+        nodes = options['node_files'][net_id]
+        multinet[net_id] = Net_parser.load_network_by_bin_matrix(net_file, [nodes], [['layer', '-']])
+        cutoff = options["layer_cutoff"].get(net_id)
+        if options["no_autorelations"]: np.fill_diagonal(multinet[net_id].matrices['adjacency_matrices'][('layer','layer')][0], 0)
+        if cutoff:
+            cutoff = float(cutoff)
+            multinet[net_id].filter_matrix( mat_keys=('adjacency_matrices',('layer','layer')),operation='filter_cutoff', options={'cutoff': cutoff}, add_to_object=True)
+        multinet[net_id].adjMat2netObj('layer','layer')
+
+    # extract a subgraph for each
+    seeds2subgraph = {}
+    for seed, nodes in seeds2explore.items():
+        seeds2subgraph[seed] = {}
+        for net_id, net in multinet.items():
+            seeds2subgraph[seed][net_id] = net.graph.subgraph(nodes)
+
+
+    # # If mention, add node2vec coordinates with a tnse proyection.
+    net2umap = None
+    # net2umap = None
+    # if options["add_umap"]:
+    #     net2umap = {}
+    #     for net_id, net in multinet.items():
+    #         adj_mat, embedding_nodes, _ = net.matrices["adjacency_matrices"][("layer", "layer")] 
+    #         emb_coords = Graph2sim.get_embedding(adj_mat, embedding = "node2vec", embedding_nodes=embedding_nodes)
+    #         umap_coords = Adv_mat_calc.data2umap(emb_coords,  n_neighbors = 15, min_dist = 0.1, n_components = 2, metric = 'euclidean', random_seed = None)
+    #         net2umap[net_id] = [umap_coords, embedding_nodes]
+
+    # Execute the reports in the process.
+    template = open(str(os.path.join(os.path.dirname(__file__), 'templates','net_explorer.txt'))).read()
+    container = {"seeds2explore": seeds2explore, "seeds2subgraph": seeds2subgraph, "net2umap": net2umap}
+    report = Py_report_html(container, 'Network explorer')
+    report.build(template)
+    report.write(options["output_file"]+".html")
+
+
 
 def main_integrate_kernels(options):
     kernels = Kernels()

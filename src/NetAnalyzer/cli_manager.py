@@ -295,7 +295,7 @@ def net_explorer(args=None):
                         help="Output name of the file")
     parser.add_argument("-N","--no_autorelations", dest="no_autorelations", default=False, action='store_true',
                         help="Kernel operation to perform with the adjacency matrix")
-    parser.add_argument("-l", "--neigh_level", dest="neigh_level", default=0, type = lambda x: int(x),
+    parser.add_argument("-l", "--neigh_level", dest="neigh_level", default={}, type = lambda string: loading_dic(string, sep1=";", sep2=","),
                         help="Defining the level of neighbourhood on the initial set of nodes")
     opts = parser.parse_args(args)
     main_net_explorer(opts)
@@ -328,7 +328,8 @@ def main_net_explorer(options):
         for net_id, net in multinet.items():
             # get neighbor from node
             nodes_with_neigh = set(nodes)
-            for i in range(0, options["neigh_level"]): nodes_with_neigh = get_neigh_set(net, nodes_with_neigh)
+            neigh_level = int(options["neigh_level"].get(net_id)) if options["neigh_level"].get(net_id) else 0
+            for i in range(0, neigh_level): nodes_with_neigh = get_neigh_set(net, nodes_with_neigh)
             seeds2subgraph[seed][net_id] = net.graph.subgraph(nodes_with_neigh)
 
     # # If mention, add node2vec coordinates with a tnse proyection.

@@ -61,6 +61,10 @@ def graph_options_parse(string):
 ## Common options
 ##############################################
 
+def add_common_relations_process(parser):
+    parser.add_argument("-N","--no_autorelations", dest="no_autorelations", default=False, action='store_true',
+                        help="No processing autorelations")
+
 ##############################################
 
 def integrate_kernels(args=None):
@@ -88,6 +92,7 @@ def integrate_kernels(args=None):
 
 def netanalyzer(args=None):
     parser = argparse.ArgumentParser(description='Perform Network analysis from NetAnalyzer package')
+    add_common_relations_process(parser)
     parser.add_argument("-i", "--input_file", dest="input_file", default= None, 
                         help="Input file to create networks for further analysis")
     parser.add_argument("-n","--node_names_file", dest="node_files", default=None, type = lambda x: single_split(x, sep=","),
@@ -120,8 +125,6 @@ def netanalyzer(args=None):
                         help="Kernel operation to perform with the adjacency matrix")
     parser.add_argument("--embedding_add_options", dest="embedding_add_options", default="",
                         help="Additional options for embedding kernel methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...' ")
-    parser.add_argument("-N","--no_autorelations", dest="no_autorelations", default=False, action='store_true',
-                        help="Kernel operation to perform with the adjacency matrix")
     parser.add_argument("-z","--normalize_kernel_values", dest="normalize_kernel", default=False, action='store_true',
                         help="Apply cosine normalization to the obtained kernel")
     parser.add_argument("--coords2sim_type", dest="coords2sim_type", default="dotProduct", help= "Select the type of transformation from coords to similarity: dotProduct, normalizedScaling, infinity and int or float numbers")
@@ -283,6 +286,7 @@ def text2binary_matrix(args=None):
 
 def net_explorer(args=None):
     parser = argparse.ArgumentParser(description="Transforming matrix format and obtaining statistics")
+    add_common_relations_process(parser)
     parser.add_argument("-i", "--input_file", dest="input_file", default= None, type = lambda string: loading_dic(string, sep1=";", sep2=","), 
                         help="Input file to create networks for further analysis")
     parser.add_argument("-n","--node_names_file", dest="node_files", default=None, type = lambda string: loading_dic(string, sep1=";", sep2=","),
@@ -293,10 +297,10 @@ def net_explorer(args=None):
                         help='Cutoff to apply to every layer in the multiplexed one')
     parser.add_argument('-o', '--output_file', dest="output_file", default="output_file",
                         help="Output name of the file")
-    parser.add_argument("-N","--no_autorelations", dest="no_autorelations", default=False, action='store_true',
-                        help="Kernel operation to perform with the adjacency matrix")
     parser.add_argument("-l", "--neigh_level", dest="neigh_level", default={}, type = lambda string: loading_dic(string, sep1=";", sep2=","),
                         help="Defining the level of neighbourhood on the initial set of nodes")
+    parser.add_argument("--plot_network_method", dest="plot_network_method", default="pyvis",
+                        help="Defining the plot method used on report")
     opts = parser.parse_args(args)
     main_net_explorer(opts)
 

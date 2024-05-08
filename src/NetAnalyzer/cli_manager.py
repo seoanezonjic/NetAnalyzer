@@ -1,24 +1,7 @@
 import argparse
-import sys
 import os
-import glob
-import numpy as np
-import random
-import copy
-from multiprocessing import Process, Manager, Lock
-
 from py_cmdtabs.cmdtabs import CmdTabs
-import py_exp_calc.exp_calc as pxc
-from py_report_html import Py_report_html
-""" ROOT_PATH=os.path.dirname(__file__)
-sys.path.insert(0, os.path.join(ROOT_PATH, '..')) """
-from NetAnalyzer import Net_parser, NetAnalyzer
-from NetAnalyzer import Kernels
-from NetAnalyzer import Net_parser, NetAnalyzer
-from NetAnalyzer import Ranker
-from NetAnalyzer.performancer import Performancer
-from NetAnalyzer.seed_parser import SeedParser
-
+from NetAnalyzer.main_modules import *
 
 ## TYPES 
 def based_0(string): return int(string) - 1
@@ -61,6 +44,58 @@ def graph_options_parse(string):
 ## Common options
 ##############################################
 
+def add_kernel_flags(parser, multiple = False):
+    if multiple:
+        type_parse = lambda x: single_split(x, sep=";")
+    else:
+        type_parse = lambda x: str(x)
+
+    parser.add_argument("-k", "--input_kernels", dest="kernel_files", default= None, type= lambda x: type_parse(x),
+                        help="The roots from each kernel to integrate")
+    parser.add_argument("-n", "--input_nodes", dest="node_files", default= None, type = lambda x: type_parse(x),
+                        help="The list of node for each kernel in lst format")
+
+def add_seed_flags(parser):
+    parser.add_argument("--seed_nodes", dest="seed_nodes", default=None,
+        help="The name of the nodes to use as seeds")
+    parser.add_argument("--seed_sep", dest="seed_sep", default=",",
+        help="Separator of seed genes. Only use when -s point to a file")
+
+def add_random_seed(parser, default_seed=None):
+    parser.add_argument("--seed", dest="seed", default= default_seed, type=int, 
+        help="Allows to set a seed for the randomization process. Set to a number. Otherwise results are not reproducible.")
+
+def add_output_flags(parser, default_opt={"output_file": "output_file"}):
+    parser.add_argument("-o","--output_file", dest="output_file", default=default_opt['output_file'],
+                        help="Output file name")
+
+def add_input_graph_flags(parser, multinet = False):
+    if multinet:
+        parser.add_argument("-i", "--input_file", dest="input_file", default= None, type = lambda string: loading_dic(string, sep1=";", sep2=","), 
+                    help="Input file to create networks for further analysis")
+        parser.add_argument("-n","--node_names_file", dest="node_files", default=None, type = lambda string: loading_dic(string, sep1=";", sep2=","),
+                    help="Files with node names corresponding to the input matrix, only use when -i is set to bin or matrix, could be two paths, indicating rows and cols, respectively. If just one path added, it is assumed to be for rows and cols")
+        # parser.add_argument("-l","--layers", dest="layers", default=[['layer', '-']], type= lambda x: double_split(x, sep1=";",sep2=","),
+        #                     help="Layer definition on network: layer1name,regexp1;layer2name,regexp2...")
+    else:
+        parser.add_argument("-i", "--input_file", dest="input_file", default= None, 
+                            help="Input file to create networks for further analysis")
+        parser.add_argument("-n","--node_names_file", dest="node_files", default=None, type = lambda x: single_split(x, sep=","),
+                            help="Files with node names corresponding to the input matrix, only use when -i is set to bin or matrix, could be two paths, indicating rows and cols, respectively. If just one path added, it is assumed to be for rows and cols")
+        parser.add_argument("-l","--layers", dest="layers", default=[['layer', '-']], type= lambda x: double_split(x, sep1=";",sep2=","),
+                            help="Layer definition on network: layer1name,regexp1;layer2name,regexp2...")
+    parser.add_argument("-s","--split_char", dest="split_char", default='\t',
+                        help = "Character for splitting input file. Default: tab")
+    parser.add_argument("-f","--input_format", dest="input_format", default='pair',
+                        help="Input file format: pair (default), bin, matrix")
+    parser.add_argument("--both_repre_formats", dest="load_both", default=False, action='store_true',
+                        help="If we need to load the adjacency matrixes and the graph object")
+
+def add_resources_flags(parser, default_opt={"threads": 1}):
+    parser.add_argument("-T", "--threads", dest="threads", default=default_opt["threads"], type=int,
+        help="Number of threads to use in computation.")
+
+
 def add_common_relations_process(parser):
     parser.add_argument("-N","--no_autorelations", dest="no_autorelations", default=False, action='store_true',
                         help="No processing autorelations")
@@ -69,748 +104,216 @@ def add_common_relations_process(parser):
 
 def integrate_kernels(args=None):
     parser = argparse.ArgumentParser(description='Integrate kernels or embedding in matrix format')
-    parser.add_argument("-t", "--input_kernels", dest="kernel_files", default= None, type= lambda x: single_split(x, sep=";"),
-                        help="The roots from each kernel to integrate")
-    parser.add_argument("-n", "--input_nodes", dest="node_files", default= None, type = lambda x: single_split(x, sep=";"),
-                        help="The list of node for each kernel in lst format")
-    parser.add_argument("-I", "--kernel_ids", dest="kernel_ids", default= None, type = lambda x: single_split(x, sep=";"),
-                        help="The names of each kernel")
+    add_kernel_flags(parser, multiple = True)
+    add_output_flags(parser, default_opt={"output_file": "general_matrix"})
     parser.add_argument("-f","--format_kernel",dest= "input_format", default="bin", 
                         help= "The format of the kernels to integrate")
+    parser.add_argument("-I", "--kernel_ids", dest="kernel_ids", default= None, type = lambda x: single_split(x, sep=";"),
+                        help="The names of each kernel")
+    # Integration conf
     parser.add_argument("-i","--integration_type",dest= "integration_type", default=None, 
                         help= "It specifies how to integrate the kernels")
-    parser.add_argument("--cpu",dest= "n_workers", default=8,  type = int,
-                        help= "It specifies the number of cpus available for the process parallelization")
-    parser.add_argument("--asym",dest= "symmetric", default=True, action='store_false',
-                        help= "It specifies if the kernel matrixes are or not symmetric"),
     parser.add_argument("--raw_values", dest="raw_values", default=False, action='store_true',help="Select this option to use the negatives and positives values, without translation")
-    parser.add_argument("-o","--output_matrix",dest= "output_matrix_file", default="general_matrix", 
-                        help= "The name of the matrix output")
-    
+    parser.add_argument("--asym",dest= "symmetric", default=True, action='store_false',
+                        help= "It specifies if the kernel matrixes are or not symmetric")
+
+    # Resources
+    add_resources_flags(parser=parser, default_opt={"threads": 8})  
     opts = parser.parse_args(args)
     main_integrate_kernels(opts)
 
 def netanalyzer(args=None):
     parser = argparse.ArgumentParser(description='Perform Network analysis from NetAnalyzer package')
     add_common_relations_process(parser)
-    parser.add_argument("-i", "--input_file", dest="input_file", default= None, 
-                        help="Input file to create networks for further analysis")
-    parser.add_argument("-n","--node_names_file", dest="node_files", default=None, type = lambda x: single_split(x, sep=","),
-                        help="Files with node names corresponding to the input matrix, only use when -i is set to bin or matrix, could be two paths, indicating rows and cols, respectively. If just one path added, it is assumed to be for rows and cols")
-    parser.add_argument("-s","--split_char", dest="split_char", default='\t',
-                        help = "Character for splitting input file. Default: tab")
-    parser.add_argument("-f","--input_format", dest="input_format", default='pair',
-                        help="Input file format: pair (default), bin, matrix")
-    parser.add_argument("--both_repre_formats", dest="load_both", default=False, action='store_true',
-                        help="If we need to load the adjacency matrixes and the graph object")
-    parser.add_argument("-o","--output_file", dest="output_file", default='output_file',
-                        help="Output file name")
-    parser.add_argument("-P","--use_pairs", dest="use_pairs", default='conn',
-                        help="Which pairs must be computed. 'all' means all posible pair node combinations and 'conn' means the pair are truly connected in the network. Default 'conn' ")
-    parser.add_argument("-a","--assoc_file", dest="assoc_file", default='assoc_values.txt',
-                        help="Output file name for association values")
-    parser.add_argument("-K","--kernel_file", dest="kernel_file", default='kernel_file',
-                        help="Output file name for kernel values")
-    parser.add_argument("-p","--performance_file", dest="performance_file", default='perf_values.txt',
-                        help="Output file name for performance values")
-    parser.add_argument("-l","--layers", dest="layers", default=[['layer', '-']], type= lambda x: double_split(x, sep1=";",sep2=","),
-                        help="Layer definition on network: layer1name,regexp1;layer2name,regexp2...")
-    parser.add_argument("-u","--use_layers", dest="use_layers", default=[], type= lambda x: double_split(x, sep1=";",sep2=","),
-                        help="Set which layers must be used on association methods: layer1,layer2;layerA,layerB")
-    parser.add_argument("-c","--control_file", dest="control_file", default=None,
-                        help="Control file name")
-    parser.add_argument("-m","--association_method", dest="meth", default=None,
-                        help="select association method to perform the projections: counts, jaccard, simpson, geometric, cosine, pcc, hypergeometric, hypergeometric_bf, hypergeometric_bh, csi, transference, correlation, umap, pca, bicm")
-    parser.add_argument("-k","--kernel_method", dest="kernel", default=None,
-                        help="Kernel operation to perform with the adjacency matrix")
-    parser.add_argument("--embedding_add_options", dest="embedding_add_options", default="",
-                        help="Additional options for embedding kernel methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...' ")
-    parser.add_argument("-z","--normalize_kernel_values", dest="normalize_kernel", default=False, action='store_true',
-                        help="Apply cosine normalization to the obtained kernel")
-    parser.add_argument("--coords2sim_type", dest="coords2sim_type", default="dotProduct", help= "Select the type of transformation from coords to similarity: dotProduct, normalizedScaling, infinity and int or float numbers")
-    parser.add_argument("-g", "--graph_file", dest="graph_file", default=None,
-                        help="Build a graphic representation of the network")
-    parser.add_argument("--graph_options", dest="graph_options", default={'method': 'elgrapho', 'layout': 'forcedir', 'steps': '30'}, type= graph_options_parse,
-                        help="Set graph parameters as 'NAME1=value1,NAME2=value2,...")
-    parser.add_argument("-T","--processes", dest="processes", default=2, type= int,
-                        help="Number of processes to use in computation")
-    parser.add_argument("-r","--reference_nodes", dest="reference_nodes", default=[], type= lambda x: single_split(x, sep=","),
-                        help="Node ids comma separared")
-    parser.add_argument("-R","--compare_clusters_reference", dest="compare_clusters_reference", default=None, type= group_nodes_parse,
-                        help="File path or groups separated by ';' and group node ids comma separared")
-    parser.add_argument("-G","--group_nodes", dest="group_nodes", default={}, type= group_nodes_parse,
-                        help="File path or groups separated by ';' and group node ids comma separared")
-    parser.add_argument("-b", "--build_clusters_alg", dest="build_cluster_alg", default=None,
-                        help="Type of cluster algorithm")
-    parser.add_argument("--output_build_clusters", dest="output_build_clusters", default=None, help= "output name for discovered clusters")
-    parser.add_argument("-B", "--build_clusters_add_options", dest="build_clusters_add_options", default="",
-                        help="Additional options for clustering methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...'")
-    parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lambda x: single_split(x, sep=";"),
-                        help="Remove nodes from file. If PATH;r then nodes not included in file are removed")
-    parser.add_argument("-x","--expand_clusters", dest="expand_clusters", default=None,
-                        help="Method to expand clusters Available methods: sht_path")
-    parser.add_argument("--output_expand_clusters", dest= "output_expand_clusters", default="expand_clusters.txt", help="outputname fopr expand clusters file")
-    parser.add_argument("--one_sht_pairs", dest="one_sht_pairs", default=False, action='store_true',
-                        help="add this flag if expand cluster needed with just one of the shortest paths")
-    parser.add_argument("-M", "--group_metrics", dest="group_metrics", default=None, type= lambda x: single_split(x, sep=";"),
-                        help="Perform group group_metrics")
-    parser.add_argument("--output_metrics_by_cluster", dest="output_metrics_by_cluster", default='group_metrics.txt', help= "output name for metrics by cluster file")
-    parser.add_argument("-S", "--summarize_metrics", dest="summarize_metrics", default=None, type= lambda x: single_split(x, sep=";"),
-                        help="Summarize metrics from groups")
-    parser.add_argument("--output_summarized_metrics", dest="output_summarized_metrics", default='group_metrics_summarized.txt', help= "output name for summarized metrics file")
-    parser.add_argument("--seed", dest="seed", default=None, 
-                        help="sepecify seed for clusterin processes")
-    parser.add_argument("-A", "--attributes", dest="get_attributes", default=[], type =lambda x: single_split(x, sep=","),
-                        help="String separated by commas with the name of network attribute")
-    parser.add_argument("--graph_attributes", dest="get_graph_attributes", default=[], type =lambda x: single_split(x, sep=","),
-                        help="String separated by commas with the name of network attribute")
-    parser.add_argument("--attributes_summarize", dest="attributes_summarize", default= False, action = "store_true", help="If the attribtes needs to be obtained summarized") 
-    parser.add_argument("--dsl_script", dest="dsl_script", default=None,
-                        help="Path to dsl script to perform complex analysis")
+    add_input_graph_flags(parser)
+    add_output_flags(parser, default_opt={"output_file": "output_file"})
+    add_random_seed(parser, default_seed=None)
     parser.add_argument("-O", "--ontology", dest="ontologies", default=[], type=lambda x: double_split(x, sep1=";",sep2=":"),
                         help="String that define which ontologies must be used with each layer. String definition:'layer_name1:path_to_obo_file1;layer_name2:path_to_obo_file2'")
+    # Assoc
+    parser.add_argument("-P","--use_pairs", dest="use_pairs", default='conn',
+    help="Which pairs must be computed. 'all' means all posible pair node combinations and 'conn' means the pair are truly connected in the network. Default 'conn' ")
+    parser.add_argument("-m","--association_method", dest="meth", default=None,
+    help="select association method to perform the projections: counts, jaccard, simpson, geometric, cosine, pcc, hypergeometric, hypergeometric_bf, hypergeometric_bh, csi, transference, correlation, umap, pca, bicm")
+    parser.add_argument("-a","--assoc_file", dest="assoc_file", default='assoc_values.txt',
+    help="Output file name for association values")
+    parser.add_argument("-p","--performance_file", dest="performance_file", default='perf_values.txt',
+    help="Output file name for performance values")
+    parser.add_argument("-u","--use_layers", dest="use_layers", default=[], type= lambda x: double_split(x, sep1=";",sep2=","),
+    help="Set which layers must be used on association methods: layer1,layer2;layerA,layerB")
+    parser.add_argument("-c","--control_file", dest="control_file", default=None,
+    help="Control file name")
+    # Kernel 
+    parser.add_argument("-k","--kernel_method", dest="kernel", default=None,
+    help="Kernel operation to perform with the adjacency matrix")
+    parser.add_argument("--embedding_add_options", dest="embedding_add_options", default="",
+    help="Additional options for embedding kernel methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...' ")
+    parser.add_argument("-z","--normalize_kernel_values", dest="normalize_kernel", default=False, action='store_true',
+    help="Apply cosine normalization to the obtained kernel")
+    parser.add_argument("--coords2sim_type", dest="coords2sim_type", default="dotProduct", help= "Select the type of transformation from coords to similarity: dotProduct, normalizedScaling, infinity and int or float numbers")
+    parser.add_argument("-K","--kernel_file", dest="kernel_file", default='kernel_file',
+    help="Output file name for kernel values")
+    # Plotting
+    parser.add_argument("-g", "--graph_file", dest="graph_file", default=None,
+    help="Build a graphic representation of the network")
+    parser.add_argument("--graph_options", dest="graph_options", default={'method': 'elgrapho', 'layout': 'forcedir', 'steps': '30'}, type= graph_options_parse,
+    help="Set graph parameters as 'NAME1=value1,NAME2=value2,...")
+    # Nodes states
+    parser.add_argument("-r","--reference_nodes", dest="reference_nodes", default=[], type= lambda x: single_split(x, sep=","),
+    help="Node ids comma separared")
+    parser.add_argument("-G","--group_nodes", dest="group_nodes", default={}, type= group_nodes_parse,
+    help="File path or groups separated by ';' and group node ids comma separared")
+    parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lambda x: single_split(x, sep=";"),
+    help="Remove nodes from file. If PATH;r then nodes not included in file are removed")
+    # Compare cluster
+    parser.add_argument("-R","--compare_clusters_reference", dest="compare_clusters_reference", default=None, type= group_nodes_parse,
+    help="File path or groups separated by ';' and group node ids comma separared")
+    # Build cluster
+    parser.add_argument("-b", "--build_clusters_alg", dest="build_cluster_alg", default=None,
+    help="Type of cluster algorithm")
+    parser.add_argument("-B", "--build_clusters_add_options", dest="build_clusters_add_options", default="",
+    help="Additional options for clustering methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...'")
+    parser.add_argument("--output_build_clusters", dest="output_build_clusters", default=None, help= "output name for discovered clusters")
+    # Expand cluster
+    parser.add_argument("-x","--expand_clusters", dest="expand_clusters", default=None,
+    help="Method to expand clusters Available methods: sht_path")
+    parser.add_argument("--one_sht_pairs", dest="one_sht_pairs", default=False, action='store_true',
+    help="add this flag if expand cluster needed with just one of the shortest paths")
+    parser.add_argument("--output_expand_clusters", dest= "output_expand_clusters", default="expand_clusters.txt", help="outputname fopr expand clusters file")
+    # Cluster metrics
+    parser.add_argument("-M", "--group_metrics", dest="group_metrics", default=None, type= lambda x: single_split(x, sep=";"),
+    help="Perform group group_metrics")
+    parser.add_argument("--output_metrics_by_cluster", dest="output_metrics_by_cluster", default='group_metrics.txt', help= "output name for metrics by cluster file")
+    parser.add_argument("-S", "--summarize_metrics", dest="summarize_metrics", default=None, type= lambda x: single_split(x, sep=";"),
+    help="Summarize metrics from groups")
+    parser.add_argument("--output_summarized_metrics", dest="output_summarized_metrics", default='group_metrics_summarized.txt', help= "output name for summarized metrics file")
+    # Graph metrics by net or node
+    parser.add_argument("-A", "--attributes", dest="get_attributes", default=[], type =lambda x: single_split(x, sep=","),
+    help="String separated by commas with the name of network attribute")
+    parser.add_argument("--graph_attributes", dest="get_graph_attributes", default=[], type =lambda x: single_split(x, sep=","),
+    help="String separated by commas with the name of network attribute")
+    parser.add_argument("--attributes_summarize", dest="attributes_summarize", default= False, action = "store_true", help="If the attribtes needs to be obtained summarized") 
+    # DSL section
+    parser.add_argument("--dsl_script", dest="dsl_script", default=None,
+    help="Path to dsl script to perform complex analysis")
+    # Resources
+    add_resources_flags(parser=parser, default_opt={"threads": 2})
 
     opts = parser.parse_args(args)
     main_netanalyzer(opts)
 	
 def randomize_clustering(args=None):
     parser = argparse.ArgumentParser(description='Perform clusters randomization')
-
+    add_output_flags(parser, default_opt={"output_file": "random_clusters.txt"})
     parser.add_argument("-i", "--input_file", dest="input_file", default= None, 
-                        help="Input file to create networks for further analysis")
-    parser.add_argument("-N", "--node_column", dest="node_index", default= 1, type=based_0, 
-                        help="Number of the nodes column")
-    parser.add_argument("-C", "--cluster_column", dest="cluster_index", default= 0, type=based_0, 
-                        help="Number of the clusters column")
+    help="Input file to create networks for further analysis")
     parser.add_argument("-S", "--split_char", dest="column_sep", default = "\t", 
-                        help="Character for splitting input file. Default: tab")
-    parser.add_argument("-s", "--node_sep", dest="node_sep", default = None, 
-                        help="Node split character. This option must to be used when input file is aggregated")
-    parser.add_argument("-r", "--random_type", dest="random_type", default = ["size"], type = lambda x: single_split(x,sep=":"), 
-                        help="Indicate random mode. 'size' for radomize clusters with the same size as input clusters. 'full_size' same as 'size' but all nodes are repaeted as same as input. 'fixed:n:s' for generate 'n' clusters of 's' nodes. Default = 'size'")
-    parser.add_argument("-R", "--replacement", dest="replacement", default=False, action='store_true',
-                        help="Boolean. Activates ramdom sampling with replacement. Sampling witout replacement will be executed instead.")  
-    parser.add_argument("-o", "--output_file", dest="output_file", default= 'random_clusters.txt', 
-                        help="Output file")
+    help="Character for splitting input file. Default: tab")
     parser.add_argument("-a", "--aggregate_sep", dest="aggregate_sep", default = None, 
-                        help="This option activates aggregation in output. Separator character must be provided")
-    parser.add_argument("-d", "--seed", dest="seed", default= 123, type=int, 
-            help="Allows to set a seed for the randomization process. Set to a number. Otherwise results are not reproducible.")
+    help="This option activates aggregation in output. Separator character must be provided")
+    parser.add_argument("-N", "--node_column", dest="node_index", default= 1, type=based_0, 
+    help="Number of the nodes column")
+    parser.add_argument("-C", "--cluster_column", dest="cluster_index", default= 0, type=based_0, 
+    help="Number of the clusters column")
+    parser.add_argument("-s", "--node_sep", dest="node_sep", default = None, 
+    help="Node split character. This option must to be used when input file is aggregated")
+    # random conf
+    parser.add_argument("-r", "--random_type", dest="random_type", default = ["size"], type = lambda x: single_split(x,sep=":"), 
+    help="""Indicate random mode. 'size' for radomize clusters with the same size as input clusters.
+     'full_size' same as 'size' but all nodes are repaeted as same as input. 'fixed:n:s' for generate 'n' clusters of 's' nodes. Default = 'size'""")
+    parser.add_argument("-R", "--replacement", dest="replacement", default=False, action='store_true',
+    help="Boolean. Activates ramdom sampling with replacement. Sampling witout replacement will be executed instead.")  
+    add_random_seed(parser,  default_seed=123)
 
     opts = parser.parse_args(args)
     main_randomize_clustering(opts)
 
 def randomize_network(args=None):
     parser = argparse.ArgumentParser(description='Perform Network analysis from NetAnalyzer package')
-    parser.add_argument("-i", "--input_file", dest="input_file", default= None, 
-            help="Input file to create networks for further analysis")
-    parser.add_argument("-o", "--output_file", dest="output_file", default= None, 
-            help="Output file to save random network")
-    parser.add_argument("-n", "--node_names_file", dest="node_file", default= None, 
-            help="File with node names corresponding to the input matrix, only use when -f is set to bin or matrix.")
-    parser.add_argument("-f", "--input_format", dest="input_format", default= 'pair', 
-            help="Input file format: pair (default), bin, matrix")
-    parser.add_argument("-s", "--split_char", dest="split_char", default= "\t", 
-            help="Character for splitting input file. Default: tab")
-    parser.add_argument("-l","--layers", dest="layers", default=['layer', '-'], type= lambda x: double_split(x, sep1=";",sep2=","),
-            help="Layer definition on network: layer1name,regexp1;layer2name,regexp2...")
+    add_input_graph_flags(parser)
+    add_output_flags(parser, default_opt={"output_file": None})
+    add_random_seed(parser, default_seed=None)
+    # random conf
     parser.add_argument("-r", "--type_random", dest="type_random", default= None, 
             help="Randomized basis. 'nodes' Node-baseds randomize or 'links' Links-baseds randomize")
-    parser.add_argument("-d", "--seed", dest="seed", default= None, 
-            help="Allows to set a seed for the randomization process. Set to a number. Otherwise results are not reproducible.")
-    
     opts = parser.parse_args(args)
     main_randomize_network(opts)
 
 def ranker(args=None):
     parser = argparse.ArgumentParser(description='Get the ranks from a matrix similarity score and a list of seeds')
-    parser.add_argument("-k", "--input_kernels", dest="kernel_file", default=None, 
-    help="The roots from each kernel to integrate")
-    parser.add_argument("-n", "--input_nodes", dest="input_nodes", default=None,
-    help="The list of node for each kernel in lst format")
-    parser.add_argument("-s", "--genes_seed", dest="genes_seed", default=None,
-    help="The name of the gene to look for backups")
+    add_seed_flags(parser)
+    add_output_flags(parser, default_opt={"output_file": "ranked_genes"})
+    add_kernel_flags(parser, multiple = False)
+
+    # Output ranking
+    parser.add_argument("--seed_presence", dest="seed_presence", default=None,
+    help="Seed presence on list: 'remove', when seed is not added on the ranker calculation; 'annotate', when just tag on output is needed, and calculation is obtained inclusing the seeds: new, seed.")
+    parser.add_argument("--header", dest="header", default=False, 
+    action='store_true', help="Select this option if header needed")
+    # filtering
+    parser.add_argument("-f", "--filter", dest="filter", default=None,
+    help="PATH to file with seed_name and genes to keep in output")
+    parser.add_argument("--whitelist", dest="whitelist", default=None, type = open_whitelist, help= "File Path with the whitelist of nodes to take into account in the ranker process")
+    parser.add_argument("--minimum_size", dest="minimum_size", default=1, type=int)
+    # Options in ranker alg
     parser.add_argument("-N","--normalize_matrix", dest="normalize_matrix", default= None,
     help="Select the type of normalization, options are: None, by_column, by_row, by_row_col")
     parser.add_argument("-p", "--propagate", dest="propagate", default = False, action = "store_true")
     parser.add_argument("--propagate_options", dest="propagate_options", default =  '"tolerance": 1e-5, "iteration_limit": 100, "with_restart": 0',
     help="Additional options for propagation methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...'")
-    parser.add_argument("-S", "--seed_sep", dest="seed_sep", default=",",
-    help="Separator of seed genes. Only use when -s point to a file")
-    parser.add_argument("-f", "--filter", dest="filter", default=None,
-    help="PATH to file with seed_name and genes to keep in output")
+    # Benchmarking mode
     parser.add_argument("-l", "--cross_validation", dest="cross_validation", default=False, 
     action='store_true', help="To activate cross validation")
     parser.add_argument("-K", "--k_fold", dest="k_fold", default=None, type=int, 
     help="Indicate the number of itrations needed, not used for leave one out cross validation (loocv)")
+    # Select tops
     parser.add_argument("-t", "--top_n", dest="top_n", default=None, type=int,
     help="Top N genes to print in output")
     parser.add_argument("--output_top", dest="output_top", default=None,
     help="File to save Top N genes")
-    parser.add_argument("-o", "--output_name", dest="output_name", default="ranked_genes",
-    help="PATH to file with seed_name and genes to keep in output")
-    parser.add_argument("--seed_presence", dest="seed_presence", default=None,
-    help="Seed presence on list: 'remove', when seed is not added on the ranker calculation; 'annotate', when just tag on output is needed, and calculation is obtained inclusing the seeds: new, seed.")
-    parser.add_argument("--whitelist", dest="whitelist", default=None, type = open_whitelist, help= "File Path with the whitelist of nodes to take into account in the ranker process")
-    parser.add_argument("-T", "--threads", dest="threads", default=1, type=int,
-     help="Number of threads to use in computation, one thread will be reserved as manager.")
-    parser.add_argument("--minimum_size", dest="minimum_size", default=1, type=int)
-    parser.add_argument("--header", dest="header", default=False, 
-        action='store_true', help="Select this option if header needed")
+    # Resources
+    add_resources_flags(parser=parser, default_opt={"threads": 1})
     opts = parser.parse_args(args)
     main_ranker(opts)
 
 def text2binary_matrix(args=None):
     parser = argparse.ArgumentParser(description="Transforming matrix format and obtaining statistics")
+    add_output_flags(parser, default_opt={"output_file": None})
     parser.add_argument('-i', '--input_file', dest="input_file", default=None,
-    	help="input file")
-    parser.add_argument('-o', '--output_matrix_file', dest="output_matrix_file", default=None,
-    	help="Output matrix file")
+    help="input file")
     parser.add_argument('-b', '--byte_format', dest="byte_format", default="float64",
-    	help='Format of the numeric values stored in matrix. Default: float64, warning set this to less precission can modify computation results using this matrix.')
+    help='Format of the numeric values stored in matrix. Default: float64, warning set this to less precission can modify computation results using this matrix.')
     parser.add_argument('-t', '--input_type', dest="input_type", default='pair',
-    	help='Set input format file. "pair", "matrix" or "bin"')
-    parser.add_argument('-d', '--set_diagonal', dest="set_diagonal", default=False, action='store_true',
-    	help='Set to 1.0 the main diagonal')
-    parser.add_argument('-B', '--binarize', dest="binarize", default=None, type = float,
-    	help='Binarize matrix changin x >= thr to one and any other to zero into matrix given')
-    parser.add_argument('-c', '--cutoff', dest="cutoff", default=None, type = float,
-    	help='Cutoff matrix values keeping just x >= and setting any other to zero into matrix given')
-    parser.add_argument('-s', '--get_stats', dest="stats", default=None,
-    	help='Get stats from the processed matrix')
+    help='Set input format file. "pair", "matrix" or "bin"')
     parser.add_argument('-O', '--output_type', dest="output_type", default='bin',
-    	help='Set output format file. "bin" for binary (default) or "mat" for tabulated text file matrix')
+    help='Set output format file. "bin" for binary (default) or "mat" for tabulated text file matrix')
+    # Process matrix
+    parser.add_argument('-d', '--set_diagonal', dest="set_diagonal", default=False, action='store_true',
+    help='Set to 1.0 the main diagonal')
+    parser.add_argument('-B', '--binarize', dest="binarize", default=None, type = float,
+    help='Binarize matrix changin x >= thr to one and any other to zero into matrix given')
+    parser.add_argument('-c', '--cutoff', dest="cutoff", default=None, type = float,
+    help='Cutoff matrix values keeping just x >= and setting any other to zero into matrix given')
+    # Get stats
+    parser.add_argument('-s', '--get_stats', dest="stats", default=None,
+    help='Get stats from the processed matrix')
     
     opts = parser.parse_args(args)
     main_text2binary_matrix(opts)
 
 def net_explorer(args=None):
     parser = argparse.ArgumentParser(description="Transforming matrix format and obtaining statistics")
-    add_common_relations_process(parser)
-    parser.add_argument("-i", "--input_file", dest="input_file", default= None, type = lambda string: loading_dic(string, sep1=";", sep2=","), 
-                        help="Input file to create networks for further analysis")
-    parser.add_argument("-n","--node_names_file", dest="node_files", default=None, type = lambda string: loading_dic(string, sep1=";", sep2=","),
-                        help="Files with node names corresponding to the input matrix, only use when -i is set to bin or matrix, could be two paths, indicating rows and cols, respectively. If just one path added, it is assumed to be for rows and cols")
-    parser.add_argument("-s", "--genes_seed", dest="genes_seed", default=None,
-        help="The name of the gene to look for backups")
+    add_common_relations_process(parser) # Common relations options
+    add_input_graph_flags(parser, multinet = True) # Input graph
+    add_seed_flags(parser) # Adding seeds
+    add_output_flags(parser, default_opt={"output_file": "output_file"})
+    # layer processing
     parser.add_argument('-c', '--layer_cutoff', dest="layer_cutoff", default={}, type = lambda string: loading_dic(string, sep1=";", sep2=","),
-                        help='Cutoff to apply to every layer in the multiplexed one')
-    parser.add_argument('-o', '--output_file', dest="output_file", default="output_file",
-                        help="Output name of the file")
+    help='Cutoff to apply to every layer in the multiplexed one')
+    # Analysis options
     parser.add_argument("-l", "--neigh_level", dest="neigh_level", default={}, type = lambda string: loading_dic(string, sep1=";", sep2=","),
-                        help="Defining the level of neighbourhood on the initial set of nodes")
+    help="Defining the level of neighbourhood on the initial set of nodes")
     parser.add_argument("--plot_network_method", dest="plot_network_method", default="pyvis",
-                        help="Defining the plot method used on report")
+    help="Defining the plot method used on report")
     opts = parser.parse_args(args)
     main_net_explorer(opts)
-
-
-def main_net_explorer(options):
-    # TODO: Los dic 
-    # TODO: los layers
-
-    # loading gene seeds.
-    options = vars(options)
-    seeds2explore, _ = SeedParser.load_nodes_by_group(options["genes_seed"], sep=",")
-
-    # Loading multinet operations
-    multinet = {}
-    for net_id, net_file in options["input_file"].items():
-        nodes = options['node_files'][net_id]
-        multinet[net_id] = Net_parser.load_network_by_bin_matrix(net_file, [nodes], [['layer', '-']])
-        cutoff = options["layer_cutoff"].get(net_id)
-        if options["no_autorelations"]: np.fill_diagonal(multinet[net_id].matrices['adjacency_matrices'][('layer','layer')][0], 0)
-        if cutoff:
-            cutoff = float(cutoff)
-            multinet[net_id].filter_matrix( mat_keys=('adjacency_matrices',('layer','layer')),operation='filter_cutoff', options={'cutoff': cutoff}, add_to_object=True)
-        multinet[net_id].adjMat2netObj('layer','layer')
-
-    # extract a subgraph for each
-    seeds2subgraph = {}
-    for seed, nodes in seeds2explore.items():
-        seeds2subgraph[seed] = {}
-        for net_id, net in multinet.items():
-            # get neighbor from node
-            nodes_with_neigh = set(nodes)
-            neigh_level = int(options["neigh_level"].get(net_id)) if options["neigh_level"].get(net_id) else 0
-            for i in range(0, neigh_level): nodes_with_neigh = get_neigh_set(net, nodes_with_neigh)
-            seeds2subgraph[seed][net_id] = net.graph.subgraph(nodes_with_neigh)
-
-    # # If mention, add node2vec coordinates with a tnse proyection.
-    net2umap = None
-    # net2umap = None
-    # if options["add_umap"]:
-    #     net2umap = {}
-    #     for net_id, net in multinet.items():
-    #         adj_mat, embedding_nodes, _ = net.matrices["adjacency_matrices"][("layer", "layer")] 
-    #         emb_coords = Graph2sim.get_embedding(adj_mat, embedding = "node2vec", embedding_nodes=embedding_nodes)
-    #         umap_coords = Adv_mat_calc.data2umap(emb_coords,  n_neighbors = 15, min_dist = 0.1, n_components = 2, metric = 'euclidean', random_seed = None)
-    #         net2umap[net_id] = [umap_coords, embedding_nodes]
-
-    # Execute the reports in the process.
-    template = open(str(os.path.join(os.path.dirname(__file__), 'templates','net_explorer.txt'))).read()
-    container = {"seeds2explore": seeds2explore, "seeds2subgraph": seeds2subgraph, "net2umap": net2umap}
-    report = Py_report_html(container, 'Network explorer')
-    report.build(template)
-    report.write(options["output_file"]+".html")
-
-def get_neigh_set(net, nodes):
-    neigh = set(nodes)
-    for i,n in enumerate(nodes):
-        try:
-            neigh = neigh | set(net.graph.neighbors(n))
-        except:
-            continue
-    return list(neigh)
-
-
-def main_integrate_kernels(options):
-    kernels = Kernels()
-
-    if not options.kernel_ids:
-        options.kernel_ids = list(range(0,len(options.kernel_files)))
-        options.kernel_ids = [str(k) for k in options.kernel_ids]
-
-    # TODO: Consider adding more options to integrate to accept other formats
-    if options.input_format == "bin":
-        kernels.load_kernels_by_bin_matrixes(options.kernel_files, options.node_files, options.kernel_ids)
-        kernels.create_general_index()
-
-    if not options.raw_values:
-        kernels.move2zero_reference()
-
-    if options.integration_type is not None:
-        print(options.n_workers)
-        kernels.integrate_matrix(options.integration_type, options.n_workers, options.symmetric)
-
-    if options.output_matrix_file is not None:
-        kernel, names = kernels.integrated_kernel
-        np.save(options.output_matrix_file, kernel)
-
-        with open(options.output_matrix_file +'.lst', 'w') as f:
-            for name in names:
-                f.write(name + "\n")  
-
-def main_netanalyzer(options):
-    print("Loading network data")
-    opts = vars(options)
-    # FRED: Remove this part of vars and modify the loads methods (Tlk wth PSZ)
-    fullNet = Net_parser.load(opts)
-    fullNet.set_compute_pairs(options.use_pairs, not options.no_autorelations)
-    fullNet.threads = options.processes
-
-    fullNet.reference_nodes = options.reference_nodes
-    for ont_data in opts['ontologies']:
-        layer_name, ontology_file_path = ont_data
-        fullNet.link_ontology(ontology_file_path, layer_name)
-        fullNet.ontologies
-
-    if options.group_nodes:
-        fullNet.set_groups(options.group_nodes)
-
-    if options.delete_nodes:
-        node_list = CmdTabs.load_input_data(options.delete_nodes[0])
-        node_list = [item for sublist in node_list for item in sublist]
-        mode = options.delete_nodes[1] if len(options.delete_nodes) > 1 else 'd'
-        fullNet.delete_nodes(node_list, mode)
-
-    if options.dsl_script is not None:
-        execute_dsl_script(fullNet, options.dsl_script)
-        sys.exit()
-
-    if options.meth is not None:
-        print(f"Performing association method {options.meth} on network \n")
-        if options.meth == "transference":
-            if not (options.use_layers[0][0], options.use_layers[1][0]) in fullNet.matrices["adjacency_matrices"]:
-                fullNet.generate_adjacency_matrix(
-                    options.use_layers[0][0], options.use_layers[1][0])
-            if not (options.use_layers[1][0], options.use_layers[0][1]) in fullNet.matrices["adjacency_matrices"]:
-                fullNet.generate_adjacency_matrix(
-                    options.use_layers[1][0], options.use_layers[0][1])
-
-            fullNet.get_association_values(
-                (options.use_layers[0][0], options.use_layers[1][0]),
-                (options.use_layers[1][0], options.use_layers[0][1]),
-                "transference")
-        else:
-            fullNet.get_association_values(
-                options.use_layers[0],
-                options.use_layers[1][0],
-                options.meth)
-
-        with open(options.assoc_file, 'w') as f:
-            for val in fullNet.association_values[options.meth][:-1]:
-                f.write("\t".join(map(str, val)) + "\n")
-            f.write(
-                "\t".join(map(str, fullNet.association_values[options.meth][-1])))
-        print(f"End of analysis: {options.meth}")
-
-        if options.control_file != None:
-            with open(options.control_file, "r") as f:
-                control = [control.append(line.rstrip().split("\t")) for line in f]
-            Performancer.load_control(control)
-            predictions = fullNet.association_values[options.meth]
-            performance = Performancer.get_pred_rec(predictions)
-            with open(options.performance_file, 'r') as f:
-                f.write("\t".join(['cut', 'prec', 'rec', 'meth']) + "\n")
-                for item in performance:
-                    item.append(options['meth'])
-                    f.write("\t".join(item) + "\n")
-
-    if options.kernel is not None:
-        # This allows inject custom arguments for each embedding method
-        embedding_kwargs = eval('{' +options.embedding_add_options +'}')
-        if len(options.use_layers) == 1:
-            # we use only a layer to perform the kernel, so only one item it is selected.
-            layers2kernel = (options.use_layers[0][0], options.use_layers[0][0])
-        else:
-            layers2kernel = tuple(options.use_layers[0])
-
-
-        fullNet.get_kernel(layers2kernel, options.kernel, options.normalize_kernel,
-                           options.coords2sim_type, embedding_kwargs, add_to_object=True)
-        fullNet.write_kernel(layers2kernel, options.kernel, options.kernel_file)
-
-    if options.graph_file is not None:
-        options.graph_options['output_file'] = options.graph_file
-        fullNet.plot_network(options.graph_options)
-
-    # Group creation
-    if options.build_cluster_alg is not None:
-        clust_kwargs = eval('{' + options.build_clusters_add_options +'}')
-        fullNet.discover_clusters(
-            options.build_cluster_alg, clust_kwargs, **{'seed': options.seed})
-
-        if options.output_build_clusters is None:
-            options.output_build_clusters = options.build_cluster_alg + \
-                '_' + 'discovered_clusters.txt'
-
-        with open(options.output_build_clusters, 'w') as out_file:
-            for cl_id, nodes in fullNet.group_nodes.items():
-                for node in nodes:
-                    out_file.write(f"{cl_id}\t{node}\n")
-
-    # Group metrics by cluster.
-    if options.group_metrics:
-        fullNet.compute_group_metrics(
-            output_filename=options.output_metrics_by_cluster, metrics=options.group_metrics)
-
-    # Group metrics summarized.
-    if options.summarize_metrics:
-        fullNet.compute_summarized_group_metrics(
-            output_filename=options.output_summarized_metrics, metrics=options.summarize_metrics)
-
-    # Comparing Group Families (Two by now)
-    if options.compare_clusters_reference is not None:
-        res = fullNet.compare_partitions(options.compare_clusters_reference)
-        print(str(res.score))
-
-    # Group Expansion
-    if options.expand_clusters is not None:
-        expanded_clusters = fullNet.expand_clusters(
-            options.expand_clusters, options.one_sht_pairs)
-        with open(options.output_expand_clusters, 'w') as out_file:
-            for cl_id, nodes in expanded_clusters.items():
-                for node in nodes:
-                    out_file.write(f"{cl_id}\t{node}\n")
-
-    if len(options.get_attributes) > 0:
-        fullNet.get_node_attributes(
-            options.get_attributes, summary=options.attributes_summarize, output_filename="node_attributes.txt")
-    if len(options.get_graph_attributes) > 0:
-        fullNet.get_graph_attributes(
-            options.get_graph_attributes, output_filename="graph_attributes.txt")
-
-def main_randomize_clustering(options):
-    options = vars(options)
-    clusters = load_clusters(options)
-
-    nodes = [ n for cl in clusters.values() for n in cl ] # Get list of nodes
-    if options['random_type'][0] != "full_size": nodes = pxc.uniq(nodes)
-
-    if "size" in options['random_type'][0] and len(options['random_type']) == 1:
-        all_sizes = [ len(nodes) for cluster_id, nodes in clusters.items() ]
-    elif options['random_type'][0] == "fixed" and len(options['random_type']) == 3:
-        all_sizes = [int(options['random_type'][2])] * int(options['random_type'][2]) # cluster_size * n clusters
-
-    random_clusters = random_sample(nodes, options['replacement'], all_sizes, options['seed']) 
-    write_clusters(random_clusters, options['output_file'], options['aggregate_sep'])
-     
-
-def main_randomize_network(options):
-    fullNet = Net_parser.load(vars(options)) 
-    randomNet = fullNet.randomize_network(options.type_random, **{"seed":options.seed})
-
-    with open(options.output_file, "w") as outfile:
-        for e in randomNet.graph.edges:
-            outfile.write(f"{e[0]}\t{e[1]}\n")
-
-def worker_ranker(seed_groups, seed_weight, opts, nodes, all_rankings, lock):
-    ranker = Ranker()
-    if opts["seed_presence"] == "remove":
-        ranker.seed_presence = False
-    ranker.nodes = nodes
-    for sg_id, sg in seed_groups: ranker.seeds[sg_id] = sg
-    for sg_id, ws in seed_weight:
-        if ws is not None: ranker.weights[sg_id] = ws
-    # LOAD KERNEL
-    load_kernel(ranker, opts)
-    # DO RANKING
-    propagate_options = eval('{' + opts["propagate_options"] +'}')
-    ranker.do_ranking(cross_validation=opts.get("cross_validation"), propagate=opts["propagate"],
-                      k_fold=opts.get("k_fold"), options=propagate_options)
-    with lock: # lock avoids that several processes write at same time in the dictionary
-        data_package = {} # Create chunks of results to reduce using too much RAM in pickle process and process piping overload
-        added_records = 0
-        for key, vals in ranker.ranking.items():
-            data_package[key] = vals
-            added_records += len(vals)
-            if added_records > 10000:
-                all_rankings.update(data_package)
-                data_package = {} 
-        if len(data_package) > 0: all_rankings.update(data_package) # Write buffered records not writed during loop execution
-
-
-def load_kernel(ranker, opts):
-    ranker.matrix = np.load(opts["kernel_file"])
-    if opts.get('normalize_matrix') is not None:
-        ranker.normalize_matrix(mode=opts["normalize_matrix"])
-    if opts.get('whitelist') is not None:
-        ranker.filter_matrix(opts["whitelist"])
-        ranker.clean_seeds()
-
-def sort_records_by_load(records):
-    recs = []
-    slices = int(chunk_size/2)
-    r = chunk_size % 2
-    while len(records) > 0:
-        recs.append(records.pop(0))
-        if len(records) > 0: recs.append(records.pop())
-    return recs
-
-def main_ranker(options):
-    # LOAD RANKER
-    ranker = Ranker()
-    if options.seed_presence == "remove": # TODO: Probably, this is not necessary right here but on worker_ranker
-        ranker.seed_presence = False
-    # LOAD SEEDS
-    ranker.load_nodes_from_file(options.input_nodes)
-    ranker.load_seeds(options.genes_seed, sep=options.seed_sep) # TODO: Add when 3 columns is needed for weigths
-    ranker.clean_seeds(options.minimum_size)
-    discarded_seeds = [ [seed_name, seed] for seed_name, seed in ranker.discarded_seeds.items()]
-    if discarded_seeds:
-        with open(options.output_name + "_discarded", "w") as f:
-            for seed_name, seed in discarded_seeds: f.write(f"{seed_name}\t{options.seed_sep.join(seed)}"+"\n")
-    
-    # DO PARALLEL RANKING
-    chunk_size = int(len(ranker.seeds)/options.threads)
-    seeds = list(ranker.seeds.items())
-    opts = vars(options)
-    lock = Lock()
-    if options.cross_validation and options.k_fold is None:
-        header = ["candidates", "score", "normalized_rank", "rank"]
-    else:
-        header = ["candidates", "score", "normalized_rank", "rank", "uniq_rank"]
-        
-    with Manager() as manager:
-        all_rankings = manager.dict()
-        processes = []
-        if options.threads > 1:
-            worker_threads = options.threads - 1
-            seeds.sort(reverse=True, key=lambda x: len(x[1]))
-            seeds = sort_records_by_load(seeds)
-        else:
-            worker_threads = options.threads 
-        for i in range(worker_threads):
-            length = len(seeds)
-            offset = length-chunk_size
-            records = seeds[offset:length]
-            seeds = seeds[0:offset]
-            if len(seeds) < chunk_size: records.extend(seeds) # There is no enough record for other chunk so we merge the remanent records t this chunk
-            records_weight = [ (record[0], ranker.weights.get(record[0])) for record in records ]
-            p = Process(target=worker_ranker, args=(records, records_weight, opts, ranker.nodes, all_rankings, lock))
-            processes.append(p)
-            p.start()
-        for p in processes: p.join() # first we have to start ALL the processes before ask to wait for their termination. For this reason, the join MUST be in an independent loop
-        ranker.ranking.update(all_rankings) # COPY RESULTS OUT OF THE MEMORY MAP MANAGER!!!
-        ranker.attributes["header"] = header
-
-    # WRITE RANKING
-    if options.seed_presence == "annotate": 
-        ranker.add_candidate_tag_types()
-
-    if options.top_n is not None:
-        if options.output_top is None:
-            ranker.ranking = ranker.get_top(options.top_n)
-        else:
-            ranker.write_ranking(options.output_top, add_header=options.header, top_n=options.top_n)
-
-    if options.filter is not None:
-        ranker.load_references(options.filter, sep=",")
-        if options.cross_validation and options.k_fold is not None:
-            ranker.get_seed_cross_validation(k_fold=options.k_fold)
-        ranker.ranking = ranker.get_filtered_ranks_by_reference()
-
-    if ranker.ranking:
-        ranker.write_ranking(f"{options.output_name}_all_candidates", add_header=options.header)
-
-
-def main_text2binary_matrix(options):
-    if options.input_file == '-':
-        source = sys.stdin
-    else:
-        source = open(options.input_file)
-
-    if options.input_type == 'bin':
-        matrix = np.load(options.input_file)
-    elif options.input_type == 'matrix':
-        matrix = load_matrix_file(source)
-    elif options.input_type == 'pair':
-        matrix, names = load_pair_file(source, options.byte_format)
-        with open(options.output_matrix_file + ".lst", 'w') as f:
-            f.write("\n".join(names))
-
-    source.close()
-
-    if options.set_diagonal:
-        elements = matrix.shape[-1]
-        for n in range(elements):
-            matrix[n, n] = 1.0
-
-    if options.binarize is not None and options.cutoff is None:
-        matrix = pxc.filter_cutoff_mat(matrix, options.binarize)
-        matrix = pxc.binarize_mat(matrix)
-
-    if options.cutoff is not None and options.binarize is None:
-        matrix = pxc.filter_cutoff_mat(matrix, options.cutoff)
-
-    if options.stats is not None:
-        stats = pxc.get_stats_from_matrix(matrix)
-        with open(options.stats, 'w') as f:
-            for row in stats:
-                f.write("\t".join([str(item) for item in row]) + "\n")
-
-    if options.output_type == 'bin':
-        np.save(options.output_matrix_file, matrix)
-    elif options.output_type == 'mat':
-        np.savetxt(options.output_matrix_file, matrix, delimiter='\t')
-
-# METHODS FOR NETANALYZER
-#########################
-
-def get_args(dsl_args):
-	"""return args, kwargs"""
-	args = []
-	kwargs = {}
-	for dsl_arg in dsl_args:
-		if '=' in dsl_arg:
-			k, v = dsl_arg.split('=', 1)
-			kwargs[k] = eval(v)
-		else:
-			args.append(eval(dsl_arg))
-	return args, kwargs
-
-def execute_dsl_script(net_obj, dsl_path):
-	with open(dsl_path, 'r') as file:
-		for line in file:
-			line = line.strip()
-			if not line or line[0] == '#': continue
-			command = line.split()
-			func = getattr(net_obj, command.pop(0))
-			args, kwargs = get_args(command)
-			func(*args, **kwargs)
-               
-# METHODS FOR RANDOMIZE CLUSTERING
-###################################
-
-def load_clusters(options):
-	clusters = {}
-	with open(options['input_file'], "r") as f:
-		for line in f:
-			line = line.rstrip().split(options['column_sep'])
-			cluster = line[options['cluster_index']]
-			node = line[options['node_index']]
-			if options.get('node_sep') != None: 
-				node = node.split(options['node_sep'])
-				clusters[cluster] = node
-			else:
-				query = clusters.get(cluster)
-				if query == None: 
-					clusters[cluster] = [node] 
-				else:
-					query.append(node)
-	return clusters
-
-def random_sample(nodes, replacement, all_sizes, seed):
-    random_clusters = {}
-    uniq_node_list = pxc.uniq(nodes)
-    random.seed(seed)
-    for counter, cluster_size in enumerate(all_sizes):
-        if cluster_size > len(uniq_node_list) and not replacement: sys.exit("Not enough nodes to generate clusters. Please activate replacement or change random mode") 
-        random_nodes = random.sample(uniq_node_list, cluster_size)
-        if not replacement: uniq_node_list = [n for n in uniq_node_list if n not in random_nodes]
-        random_clusters[f"{counter}_random"] = random_nodes
-    return random_clusters
-
-def write_clusters(clusters, output_file, sep): #2expcalc
-	with open(output_file, "w") as outfile:
-		for cluster, nodes in clusters.items():
-			if sep != None: nodes = [sep.join(nodes)]
-			for node in nodes:
-				outfile.write(f"{cluster}\t{node}\n")
-                        
-# METHODS FOR RANKER
-#####################
-
-def open_whitelist(file):
-  whitelist = []
-  with open(file, "r") as f:
-    for line in f:
-      node = line.strip()
-      whitelist.append(node)
-  return whitelist
-
-# METHODS FOR TEXT2BINARY
-#########################
-
-def load_matrix_file(source, splitChar = "\t"):
-	matrix = None
-	counter = 0
-	for line in source:
-		line = line.strip()
-		
-		row = [float(c) for c in line.split(splitChar)]
-		if matrix is None:
-			matrix = np.zeros((len(row), len(row)))
-		for i, val in enumerate(row):
-			matrix[counter, i] = val 	
-		counter += 1
-
-	return matrix
-
-def load_pair_file(source, byte_format = "float32"): 
-	# Not used byte_forma parameter
-	connections = {}
-	for line in source:
-		node_a, node_b, weight = line.strip().split("\t")
-		weight = float(weight) if weight is not None else 1.0 
-		pxc.add_nested_record(connections, node_a, node_b, weight)
-		pxc.add_nested_record(connections, node_b, node_a, weight)
-
-	matrix, names = dicti2wmatrix_squared(connections)
-	return matrix, names
-
-def dicti2wmatrix_squared(dicti,symm= True):
-	element_names = dicti.keys()
-	matrix = np.zeros((len(element_names), len(element_names)))
-	i = 0
-	for  elementA, relations in dicti.items():
-		for j, elementB in enumerate(element_names):
-			if elementA != elementB:
-				query = relations.get(elementB)
-				if query is not None:
-					matrix[i, j] = query
-					if symm:
-						matrix[j, i] = query 
-		i += 1
-	return matrix, element_names

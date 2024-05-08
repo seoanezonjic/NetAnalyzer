@@ -334,28 +334,28 @@ def test_text2binary_matrix(tmp_dir, ref_name, ref_output, args, matrix):
 ##########
 
 @pytest.mark.parametrize("ref_file, args, output2check, tag", [
-       ('ranker_by_seed_string_results', '-s A,B -k {kernel_file} -n {kernel_file}.lst -o {output_file}', '{output_file}', '_all_candidates'), # set seed from terminal
-       ('ranker_by_seed_file_results', '-s {seeds_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # seed from file
-       ('ranker_by_seed_file_nonseeded_results', '-s {seeds_file} --seed_presence remove -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # seed from file
-       ('ranker_by_seed_file_results_header', '-s {seeds_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file} --header','{output_file}', '_all_candidates'), # seed from file
-       ('ranker_by_seed_file_weighted_results', '-s {seeds_file_weighted} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # probando
-       ('ranker_by_seed_file_results_type_added', '-s {seeds_file} --seed_presence annotate -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # if candidates are in seeds or not
-       ('ranker_by_seed_file_results_type_added_header', '-s {seeds_file} --seed_presence annotate -k {kernel_file} -n {kernel_file}.lst -o {output_file} --header','{output_file}', '_all_candidates'), # seed from file
-       ('ranker_leave_one_out_by_seed_results_bigseed', '-s {bigseed} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # leave one out option
-       ('ranker_leave_one_out_by_seed_results', '-s {seeds_file} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # leave one out option
-       ('ranker_leave_one_out_by_seed_nonseed_results', '-s {seeds_file} -l --seed_presence remove -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # leave one out option
-       ('ranker_leave_one_out_by_seed_results_header', '-s {seeds_file} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file} --header','{output_file}', '_all_candidates'), # leave one out option
-       ('ranker_cross_validation_by_seed_results', '-s {seeds_file} -l -K 2 -k {kernel_file} -f {filter_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
-       ('ranker_cross_validation_all_by_seed_results', '-s {seeds_file} -l -K 2 -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
-       ('ranker_cross_validation_by_seed_results_bigseed', '-s {bigseed} -l -K 3 -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
-       ('ranker_cross_validation_by_seed_results_remove_seed', '-s {bigseed} -l -K 3 -k {kernel_file} --seed_presence remove -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
-       ('ranker_filter_results', '-s {seeds_file} -f {filter_file} -o {output_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Filter ranking to select genes to keep in output
-       ('ranker_whitelist_results', '-s {seeds_file} --whitelist {whitelist} -o {output_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Whitelist to filter in matrix
-       ('ranker_propagate_normalized', '-s {seeds_file} -p -N by_column -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Propagate with normalization by column
-       ('ranker_propagate_not_normalized', '-s {seeds_file} -p -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Propagate with no normalization
-       ('ranker_propagate_with_restart', "-s {seeds_file} -p --propagate_options 'tolerance':1e-5,'iteration_limit':100,'with_restart':0.7 -k {kernel_file} -n {kernel_file}.lst -o {output_file}", '{output_file}', '_all_candidates'), # Propagate with restart
-       ('ranker_top_results', "-s {seeds_file} --output_top {top_output} -t 2 -o {output_file} -k {kernel_file} -n {kernel_file}.lst", '{top_output}', ''), # Select top results
-       ('output_ranker', "-s JK,LL -o {output_file} -k {kernel_file} -n {kernel_file}.lst", '{output_file}', '_discarded') # Check the discarded seeds
+       ('ranker_by_seed_string_results', '--seed_nodes A,B -k {kernel_file} -n {kernel_file}.lst -o {output_file}', '{output_file}', '_all_candidates'), # set seed from terminal
+       ('ranker_by_seed_file_results', '--seed_nodes {seeds_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # seed from file
+       ('ranker_by_seed_file_nonseeded_results', '--seed_nodes {seeds_file} --seed_presence remove -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # seed from file
+       ('ranker_by_seed_file_results_header', '--seed_nodes {seeds_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file} --header','{output_file}', '_all_candidates'), # seed from file
+       ('ranker_by_seed_file_weighted_results', '--seed_nodes {seeds_file_weighted} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # probando
+       ('ranker_by_seed_file_results_type_added', '--seed_nodes {seeds_file} --seed_presence annotate -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # if candidates are in seeds or not
+       ('ranker_by_seed_file_results_type_added_header', '--seed_nodes {seeds_file} --seed_presence annotate -k {kernel_file} -n {kernel_file}.lst -o {output_file} --header','{output_file}', '_all_candidates'), # seed from file
+       ('ranker_leave_one_out_by_seed_results_bigseed', '--seed_nodes {bigseed} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # leave one out option
+       ('ranker_leave_one_out_by_seed_results', '--seed_nodes {seeds_file} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # leave one out option
+       ('ranker_leave_one_out_by_seed_nonseed_results', '--seed_nodes {seeds_file} -l --seed_presence remove -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # leave one out option
+       ('ranker_leave_one_out_by_seed_results_header', '--seed_nodes {seeds_file} -l -k {kernel_file} -n {kernel_file}.lst -o {output_file} --header','{output_file}', '_all_candidates'), # leave one out option
+       ('ranker_cross_validation_by_seed_results', '--seed_nodes {seeds_file} -l -K 2 -k {kernel_file} -f {filter_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
+       ('ranker_cross_validation_all_by_seed_results', '--seed_nodes {seeds_file} -l -K 2 -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
+       ('ranker_cross_validation_by_seed_results_bigseed', '--seed_nodes {bigseed} -l -K 3 -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
+       ('ranker_cross_validation_by_seed_results_remove_seed', '--seed_nodes {bigseed} -l -K 3 -k {kernel_file} --seed_presence remove -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Cross validation option
+       ('ranker_filter_results', '--seed_nodes {seeds_file} -f {filter_file} -o {output_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Filter ranking to select genes to keep in output
+       ('ranker_whitelist_results', '--seed_nodes {seeds_file} --whitelist {whitelist} -o {output_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Whitelist to filter in matrix
+       ('ranker_propagate_normalized', '--seed_nodes {seeds_file} -p -N by_column -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Propagate with normalization by column
+       ('ranker_propagate_not_normalized', '--seed_nodes {seeds_file} -p -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # Propagate with no normalization
+       ('ranker_propagate_with_restart', "--seed_nodes {seeds_file} -p --propagate_options 'tolerance':1e-5,'iteration_limit':100,'with_restart':0.7 -k {kernel_file} -n {kernel_file}.lst -o {output_file}", '{output_file}', '_all_candidates'), # Propagate with restart
+       ('ranker_top_results', "--seed_nodes {seeds_file} --output_top {top_output} -t 2 -o {output_file} -k {kernel_file} -n {kernel_file}.lst", '{top_output}', ''), # Select top results
+       ('output_ranker', "--seed_nodes JK,LL -o {output_file} -k {kernel_file} -n {kernel_file}.lst", '{output_file}', '_discarded') # Check the discarded seeds
     ])
 def test_ranker(tmp_dir, ref_file, args, output2check, tag):
     kernel_file = os.path.join(DATA_PATH, 'data_ranker', 'kernel_for_validating')
@@ -377,8 +377,8 @@ def test_ranker(tmp_dir, ref_file, args, output2check, tag):
 ###############
 
 @pytest.mark.parametrize("ref_file, output_file, args", [
-    ("int_mean", "outputfile_integration", "-i mean -t {kernel1}.npy;{kernel2}.npy -n {kernel1}.lst;{kernel2}.lst -o {output_file}"), # Integration for symmetric matrixes
-    ("int_mean_asym", "outputfile_integration", "--asym -i mean -t {asym_kernel1}.npy;{asym_kernel2}.npy -n {kernel1}.lst;{kernel2}.lst -o {output_file}") # INtegration for non symmetric matrixes
+    ("int_mean", "outputfile_integration", "-i mean -k {kernel1}.npy;{kernel2}.npy -n {kernel1}.lst;{kernel2}.lst -o {output_file}"), # Integration for symmetric matrixes
+    ("int_mean_asym", "outputfile_integration", "--asym -i mean -k {asym_kernel1}.npy;{asym_kernel2}.npy -n {kernel1}.lst;{kernel2}.lst -o {output_file}") # INtegration for non symmetric matrixes
 ])
 def test_integration(tmp_dir, ref_file, output_file, args):
     output_file = os.path.join(tmp_dir, output_file)

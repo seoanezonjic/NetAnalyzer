@@ -6,5 +6,6 @@ from NetAnalyzer.net_plotter import Net_plotter
 from NetAnalyzer.ranker import Ranker
 from NetAnalyzer.performancer import Performancer
 from NetAnalyzer.integration import Kernels
+from NetAnalyzer.main_modules import *
 from NetAnalyzer.cli_manager import *
 from NetAnalyzer.seed_parser import SeedParser

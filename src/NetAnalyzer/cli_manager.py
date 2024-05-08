@@ -301,7 +301,7 @@ def text2binary_matrix(args=None):
     opts = parser.parse_args(args)
     main_text2binary_matrix(opts)
 
-def net_explorer(args=None):
+def net_explorer(args=None, test=False):
     parser = argparse.ArgumentParser(description="Transforming matrix format and obtaining statistics")
     add_common_relations_process(parser) # Common relations options
     add_input_graph_flags(parser, multinet = True) # Input graph
@@ -315,5 +315,8 @@ def net_explorer(args=None):
     help="Defining the level of neighbourhood on the initial set of nodes")
     parser.add_argument("--plot_network_method", dest="plot_network_method", default="pyvis",
     help="Defining the plot method used on report")
+    parser.add_argument("--embedding_proj", dest="embedding_proj", default=None,
+    help="Select different projections methods: umap")
     opts = parser.parse_args(args)
-    main_net_explorer(opts)
+    to_test = main_net_explorer(opts, test)
+    if test: return to_test

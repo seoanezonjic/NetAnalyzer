@@ -1,4 +1,5 @@
 import sys
+import os
 import numpy as np
 import random
 import copy
@@ -10,10 +11,12 @@ from NetAnalyzer import Net_parser, NetAnalyzer
 from NetAnalyzer import Kernels
 from NetAnalyzer import Net_parser, NetAnalyzer
 from NetAnalyzer import Ranker
+from NetAnalyzer import Graph2sim
+from NetAnalyzer import Adv_mat_calc
 from NetAnalyzer.performancer import Performancer
 from NetAnalyzer.seed_parser import SeedParser
 
-def main_net_explorer(options):
+def main_net_explorer(options, test = False):
     # TODO: Los dic 
     # TODO: los layers
 
@@ -45,22 +48,26 @@ def main_net_explorer(options):
             seeds2subgraph[seed][net_id] = net.graph.subgraph(nodes_with_neigh)
 
     # # If mention, add node2vec coordinates with a tnse proyection.
-    net2umap = None
-    # net2umap = None
-    # if options["add_umap"]:
-    #     net2umap = {}
-    #     for net_id, net in multinet.items():
-    #         adj_mat, embedding_nodes, _ = net.matrices["adjacency_matrices"][("layer", "layer")] 
-    #         emb_coords = Graph2sim.get_embedding(adj_mat, embedding = "node2vec", embedding_nodes=embedding_nodes)
-    #         umap_coords = Adv_mat_calc.data2umap(emb_coords,  n_neighbors = 15, min_dist = 0.1, n_components = 2, metric = 'euclidean', random_seed = None)
-    #         net2umap[net_id] = [umap_coords, embedding_nodes]
+    net2embedding_proj = None
+    if options["embedding_proj"]:
+        net2embedding_proj = {}
+        for net_id, net in multinet.items():
+            adj_mat, embedding_nodes, _ = net.matrices["adjacency_matrices"][("layer", "layer")] 
+            emb_coords = Graph2sim.get_embedding(adj_mat, embedding = "node2vec", embedding_nodes=embedding_nodes)
+            umap_coords = Adv_mat_calc.data2umap(emb_coords,  n_neighbors = 15, min_dist = 0.1, n_components = 2, metric = 'euclidean', random_seed = None)
+            net2embedding_proj[net_id] = [umap_coords, embedding_nodes]
+            print("The umap coords")
+            print(umap_coords[0])
 
     # Execute the reports in the process.
     template = open(str(os.path.join(os.path.dirname(__file__), 'templates','net_explorer.txt'))).read()
-    container = {"seeds2explore": seeds2explore, "seeds2subgraph": seeds2subgraph, "net2umap": net2umap}
+    container = {"seeds2explore": seeds2explore, "seeds2subgraph": seeds2subgraph, "net2embedding_proj": net2embedding_proj}
+
     report = Py_report_html(container, 'Network explorer')
     report.build(template)
     report.write(options["output_file"]+".html")
+
+    if test: return container
 
 def get_neigh_set(net, nodes):
     neigh = set(nodes)

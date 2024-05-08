@@ -16,6 +16,7 @@ RANDOMIZE_NETWORK = os.path.join(INPUT_PATH, 'randomize_network')
 NETANALYZER = os.path.join(INPUT_PATH, 'netanalyzer')
 RANKER = os.path.join(INPUT_PATH, 'ranker')
 TEXT2BINARY_MATRIX = os.path.join(INPUT_PATH, 'text2binary_matrix')
+NET_EXPLORER = os.path.join(INPUT_PATH, 'net_explorer')
 
 
 @pytest.fixture(scope="session")
@@ -53,6 +54,10 @@ def randomize_clustering(lsargs):
 @capture_stdout
 def randomize_network(lsargs):
     return NetAnalyzer.randomize_network(lsargs)
+
+@capture_stdout
+def net_explorer(lsargs):
+    return NetAnalyzer.net_explorer(lsargs, True)
 
 @capture_stdout
 def netanalyzer(lsargs):
@@ -393,5 +398,29 @@ def test_integration(tmp_dir, ref_file, output_file, args):
     diff(ref_file + ".lst", output_file + ".lst")
 
 
+# Net explorer #
+################
 
-
+@pytest.mark.parametrize("args", [
+    ( "-i graphA,{net1}.npy;graphB,{net2}.npy -n graphA,{net1}.lst;graphB,{net2}.lst -N --neigh_level layerA,1;layerB,2 --seed_nodes {seeds} -o {output_file} --embedding_proj umap"), # Integration for symmetric matrixes
+])
+def test_net_explorer(tmp_dir, args):
+    output_file = os.path.join(tmp_dir, "output_file")
+    net1 = os.path.join(NET_EXPLORER, "net1")
+    net2 = os.path.join(NET_EXPLORER, "net2")
+    seeds = os.path.join(NET_EXPLORER, "seeds")
+    args = args.format(output_file=output_file, net1=net1, net2=net2, seeds=seeds).split(" ")
+    returned, printed = net_explorer(args)
+    assert {'seed': ['A', 'B', 'C']} == returned["seeds2explore"] 
+    returned_subgraph_A = returned["seeds2subgraph"]["seed"]["graphA"]
+    returned_subgraph_B = returned["seeds2subgraph"]["seed"]["graphB"]
+    assert list(returned_subgraph_B.nodes) == ['C', 'A']
+    assert list(returned_subgraph_A.nodes) == ['A', 'B', 'C']
+    assert list(returned_subgraph_B.edges) == []
+    assert list(returned_subgraph_A.edges) == [('A', 'C')]
+    returned_embedding_proj_A = returned["net2embedding_proj"]["graphA"]
+    returned_embedding_proj_B = returned["net2embedding_proj"]["graphB"]
+    assert returned_embedding_proj_A[0].shape == (5, 2)
+    assert returned_embedding_proj_A[1] == ['A', 'B', 'C', 'D', 'E']
+    assert returned_embedding_proj_B[0].shape == (4, 2)
+    assert returned_embedding_proj_B[1] == ['C', 'E', 'D', 'A']

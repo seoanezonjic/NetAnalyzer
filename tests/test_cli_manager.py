@@ -409,7 +409,7 @@ def test_net_explorer(tmp_dir, args):
     net1 = os.path.join(NET_EXPLORER, "net1")
     net2 = os.path.join(NET_EXPLORER, "net2")
     seeds = os.path.join(NET_EXPLORER, "seeds")
-    args = args.format(output_file="output_file", net1=net1, net2=net2, seeds=seeds).split(" ")
+    args = args.format(output_file=output_file, net1=net1, net2=net2, seeds=seeds).split(" ")
     returned, printed = net_explorer(args)
     print(printed)
     assert {'seed': ['A', 'B', 'C']} == returned["seeds2explore"] 

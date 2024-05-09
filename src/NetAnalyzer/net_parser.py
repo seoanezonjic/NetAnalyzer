@@ -1,4 +1,3 @@
-import sys
 import numpy
 from NetAnalyzer.netanalyzer import NetAnalyzer
 

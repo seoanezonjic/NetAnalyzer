@@ -15,14 +15,12 @@ from NetAnalyzer import Graph2sim
 from NetAnalyzer import Adv_mat_calc
 from NetAnalyzer.performancer import Performancer
 from NetAnalyzer.seed_parser import SeedParser
+import networkx as nx
 
 def main_net_explorer(options, test = False):
-    # TODO: Los dic 
-    # TODO: los layers
-
     # loading gene seeds.
     options = vars(options)
-    seeds2explore, _ = SeedParser.load_nodes_by_group(options["seed_nodes"], sep=options["seed_sep"])
+    if options["seed_nodes"]: seeds2explore, _ = SeedParser.load_nodes_by_group(options["seed_nodes"], sep=options["seed_sep"])
 
     # Loading multinet operations
     multinet = {}
@@ -37,15 +35,20 @@ def main_net_explorer(options, test = False):
         multinet[net_id].adjMat2netObj('layer','layer')
 
     # extract a subgraph for each
-    seeds2subgraph = {}
-    for seed, nodes in seeds2explore.items():
-        seeds2subgraph[seed] = {}
-        for net_id, net in multinet.items():
-            # get neighbor from node
-            nodes_with_neigh = set(nodes)
-            neigh_level = int(options["neigh_level"].get(net_id)) if options["neigh_level"].get(net_id) else 0
-            for i in range(0, neigh_level): nodes_with_neigh = get_neigh_set(net, nodes_with_neigh)
-            seeds2subgraph[seed][net_id] = net.graph.subgraph(nodes_with_neigh)
+    if options["seed_nodes"]:
+        seeds2subgraph = {}
+        seeds2lcc = {}
+        for seed, nodes in seeds2explore.items():
+            seeds2subgraph[seed] = {}
+            seeds2lcc[seed] = {}
+            for net_id, net in multinet.items():
+                # get neighbor from node
+                nodes_with_neigh = set(nodes)
+                neigh_level = int(options["neigh_level"].get(net_id)) if options["neigh_level"].get(net_id) else 0
+                for i in range(0, neigh_level): nodes_with_neigh = get_neigh_set(net, nodes_with_neigh)
+                seeds2subgraph[seed][net_id] = net.graph.subgraph(nodes_with_neigh)
+                largest_cc = len(max(nx.connected_components(seeds2subgraph[seed][net_id]), key=len))
+                seeds2lcc[seed][net_id] = largest_cc
 
     # # If mention, add node2vec coordinates with a tnse proyection.
     net2embedding_proj = None
@@ -56,12 +59,25 @@ def main_net_explorer(options, test = False):
             emb_coords = Graph2sim.get_embedding(adj_mat, embedding = "node2vec", embedding_nodes=embedding_nodes)
             umap_coords = Adv_mat_calc.data2umap(emb_coords,  n_neighbors = 15, min_dist = 0.1, n_components = 2, metric = 'euclidean', random_seed = None)
             net2embedding_proj[net_id] = [umap_coords, embedding_nodes]
-            print("The umap coords")
-            print(umap_coords[0])
+
+    # Comparing nets:
+    if options["compare_nets"]:
+        network_ids = list(options["input_file"].keys())
+        num_nets = len(network_ids)
+        sim_nets = np.zeros((num_nets,num_nets))
+        for i, net_i in enumerate(network_ids):
+            for j,net_j in enumerate(network_ids[i:len(network_ids)]):
+                edges_i = set(multinet[net_i].graph.edges)
+                edges_j = set(multinet[net_j].graph.edges)
+                sim_i_j = len(edges_i & edges_j) / min(len(edges_i), len(edges_j))
+                sim_nets[i,j+i] = sim_i_j
+                sim_nets[j+i,i] = sim_i_j
+        net_sims = [sim_nets, network_ids]
+                
 
     # Execute the reports in the process.
     template = open(str(os.path.join(os.path.dirname(__file__), 'templates','net_explorer.txt'))).read()
-    container = {"seeds2explore": seeds2explore, "seeds2subgraph": seeds2subgraph, "net2embedding_proj": net2embedding_proj}
+    container = {"seeds2explore": seeds2explore, "seeds2subgraph": seeds2subgraph, "seeds2lcc":seeds2lcc, "net2embedding_proj": net2embedding_proj, "net_sims": net_sims, "plot_method": options["plot_network_method"]}
 
     report = Py_report_html(container, 'Network explorer')
     report.build(template)

@@ -1,3 +1,47 @@
+<%
+    import pandas as pd
+    def plot_embdedding(data, plotter_list):
+        plotter_list["sns"].scatterplot(data=data[data['group_seed'] == 'background'], x='coord1', y='coord2', color='lightgrey', label='background', zorder=1)
+        plotter_list["sns"].scatterplot(data=df[df['group_seed'] != 'background'], x='coord1', y='coord2', hue='group_seed', palette='Set2', legend=True, zorder=2)
+    
+    node2seed = {}
+    for seed, nodes in plotter.hash_vars["seeds2explore"].items():
+        for node in nodes:
+            if not node2seed.get(node): node2seed[node] = seed
+%>
+
+## Seeds LCC.
+% if plotter.hash_vars.get("seeds2lcc"):
+${plotter.create_title("LCC by seed", id='net_study', hlevel=1, indexable=True, clickable=False)}
+<div style="overflow: hidden; display: flex; flex-direction: col; justify-content: center;">
+<%
+table_lcc = [["seed_name","net","lcc"]]
+for seed, net_lcc in plotter.hash_vars["seeds2lcc"].items():
+    for net, lcc in net_lcc.items():
+        table_lcc.append([seed, net, lcc])
+plotter.hash_vars["table_lcc"] = table_lcc
+%>
+${plotter.barplot(id='table_lcc', responsive= False, header=True,
+                         fields = [0,2],
+                         x_label = 'LCC size',
+                         height = '400px', width= '400px',
+                         var_attr = [0,1],
+                         config = {
+                                'showLegend' : True,
+                                'graphOrientation' : 'vertical',
+                                'colorBy' : 'seed_name',
+                                'setMinX': 0,
+                                "titleFontStyle": "italic",
+                                "titleScaleFontFactor": 0.7,
+                                "smpLabelScaleFontFactor": 1,
+                                "axisTickScaleFontFactor": 0.7,
+                                "smpLabelRotate": 45,
+                                "segregateSamplesBy": "net"
+                                })}
+</div>
+%endif
+## Seeds subgraphs.
+% if plotter.hash_vars.get("seeds2subgraph"):
 <% plotter.set_header() %>
 ${plotter.create_title("Network study on every group of genes", id='net_study', hlevel=1, indexable=True, clickable=False)}
 % for seed, net2subgraph in plotter.hash_vars["seeds2subgraph"].items():
@@ -6,6 +50,35 @@ ${plotter.create_title(f"Group of genes: {seed}", id='net_study', hlevel=2, inde
 ${plotter.create_title(f"<b>{net}</b>", id='net_study', hlevel=3, indexable=True, clickable=False)}
 <% key = net+"_"+seed
 plotter.hash_vars[key] = {"graph": subgraph, "layers": ["layer", "layer"], "reference_nodes": plotter.hash_vars["seeds2explore"][seed], "group_nodes": []}  %>
-${plotter.network(id = key, method = 'pyvis')} 
+${plotter.network(id = key, method = plotter.hash_vars["plot_method"])} 
 %endfor
 %endfor
+%endif
+
+% if plotter.hash_vars["net2embedding_proj"]:
+${plotter.create_title("Network embedding and projection", id='net_emb', hlevel=1, indexable=True, clickable=False)}
+% for graph, embedding in plotter.hash_vars["net2embedding_proj"].items():
+${plotter.create_title(f"embedding in {graph}", id=f"net_emb_{graph}", hlevel=2, indexable=True, clickable=False)}
+<% 
+coords, nodes = embedding 
+df = pd.DataFrame(coords, columns= ["coord1","coord2"])
+df = df.assign(group_seed=[node2seed[node] if node2seed.get(node) else "background" for node in nodes]) 
+plotter.hash_vars["net_proj"] = df
+%>
+${plotter.static_plot_main(id="net_proj", raw= True, plotting_function= lambda data, plotter_list: plot_embdedding(data, plotter_list))} 
+% endfor
+% endif
+
+## Net sims
+% if plotter.hash_vars.get("net_sims"):
+${plotter.create_title("Network similarity edge", id='net_edge', hlevel=1, indexable=True, clickable=False)}
+<%
+sim_nets, network_ids = plotter.hash_vars["net_sims"]
+table_sims = [["",*network_ids]]
+for i, net_id in enumerate(network_ids):
+    table_sims.append([net_id,*sim_nets[i,:].tolist()])
+print(table_sims)
+plotter.hash_vars["table_sims"] = table_sims
+%>
+${plotter.corplot(id = 'table_sims', header = True, row_names = True, correlationAxis = 'variables', config= {"correlationType":"circle"})}
+%endif

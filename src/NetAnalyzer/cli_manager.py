@@ -317,6 +317,7 @@ def net_explorer(args=None, test=False):
     help="Defining the plot method used on report")
     parser.add_argument("--embedding_proj", dest="embedding_proj", default=None,
     help="Select different projections methods: umap")
+    parser.add_argument("--compare_nets", dest="compare_nets", default=False, action="store_true")
     opts = parser.parse_args(args)
     to_test = main_net_explorer(opts, test)
     if test: return to_test

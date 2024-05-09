@@ -402,15 +402,16 @@ def test_integration(tmp_dir, ref_file, output_file, args):
 ################
 
 @pytest.mark.parametrize("args", [
-    ( "-i graphA,{net1}.npy;graphB,{net2}.npy -n graphA,{net1}.lst;graphB,{net2}.lst -N --neigh_level layerA,1;layerB,2 --seed_nodes {seeds} -o {output_file} --embedding_proj umap"), # Integration for symmetric matrixes
+    ( "-i graphA,{net1}.npy;graphB,{net2}.npy -n graphA,{net1}.lst;graphB,{net2}.lst -N --neigh_level layerA,1;layerB,2 --seed_nodes {seeds} -o {output_file} --embedding_proj umap --plot_network_method pyvis --compare_nets")
 ])
 def test_net_explorer(tmp_dir, args):
     output_file = os.path.join(tmp_dir, "output_file")
     net1 = os.path.join(NET_EXPLORER, "net1")
     net2 = os.path.join(NET_EXPLORER, "net2")
     seeds = os.path.join(NET_EXPLORER, "seeds")
-    args = args.format(output_file=output_file, net1=net1, net2=net2, seeds=seeds).split(" ")
+    args = args.format(output_file="output_file", net1=net1, net2=net2, seeds=seeds).split(" ")
     returned, printed = net_explorer(args)
+    print(printed)
     assert {'seed': ['A', 'B', 'C']} == returned["seeds2explore"] 
     returned_subgraph_A = returned["seeds2subgraph"]["seed"]["graphA"]
     returned_subgraph_B = returned["seeds2subgraph"]["seed"]["graphB"]

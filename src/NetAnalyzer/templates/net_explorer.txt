@@ -28,14 +28,12 @@ ${plotter.barplot(id='table_lcc', responsive= False, header=True,
                          var_attr = [0,1],
                          config = {
                                 'showLegend' : True,
-                                'graphOrientation' : 'vertical',
                                 'colorBy' : 'seed_name',
                                 'setMinX': 0,
                                 "titleFontStyle": "italic",
                                 "titleScaleFontFactor": 0.7,
                                 "smpLabelScaleFontFactor": 1,
                                 "axisTickScaleFontFactor": 0.7,
-                                "smpLabelRotate": 45,
                                 "segregateSamplesBy": "net"
                                 })}
 </div>
@@ -49,8 +47,10 @@ ${plotter.create_title(f"Group of genes: {seed}", id='net_study', hlevel=2, inde
 % for net, subgraph in net2subgraph.items():
 ${plotter.create_title(f"<b>{net}</b>", id='net_study', hlevel=3, indexable=True, clickable=False)}
 <% key = net+"_"+seed
-plotter.hash_vars[key] = {"graph": subgraph, "layers": ["layer", "layer"], "reference_nodes": plotter.hash_vars["seeds2explore"][seed], "group_nodes": []}  %>
-${plotter.network(id = key, method = plotter.hash_vars["plot_method"])} 
+plotter.hash_vars[key] = {"graph": subgraph, "layers": ["layer", "layer"], "reference_nodes": plotter.hash_vars["seeds2explore"][seed], "group_nodes": []}  
+layout = "forcedir" if plotter.hash_vars["plot_method"] == "elgrapho" else None
+%>
+${plotter.network(id = key, method = plotter.hash_vars["plot_method"], layout=layout)} 
 %endfor
 %endfor
 %endif
@@ -77,7 +77,6 @@ sim_nets, network_ids = plotter.hash_vars["net_sims"]
 table_sims = [["",*network_ids]]
 for i, net_id in enumerate(network_ids):
     table_sims.append([net_id,*sim_nets[i,:].tolist()])
-print(table_sims)
 plotter.hash_vars["table_sims"] = table_sims
 %>
 ${plotter.corplot(id = 'table_sims', header = True, row_names = True, correlationAxis = 'variables', config= {"correlationType":"circle"})}

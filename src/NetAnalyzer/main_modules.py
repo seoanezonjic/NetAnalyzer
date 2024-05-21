@@ -289,7 +289,7 @@ def worker_ranker(seed_groups, seed_weight, opts, nodes, all_rankings, lock):
     # DO RANKING
     propagate_options = eval('{' + opts["propagate_options"] +'}')
     ranker.do_ranking(cross_validation=opts.get("cross_validation"), propagate=opts["propagate"],
-                      k_fold=opts.get("k_fold"), options=propagate_options)
+                      k_fold=opts.get("k_fold"), metric = opts["representation_seed_metric"], options=propagate_options)
     with lock: # lock avoids that several processes write at same time in the dictionary
         data_package = {} # Create chunks of results to reduce using too much RAM in pickle process and process piping overload
         added_records = 0

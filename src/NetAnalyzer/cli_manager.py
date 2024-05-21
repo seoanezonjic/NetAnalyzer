@@ -271,6 +271,8 @@ def ranker(args=None):
     help="Top N genes to print in output")
     parser.add_argument("--output_top", dest="output_top", default=None,
     help="File to save Top N genes")
+    parser.add_argument("--representation_seed_metric", dest = "representation_seed_metric", default = "mean", 
+        help = "select the type of representation on seed, default mean, options: mean and max")
     # Resources
     add_resources_flags(parser=parser, default_opt={"threads": 1})
     opts = parser.parse_args(args)

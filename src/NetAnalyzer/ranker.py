@@ -144,7 +144,7 @@ class Ranker:
         self.reference_nodes = genes2predict
         self.weights = new_weights
 
-    def get_loo_ranking(self, seed_name, seed):
+    def get_loo_ranking(self, seed_name, seed, metric = "mean"):
          # Generate new seeds
          # Get matrix values
          cv = LeaveOneOut()
@@ -168,7 +168,12 @@ class Ranker:
             nodes2predict_names.append(self.nodes[node2predict])
          # recoger los valores correspondientes
          # Calcular los score
-         R = W @ self.matrix / (nrows - 1)
+         if metric == "mean":
+            R = W @ self.matrix / (nrows - 1)
+         elif metric == "max":
+            R = np.zeros(sel.matrix.shape)
+            for row in range(0,self.matrix.shape[0]):
+                R[row] = (W[row,:] * sefl.matrix).max(0)
          scores = R[range(0,nrows), nodes2predict_pos]
          # Calcular los members_below
          if self.seed_presence:
@@ -183,7 +188,7 @@ class Ranker:
          return list(zip(nodes2predict_names, scores, rank_percentage, members_below))
 
     ## Ranking by seed
-    def do_ranking(self, cross_validation=False, k_fold=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
+    def do_ranking(self, cross_validation=False, k_fold=None, propagate=False,  metric = "mean", options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         self.get_seed_indexes()
         self.translate2idx()
 
@@ -195,10 +200,10 @@ class Ranker:
             # The code in this block CANNOT modify nothing outside
             if cross_validation and k_fold is None:
                 self.attributes["header"] = ["candidates", "score", "normalized_rank", "rank"]
-                rank_list = self.get_loo_ranking(seed_name, seed)
+                rank_list = self.get_loo_ranking(seed_name, seed, metric=metric)
                 ranked_lists.append([seed_name, rank_list])
             else:
-                rank_list = self.rank_by_seed(seed, weights=self.weights.get(seed_name), propagate=propagate, options=options)  # Production mode
+                rank_list = self.rank_by_seed(seed, weights=self.weights.get(seed_name), propagate=propagate, metric = metric, options=options)  # Production mode
                 if cross_validation and k_fold is not None:
                     rank_list = self.delete_seed_from_rank(rank_list, [self.nodes[pos] for pos in self.seeds[seed_name]])
                 ranked_lists.append([seed_name, rank_list])
@@ -208,7 +213,7 @@ class Ranker:
 
         self.translate2names()
 
-    def rank_by_seed(self, seed, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
+    def rank_by_seed(self, seed, weights=None, propagate=False, metric = "mean", options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         ordered_gene_score = []
         genes_pos = seed
         number_of_all_nodes = len(self.nodes)
@@ -223,12 +228,12 @@ class Ranker:
 
         if number_of_seed_genes > 0:
             gen_list = self.update_seed(
-                genes_pos, genes_of_interest, weights=weights, propagate=propagate, options=options)
+                genes_pos, genes_of_interest, weights=weights, propagate=propagate, metric = metric, options=options)
             ordered_gene_score = pxc.get_rank_metrics(gen_list, ids=nodes)
 
         return ordered_gene_score
 
-    def update_seed(self, genes_pos, genes_of_interest, weights=None, propagate=False, options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
+    def update_seed(self, genes_pos, genes_of_interest, weights=None, propagate=False, metric = "mean", options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
         number_of_seed_genes = len(genes_pos)
         number_of_all_nodes = len(self.nodes)
 
@@ -243,12 +248,15 @@ class Ranker:
         else:
             subsets_gen_values = self.matrix[genes_pos,:][:,genes_of_interest]
 
-            if weights is not None:
-                integrated_gen_values = weights @ subsets_gen_values
-                gen_list = (1/weights.sum()) * integrated_gen_values
-            else:
-                integrated_gen_values = subsets_gen_values.sum(0)
-                gen_list = (1/number_of_seed_genes) * integrated_gen_values
+            if metric == "max":
+                gen_list = subsets_gen_values.max(0)
+            elif metric == "mean": 
+                if weights is not None:         
+                    integrated_gen_values = weights @ subsets_gen_values
+                    gen_list = (1/weights.sum()) * integrated_gen_values
+                else:
+                    integrated_gen_values = subsets_gen_values.sum(0)
+                    gen_list = (1/number_of_seed_genes) * integrated_gen_values
         return gen_list
 
     def propagate_seed(self, matrix, seed_attr, tol=1e-6, n=1000, restart_factor=0):

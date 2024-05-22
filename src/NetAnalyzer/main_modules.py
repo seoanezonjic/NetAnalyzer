@@ -233,7 +233,7 @@ def main_netanalyzer(options):
 
     # Comparing Group Families (Two by now)
     if options.compare_clusters_reference is not None:
-        res = fullNet.compare_partitions(options.compare_clusters_reference)
+        res = fullNet.compare_partitions(options.compare_clusters_reference, options.overlapping_communities)
         print(str(res.score))
 
     # Group Expansion
@@ -262,7 +262,7 @@ def main_randomize_clustering(options):
     if "size" in options['random_type'][0] and len(options['random_type']) == 1:
         all_sizes = [ len(nodes) for cluster_id, nodes in clusters.items() ]
     elif options['random_type'][0] == "fixed" and len(options['random_type']) == 3:
-        all_sizes = [int(options['random_type'][2])] * int(options['random_type'][2]) # cluster_size * n clusters
+        all_sizes = [int(options['random_type'][2])] * int(options['random_type'][1]) # cluster_size * n clusters
 
     random_clusters = random_sample(nodes, options['replacement'], all_sizes, options['seed']) 
     write_clusters(random_clusters, options['output_file'], options['aggregate_sep'])
@@ -474,12 +474,14 @@ def load_clusters(options):
 
 def random_sample(nodes, replacement, all_sizes, seed):
     random_clusters = {}
-    uniq_node_list = pxc.uniq(nodes)
+    #uniq_node_list = pxc.uniq(nodes)
+    node_list = copy.deepcopy(nodes)    
     random.seed(seed)
     for counter, cluster_size in enumerate(all_sizes):
-        if cluster_size > len(uniq_node_list) and not replacement: sys.exit("Not enough nodes to generate clusters. Please activate replacement or change random mode") 
-        random_nodes = random.sample(uniq_node_list, cluster_size)
-        if not replacement: uniq_node_list = [n for n in uniq_node_list if n not in random_nodes]
+        if cluster_size > len(node_list) and not replacement: sys.exit("Not enough nodes to generate clusters. Please activate replacement or change random mode") 
+        random_nodes = random.sample(node_list, cluster_size)
+        if not replacement: 
+            node_list = pxc.diff(node_list, random_nodes)
         random_clusters[f"{counter}_random"] = random_nodes
     return random_clusters
 

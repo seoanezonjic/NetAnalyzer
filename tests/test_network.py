@@ -567,7 +567,7 @@ class BaseNetTestCase(unittest.TestCase):
 		ref_com = {'com1_alt': com1_alt, 'com2_alt': com2_alt}
 		res = self.comunities_network.compare_partitions(ref_com)
 		returned = round(res.score,5)
-		expected = 0.37444
+		expected = 0.43254
 		self.assertEqual(expected, returned)
 	
 

@@ -1098,10 +1098,13 @@ class NetAnalyzer:
     # Evaluating comparison between partitions (EXTERNAL EVALUATION IN CDLIB)
     # Note: Partitions are non overlapped communities (Must be).
 
-    def compare_partitions(self, communities_ref):
-        communities = self.get_communities_as_cdlibObj(self.group_nodes)
-        ref_communities = self.get_communities_as_cdlibObj(communities_ref)
-        res = evaluation.adjusted_mutual_information(ref_communities,communities) # This could be easily extended
+    def compare_partitions(self, communities_ref, overlaping=False):
+        communities = self.get_communities_as_cdlibObj(self.group_nodes,overlaping=overlaping)
+        ref_communities = self.get_communities_as_cdlibObj(communities_ref, overlaping=overlaping)
+        if overlaping:
+            res = evaluation.overlapping_normalized_mutual_information_MGH(ref_communities,communities) 
+        else:
+            res = evaluation.normalized_mutual_information(ref_communities,communities)
         return(res)
 
     # TODO: Add ranker evalutation for set of clusterings (This is told to be added in a posterior expansion phase of lib)

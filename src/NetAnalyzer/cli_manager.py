@@ -166,6 +166,8 @@ def netanalyzer(args=None):
     parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lambda x: single_split(x, sep=";"),
     help="Remove nodes from file. If PATH;r then nodes not included in file are removed")
     # Compare cluster
+    parser.add_argument("--overlapping_communities", dest ="overlapping_communities", default=False, action="store_true",
+        help=" This is needed to activate overlapping sensitive operations in communities analysis")
     parser.add_argument("-R","--compare_clusters_reference", dest="compare_clusters_reference", default=None, type= group_nodes_parse,
     help="File path or groups separated by ';' and group node ids comma separared")
     # Build cluster

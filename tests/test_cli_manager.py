@@ -294,7 +294,14 @@ def test_randomize(tmp_dir):
     input_file = os.path.join(DATA_PATH, "bipartite_network_for_validating.txt")
     output_file = os.path.join(tmp_dir, "random_clusters.txt")
     ref_file = os.path.join(RANDOMIZE_CLUSTERING, "random_clusters.txt")
-    args=f"-i {input_file} -o {output_file} -r fixed:5:2".split(" ")
+    args=f"-i {input_file} -o {output_file} -r custom:3:3:nr".split(" ")
+    _, printed = randomize_clustering(args)
+    diff(ref_file, output_file)
+
+    input_file = os.path.join(DATA_PATH, "minicluster")
+    output_file = os.path.join(tmp_dir, "random_clusters.txt")
+    ref_file = os.path.join(RANDOMIZE_CLUSTERING, "random_minicluster.txt")
+    args=f"-i {input_file} -o {output_file} -r hard_fixed --seed 111".split(" ")
     _, printed = randomize_clustering(args)
     diff(ref_file, output_file)
 
@@ -374,7 +381,6 @@ def test_ranker(tmp_dir, ref_file, args, output2check, tag):
     args = args.format(kernel_file=kernel_file, output_file=output_file, seeds_file=seeds_file, filter_file=filter_file, bigseed=bigseed,whitelist=whitelist, top_output=top_output,seeds_file_weighted=seeds_file_weighted).split(" ")
     ref_file = os.path.join(RANKER, ref_file)
     _, printed = ranker(args)
-    print(printed)
     diff(output2check.format(output_file=output_file,top_output=top_output)+tag, ref_file+tag)
 
 
@@ -411,7 +417,6 @@ def test_net_explorer(tmp_dir, args):
     seeds = os.path.join(NET_EXPLORER, "seeds")
     args = args.format(output_file=output_file, net1=net1, net2=net2, seeds=seeds).split(" ")
     returned, printed = net_explorer(args)
-    print(printed)
     assert {'seed': ['A', 'B', 'C']} == returned["seeds2explore"] 
     returned_subgraph_A = returned["seeds2subgraph"]["seed"]["graphA"]
     returned_subgraph_B = returned["seeds2subgraph"]["seed"]["graphB"]

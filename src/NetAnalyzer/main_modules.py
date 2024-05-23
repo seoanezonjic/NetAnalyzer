@@ -254,17 +254,52 @@ def main_netanalyzer(options):
 
 def main_randomize_clustering(options):
     options = vars(options)
-    clusters = load_clusters(options)
+    if options["seed"]: random.seed(options["seed"])
+    cluster2nodes = load_clusters(options)
+    random_clusters = {}
+    # Reverse should go to expcalc
+    node2clusters = {}
+    for cluster, nodes in cluster2nodes.items():
+        for node in nodes:
+            if not node2clusters.get(node):
+                node2clusters[node] = [cluster]
+            else:
+                node2clusters[node].append(cluster) 
+    if options["random_type"][0] == "hard_fixed" or options["random_type"] == "soft_fixed":
+        # Setting universe com and exiled:
+        cluster_universe = list(cluster2nodes.keys())
+        for node, clusters in node2clusters.items():
+            if options["random_type"][0] == "hard_fixed":
+                number_clust = len(clusters)
+            elif options["random_type"][1] == "soft_fixed":
+                u_size = len(cluster_universe)
+                k = len(pxc.intersection(clusters,cluster_universe))
+                p = k/u_size
+                number_clust = random.binomial(u_size, p) 
+            for clust in random.sample(cluster_universe,number_clust):
+                if random_clusters.get(clust):
+                    random_clusters[clust].append(node)
+                else:
+                    random_clusters[clust] = [node]
+                if len(random_clusters[clust]) == len(cluster2nodes[clust]): cluster_universe.remove(clust)
+    elif options["random_type"][0] == "not_fixed":
+        all_nodes = [ n for cl in cluster2nodes.values() for n in cl ] 
+        uniq_nodes = pxc.uniq(all_nodes)
+        if len(uniq_nodes) < len(all_nodes):
+            for cluster, nodes in cluster2nodes.items():
+                random_clusters[cluster] = random.sample(uniq_nodes, len(nodes))
+        else:
+            random.shuffle(all_nodes)
+            i = 0
+            for cluster, nodes in cluster2nodes:
+                random_clusters[cluster] = all_nodes[i, i+len(nodes)]
+                i += len(nodes)
+    else:
+        # Hacemos el procedimiento que se seguia con anterioridad r/nr
+        all_sizes = [int(options['random_type'][2])] * int(options['random_type'][1])
+        all_nodes = list(node2clusters.keys())
+        random_clusters = random_sample(all_nodes, options['random_type'][3] == "r", all_sizes, options['seed']) 
 
-    nodes = [ n for cl in clusters.values() for n in cl ] # Get list of nodes
-    if options['random_type'][0] != "full_size": nodes = pxc.uniq(nodes)
-
-    if "size" in options['random_type'][0] and len(options['random_type']) == 1:
-        all_sizes = [ len(nodes) for cluster_id, nodes in clusters.items() ]
-    elif options['random_type'][0] == "fixed" and len(options['random_type']) == 3:
-        all_sizes = [int(options['random_type'][2])] * int(options['random_type'][1]) # cluster_size * n clusters
-
-    random_clusters = random_sample(nodes, options['replacement'], all_sizes, options['seed']) 
     write_clusters(random_clusters, options['output_file'], options['aggregate_sep'])
      
 
@@ -474,8 +509,7 @@ def load_clusters(options):
 
 def random_sample(nodes, replacement, all_sizes, seed):
     random_clusters = {}
-    #uniq_node_list = pxc.uniq(nodes)
-    node_list = copy.deepcopy(nodes)    
+    node_list = copy.deepcopy(nodes)  
     random.seed(seed)
     for counter, cluster_size in enumerate(all_sizes):
         if cluster_size > len(node_list) and not replacement: sys.exit("Not enough nodes to generate clusters. Please activate replacement or change random mode") 

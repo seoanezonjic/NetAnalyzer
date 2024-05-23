@@ -220,13 +220,14 @@ def randomize_clustering(args=None):
     parser.add_argument("-s", "--node_sep", dest="node_sep", default = None, 
     help="Node split character. This option must to be used when input file is aggregated")
     # random conf
-    parser.add_argument("-r", "--random_type", dest="random_type", default = ["size"], type = lambda x: single_split(x,sep=":"), 
-    help="""Indicate random mode. 'size' for radomize clusters with the same size as input clusters.
-     'full_size' same as 'size' but all nodes are repaeted as same as input. 'fixed:n:s' for generate 'n' clusters of 's' nodes. Default = 'size'""")
-    parser.add_argument("-R", "--replacement", dest="replacement", default=False, action='store_true',
-    help="Boolean. Activates ramdom sampling with replacement. Sampling witout replacement will be executed instead.")  
+    parser.add_argument("-r", "--random_type", dest="random_type", default = ["hard_fixed"], type = lambda x: single_split(x,sep=":"), 
+    help="""Indicate random mode. First, the not custom randomization, where cluster size is the same: 
+    'hard_fixed' (fixing the number of communities a node belongs), 
+    'soft_fixed' (soft finxing the number of communities a node belongs by binomial model), 
+    'not_fixed' (just a sampling with replacement). 
+    Secondly, the custom size can be used with the format 'custom:n:s:r|nr' for generate 'n' clusters of 's' nodes and
+     r|nr for replacement or not, respectively. Default = 'hard_fixed'""")
     add_random_seed(parser,  default_seed=123)
-
     opts = parser.parse_args(args)
     main_randomize_clustering(opts)
 

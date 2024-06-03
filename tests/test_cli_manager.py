@@ -273,7 +273,7 @@ def test_communities(tmp_dir):
     group_reference_file = os.path.join(NETANALYZER, "clustering","rber_pots_discovered_clusters.txt")
     args=f"-i {input_file} -G {group_file} -R {group_reference_file} -f pair -l genes".split(" ")
     _, printed = netanalyzer(args)
-    assert 0.647 == round(float(printed.split("\n")[-2]),3)
+    assert 0.647 == round(float(printed.split("\n")[-2].split("\t")[1]),3)
     # Group expansion
     output_file = os.path.join(tmp_dir, "expand_clusters.txt")
     ref_file = os.path.join(NETANALYZER, "clustering", "expand_clusters.txt")

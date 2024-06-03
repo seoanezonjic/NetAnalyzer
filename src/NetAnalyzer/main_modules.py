@@ -233,8 +233,11 @@ def main_netanalyzer(options):
 
     # Comparing Group Families (Two by now)
     if options.compare_clusters_reference is not None:
-        res = fullNet.compare_partitions(options.compare_clusters_reference, options.overlapping_communities)
-        print(str(res.score))
+        fullNet.group_reference = options.compare_clusters_reference
+        fullNet.join_clusters(options.compare_clusters_join)
+        results = fullNet.compare_partitions(options.overlapping_communities)
+        for metric_name, metric_value in results.items():
+            print(f"{metric_name}\t{metric_value}")
 
     # Group Expansion
     if options.expand_clusters is not None:

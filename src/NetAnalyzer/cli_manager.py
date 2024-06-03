@@ -128,8 +128,8 @@ def netanalyzer(args=None):
     add_input_graph_flags(parser)
     add_output_flags(parser, default_opt={"output_file": "output_file"})
     add_random_seed(parser, default_seed=None)
-    parser.add_argument("-O", "--ontology", dest="ontologies", default=[], type=lambda x: double_split(x, sep1=";",sep2=":"),
-                        help="String that define which ontologies must be used with each layer. String definition:'layer_name1:path_to_obo_file1;layer_name2:path_to_obo_file2'")
+    parser.add_argument("-O", "--ontology", dest="ontologies", default=[], type=lambda x: double_split(x, sep1=";",sep2=","),
+                        help="String that define which ontologies must be used with each layer. String definition:'layer_name1,path_to_obo_file1;layer_name2,path_to_obo_file2'")
     # Assoc
     parser.add_argument("-P","--use_pairs", dest="use_pairs", default='conn',
     help="Which pairs must be computed. 'all' means all posible pair node combinations and 'conn' means the pair are truly connected in the network. Default 'conn' ")
@@ -170,6 +170,8 @@ def netanalyzer(args=None):
         help=" This is needed to activate overlapping sensitive operations in communities analysis")
     parser.add_argument("-R","--compare_clusters_reference", dest="compare_clusters_reference", default=None, type= group_nodes_parse,
     help="File path or groups separated by ';' and group node ids comma separared")
+    parser.add_argument("--compare_clusters_join", dest="compare_clusters_join", default=None, 
+        help="Join strategy on comparing two types of clusters: union")
     # Build cluster
     parser.add_argument("-b", "--build_clusters_alg", dest="build_cluster_alg", default=None,
     help="Type of cluster algorithm")
@@ -191,7 +193,7 @@ def netanalyzer(args=None):
     parser.add_argument("--output_summarized_metrics", dest="output_summarized_metrics", default='group_metrics_summarized.txt', help= "output name for summarized metrics file")
     # Graph metrics by net or node
     parser.add_argument("-A", "--attributes", dest="get_attributes", default=[], type =lambda x: single_split(x, sep=","),
-    help="String separated by commas with the name of network attribute")
+    help="String separated by commas with the name of node attribute")
     parser.add_argument("--graph_attributes", dest="get_graph_attributes", default=[], type =lambda x: single_split(x, sep=","),
     help="String separated by commas with the name of network attribute")
     parser.add_argument("--attributes_summarize", dest="attributes_summarize", default= False, action = "store_true", help="If the attribtes needs to be obtained summarized") 

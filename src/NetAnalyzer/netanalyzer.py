@@ -41,6 +41,7 @@ class NetAnalyzer:
          }
         self.embedding_coords = {} 
         self.group_nodes = {} # Communities are lists {community_id : [Node1, Node2,...]}
+        self.group_reference = {}
         self.reference_nodes = []
         self.loaded_obos = []
         self.ontologies = []
@@ -111,7 +112,6 @@ class NetAnalyzer:
                     #print("Group id: " + str(group_id) + " with member not in network:" + str(node), file=sys.stderr)
                     logging.warning("Group id: " + str(group_id) + " with member not in network: " + str(node))
 
-    
 
     def generate_adjacency_matrix(self, layerA, layerB): 
         layerAidNodes = [ node[0] for node in self.graph.nodes('layer') if node[1] == layerA] 
@@ -1096,16 +1096,30 @@ class NetAnalyzer:
             header.append(metric)
 
     # Evaluating comparison between partitions (EXTERNAL EVALUATION IN CDLIB)
-    # Note: Partitions are non overlapped communities (Must be).
 
-    def compare_partitions(self, communities_ref, overlaping=False):
+    def join_clusters(self, join_strategy):
+        membersG = set([node for nodes in self.group_nodes.values() for node in nodes])
+        membersR = set([node for nodes in self.group_reference.values() for node in nodes])
+
+        if join_strategy == "union":
+            members = membersG | membersR
+            for i, member in enumerate(members - membersR):
+                self.group_reference[f"single_added_ref_{i}"] = [member]
+            for i, member in enumerate(members - membersG):
+                self.group_nodes[f"single_added_group_{i}"] = [member]
+
+    def compare_partitions(self, overlaping=False):
         communities = self.get_communities_as_cdlibObj(self.group_nodes,overlaping=overlaping)
-        ref_communities = self.get_communities_as_cdlibObj(communities_ref, overlaping=overlaping)
+        ref_communities = self.get_communities_as_cdlibObj(self.group_reference, overlaping=overlaping)
+        res = {}
         if overlaping:
-            res = evaluation.overlapping_normalized_mutual_information_MGH(ref_communities,communities) 
+            res["mutual_information_MGH"] = evaluation.overlapping_normalized_mutual_information_MGH(ref_communities,communities).score
+            res["mutual_information_LFK"] = evaluation.overlapping_normalized_mutual_information_LFK(ref_communities,communities).score
+            res["omega"] = evaluation.omega(ref_communities,communities).score
+            res["overlap_quality"] = evaluation.overlap_quality(ref_communities,communities).score
         else:
-            res = evaluation.normalized_mutual_information(ref_communities,communities)
-        return(res)
+            res["mutual_information"] = evaluation.normalized_mutual_information(ref_communities,communities).score
+        return res
 
     # TODO: Add ranker evalutation for set of clusterings (This is told to be added in a posterior expansion phase of lib)
 
@@ -1121,7 +1135,7 @@ class NetAnalyzer:
         for id, com in self.group_nodes.items():
             if expand_method == 'sht_path':
                 new_nodes = set(com) 
-                #Community nodes are included in the set above and then this set is expanded with shortest path nodes
+                # Community nodes are included in the set above and then this set is expanded with shortest path nodes
                 # between community nodes and assigned as the new cluster nodes list, otherwise updating the current list 
                 # could potentially add original community nodes again if they are found in the shortest path between other community nodes. 
                 sht_paths = []
@@ -1138,7 +1152,7 @@ class NetAnalyzer:
                 for node_pair_sht_paths in sht_paths:
                     for path in node_pair_sht_paths:
                         new_nodes = new_nodes.union(set(path))
-                self.group_nodes[id] = new_nodes #Originally it was modified inplace with "com.add_nodes_from(list(new_nodes))" because "com" were networkx objects
+                self.group_nodes[id] = new_nodes # Originally it was modified inplace with "com.add_nodes_from(list(new_nodes))" because "com" were networkx objects
                 clusters[id] = new_nodes
         return clusters
 

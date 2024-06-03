@@ -565,8 +565,9 @@ class BaseNetTestCase(unittest.TestCase):
 		com1_alt = [node for node in self.comunities_network.graph.nodes if node in "ABDF"]		
 		com2_alt = [node for node in self.comunities_network.graph.nodes if node in "ZLCENM"]
 		ref_com = {'com1_alt': com1_alt, 'com2_alt': com2_alt}
-		res = self.comunities_network.compare_partitions(ref_com)
-		returned = round(res.score,5)
+		self.comunities_network.group_reference = ref_com
+		res = self.comunities_network.compare_partitions()
+		returned = round(res["mutual_information"],5)
 		expected = 0.43254
 		self.assertEqual(expected, returned)
 	

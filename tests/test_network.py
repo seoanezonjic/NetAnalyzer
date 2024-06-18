@@ -540,11 +540,30 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertListEqual(expected_rows, row_value)
 		# Checking disparity filter.
 		operation = "filter_disparity"
-		options = {"pval_threshold": 0.4}
-		expected = [[0., 7.],
-					[7., 0.]]
-		expected_rows = ['M3', 'M1']
-		expected_cols = ['M3', 'M1']
+		options = {"pval_threshold": 0.3}
+		mat_keys = ("adjacency_matrices", ("new","new"))
+		expected = [[0., 0, 7, 0],
+					[0, 0, 0, 7],
+					[7, 0, 0, 0],
+					[0, 7, 0, 0]]
+		expected_rows = ['M1', 'M2','M3', 'M4']
+		expected_cols = ['M1', 'M2','M3', 'M4']
+		self.monopartite_network_weights.matrices["adjacency_matrices"][("new","new")] = [np.array([[0,3,7,0],[3,0,2,7],[7,2,0,1],[0,7,1,0]]),["M1","M2","M3","M4"],["M1","M2","M3","M4"]]
+		
+		test_value, row_value, col_value = self.monopartite_network_weights.filter_matrix(mat_keys, operation, options)
+		self.assertEqual(expected, test_value.round(6).tolist())
+		self.assertListEqual(expected_cols, col_value)
+		self.assertListEqual(expected_rows, row_value)
+
+		# Checking disparity filter.
+		operation = "filter_disparity"
+		options = {"pval_threshold": 0.3}
+		mat_keys = ("adjacency_matrices", ("new","new"))
+		expected = [[0, 2, 7], [2, 0, 0], [7, 0, 0]]
+		expected_rows = ['M2','M3', 'M4']
+		expected_cols = ['M2','M3', 'M4'] 
+		self.monopartite_network_weights.matrices["adjacency_matrices"][("new","new")] = [np.array([[0,1,1,0],[1,0,2,7],[1,2,0,1],[0,7,1,0]]),["M1","M2","M3","M4"],["M1","M2","M3","M4"]]
+		
 		test_value, row_value, col_value = self.monopartite_network_weights.filter_matrix(mat_keys, operation, options)
 		self.assertEqual(expected, test_value.round(6).tolist())
 		self.assertListEqual(expected_cols, col_value)

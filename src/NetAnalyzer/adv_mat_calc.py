@@ -60,10 +60,13 @@ class Adv_mat_calc:
 	@staticmethod
 	def disparity_filter_mat(matrix, rowIds, colIds, pval_threshold = 0.05): #2exp?
 	    pval_mat = Adv_mat_calc.get_disparity_backbone_pval(matrix)
+	    print(pval_mat)
 	    # Create edge list from that p value matrix
 	    result_mat = pval_mat < pval_threshold
 	    # adjacency matrix, obtained when p[i,j] OR p[j,i] match the criteria
 	    new_adj = result_mat.transpose() + result_mat
+	    print(new_adj)
+	    matrix[~new_adj] = 0
 
 	    # remove genes with no significance
 	    k = np.sum(new_adj, axis=0)
@@ -91,12 +94,13 @@ class Adv_mat_calc:
 
 	@staticmethod
 	def get_disparity_backbone_pval(matrix): #2exp?
-	    # by the moment, implementetion square (?)
-	    # TODO: Add a warning when not square matrix.
-	    pval_mat = matrix.copy()
-	    W = np.sum(pval_mat, axis=0)
-	    k = (pval_mat > 0).sum(0)
-	    # operacion vectorizada.
-	    for i in range(0,pval_mat.shape[1]):
-	        pval_mat[:,i] = (1-(matrix[:,i]/W[i]))**(k[i]-1)
-	    return pval_mat
+		# by the moment, implementetion square (?)
+		# TODO: Add a warning when not square matrix.
+		pval_mat = matrix
+		W = np.sum(pval_mat, axis=0) 
+		k = (pval_mat > 0).sum(0) 
+		# operacion vectorizada.
+		pval_mat = np.ones(matrix.shape)
+		for i in range(0,pval_mat.shape[1]):
+			pval_mat[:,i] = (1-(matrix[:,i]/W[i]))**(k[i]-1)
+		return pval_mat

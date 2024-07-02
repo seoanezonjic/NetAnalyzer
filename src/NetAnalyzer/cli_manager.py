@@ -276,6 +276,7 @@ def ranker(args=None):
     help="Top N genes to print in output")
     parser.add_argument("--output_top", dest="output_top", default=None,
     help="File to save Top N genes")
+    parser.add_argument("--add_tags", dest="add_tags", default=None, help="Adding node attribute by seed: format seed\\tnode\\tattr")
     parser.add_argument("--representation_seed_metric", dest = "representation_seed_metric", default = "mean", 
         help = "select the type of representation on seed, default mean, options: mean and max")
     # Resources

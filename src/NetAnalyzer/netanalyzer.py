@@ -511,8 +511,8 @@ class NetAnalyzer:
         node_rels = {}
 
         for node1, node2, assoc_index in pcc_relations:
-            pxc.add_nested_record(pcc_vals, node1, node2, np.abs(assoc_index))
-            pxc.add_nested_record(pcc_vals, node2, node1, np.abs(assoc_index))
+            pxc.add_nested_value(pcc_vals, (node1, node2), np.abs(assoc_index))
+            pxc.add_nested_value(pcc_vals, (node2, node1), np.abs(assoc_index))
             pxc.add_record(node_rels, node1, node2)
             pxc.add_record(node_rels, node2, node1)
         

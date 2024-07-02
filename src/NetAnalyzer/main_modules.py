@@ -420,9 +420,12 @@ def main_ranker(options):
             ranker.get_seed_cross_validation(k_fold=options.k_fold)
         ranker.ranking = ranker.get_filtered_ranks_by_reference()
 
+    if options.add_tags is not None:
+        tags = load_tags(add_tags)
+        ranker.ranking = pxc.add_tags(ranker.ranking, tag_file, (0,5), default_tag = False)
+
     if ranker.ranking:
         ranker.write_ranking(f"{options.output_file}_all_candidates", add_header=options.header)
-
 
 def main_text2binary_matrix(options):
     if options.input_file == '-':
@@ -540,6 +543,13 @@ def open_whitelist(file):
       whitelist.append(node)
   return whitelist
 
+def load_tags(file):
+    tags = {}
+    with open(file, "r") as f:
+        for line in f:
+            pxc.add_nested_value(tags, (line[0],line[1]), line[2])
+    return tags
+
 # METHODS FOR TEXT2BINARY
 #########################
 
@@ -564,8 +574,8 @@ def load_pair_file(source, byte_format = "float32"):
     for line in source:
         node_a, node_b, weight = line.strip().split("\t")
         weight = float(weight) if weight is not None else 1.0 
-        pxc.add_nested_record(connections, node_a, node_b, weight)
-        pxc.add_nested_record(connections, node_b, node_a, weight)
+        pxc.add_nested_value(connections, (node_a, node_b), weight)
+        pxc.add_nested_value(connections, (node_b, node_a), weight)
 
     matrix, names = dicti2wmatrix_squared(connections)
     return matrix, names

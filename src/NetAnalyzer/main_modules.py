@@ -421,8 +421,16 @@ def main_ranker(options):
         ranker.ranking = ranker.get_filtered_ranks_by_reference()
 
     if options.add_tags is not None:
-        tags = load_tags(add_tags)
-        ranker.ranking = pxc.add_tags(ranker.ranking, tag_file, (0,5), default_tag = False)
+        tags = load_tags(options.add_tags)
+        if options.cross_validation:
+            for seed, nodes in ranker.seeds.keys():
+                tags[seed] = tags[seed.split("_")[0]]
+        seed_col = len(ranker.attributes["header"]) -1
+        print(tags)
+        print(ranker.ranking)
+        for seed, ranking_by_seed in ranker.ranking.items():
+            ranker.ranking[seed] = pxc.add_tags(ranking_by_seed, tags[seed], (0,), default_tag = False)
+        print(ranker.ranking)
 
     if ranker.ranking:
         ranker.write_ranking(f"{options.output_file}_all_candidates", add_header=options.header)
@@ -547,6 +555,7 @@ def load_tags(file):
     tags = {}
     with open(file, "r") as f:
         for line in f:
+            line = line.strip().split("\t")
             pxc.add_nested_value(tags, (line[0],line[1]), line[2])
     return tags
 

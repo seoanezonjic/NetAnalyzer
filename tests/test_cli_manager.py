@@ -347,7 +347,8 @@ def test_text2binary_matrix(tmp_dir, ref_name, ref_output, args, matrix):
 
 @pytest.mark.parametrize("ref_file, args, output2check, tag", [
        ('ranker_by_seed_string_results', '--seed_nodes A,B -k {kernel_file} -n {kernel_file}.lst -o {output_file}', '{output_file}', '_all_candidates'), # set seed from terminal
-       ('ranker_by_seed_file_results', '--seed_nodes {seeds_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # seed from file
+       ('ranker_by_seed_file_results', '--seed_nodes {seeds_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # seed from file,
+       ('ranker_by_seed_file_results_tagged', '--seed_nodes {seeds_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file} --add_tags {tagged_file}','{output_file}', '_all_candidates'), # seed from file
        ('ranker_by_seed_file_nonseeded_results', '--seed_nodes {seeds_file} --seed_presence remove -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # seed from file
        ('ranker_by_seed_file_results_header', '--seed_nodes {seeds_file} -k {kernel_file} -n {kernel_file}.lst -o {output_file} --header','{output_file}', '_all_candidates'), # seed from file
        ('ranker_by_seed_file_weighted_results', '--seed_nodes {seeds_file_weighted} -k {kernel_file} -n {kernel_file}.lst -o {output_file}','{output_file}', '_all_candidates'), # probando
@@ -373,14 +374,16 @@ def test_ranker(tmp_dir, ref_file, args, output2check, tag):
     kernel_file = os.path.join(DATA_PATH, 'data_ranker', 'kernel_for_validating')
     output_file = os.path.join(tmp_dir, "output_ranker")
     seeds_file= os.path.join(DATA_PATH, 'data_ranker', 'seed_genes_for_validating_withNotInkernels')
+    tagged_file = os.path.join(DATA_PATH, 'data_ranker', 'tagged_file')
     bigseed = os.path.join(DATA_PATH, 'data_ranker', "bigseed")
     seeds_file_weighted = os.path.join(DATA_PATH, 'data_ranker', 'seed_weighted_for_validating')
     filter_file = os.path.join(DATA_PATH, 'data_ranker', 'genes2filter_for_validating')
     whitelist = os.path.join(RANKER, "whitelist")
     top_output = os.path.join(tmp_dir, "ranker_top_results")
-    args = args.format(kernel_file=kernel_file, output_file=output_file, seeds_file=seeds_file, filter_file=filter_file, bigseed=bigseed,whitelist=whitelist, top_output=top_output,seeds_file_weighted=seeds_file_weighted).split(" ")
+    args = args.format(kernel_file=kernel_file, output_file=output_file, seeds_file=seeds_file, filter_file=filter_file, bigseed=bigseed,whitelist=whitelist, top_output=top_output,seeds_file_weighted=seeds_file_weighted, tagged_file=tagged_file).split(" ")
     ref_file = os.path.join(RANKER, ref_file)
     _, printed = ranker(args)
+    print(printed)
     diff(output2check.format(output_file=output_file,top_output=top_output)+tag, ref_file+tag)
 
 

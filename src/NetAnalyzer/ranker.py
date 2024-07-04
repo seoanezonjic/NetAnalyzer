@@ -185,7 +185,7 @@ class Ranker:
             members_below = (R >= scores.reshape(nrows, 1)).sum(1)
             rank_percentage = members_below/(ncols-nrows+1)
          # Calcular los absolute rank
-         return list(zip(nodes2predict_names, scores, rank_percentage, members_below))
+         return list(zip(new_seed_names, nodes2predict_names, scores, rank_percentage, members_below))
 
     ## Ranking by seed
     def do_ranking(self, cross_validation=False, k_fold=None, propagate=False,  metric = "mean", options={"tolerance": 1e-9, "iteration_limit": 100, "with_restart": 0}):
@@ -201,7 +201,9 @@ class Ranker:
             if cross_validation and k_fold is None:
                 self.attributes["header"] = ["candidates", "score", "normalized_rank", "rank"]
                 rank_list = self.get_loo_ranking(seed_name, seed, metric=metric)
-                ranked_lists.append([seed_name, rank_list])
+                print(rank_list)
+                for row in rank_list:
+                    ranked_lists.append([row[0], [list(row[1:])]])
             else:
                 rank_list = self.rank_by_seed(seed, weights=self.weights.get(seed_name), propagate=propagate, metric = metric, options=options)  # Production mode
                 if cross_validation and k_fold is not None:

@@ -581,8 +581,13 @@ def load_pair_file(source, byte_format = "float32"):
     # Not used byte_forma parameter
     connections = {}
     for line in source:
-        node_a, node_b, weight = line.strip().split("\t")
-        weight = float(weight) if weight is not None else 1.0 
+        line = line.strip().split("\t")
+        if len(line) == 3:
+            node_a, node_b, weight = line
+            weight = float(weight) 
+        else:
+            node_a, node_b = line
+            weight = 1.0
         pxc.add_nested_value(connections, (node_a, node_b), weight)
         pxc.add_nested_value(connections, (node_b, node_a), weight)
 

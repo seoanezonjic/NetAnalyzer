@@ -1116,7 +1116,7 @@ class NetAnalyzer:
             res["mutual_information_MGH"] = evaluation.overlapping_normalized_mutual_information_MGH(ref_communities,communities).score
             res["mutual_information_LFK"] = evaluation.overlapping_normalized_mutual_information_LFK(ref_communities,communities).score
             res["omega"] = evaluation.omega(ref_communities,communities).score
-            res["overlap_quality"] = evaluation.overlap_quality(ref_communities,communities).score
+            #res["overlap_quality"] = evaluation.overlap_quality(ref_communities,communities).score
         else:
             res["mutual_information"] = evaluation.normalized_mutual_information(ref_communities,communities).score
         return res

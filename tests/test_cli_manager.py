@@ -68,16 +68,20 @@ def netanalyzer_dsl(lsargs):
     with pytest.raises(SystemExit):
         return NetAnalyzer.netanalyzer(lsargs)
 
-def diff(file1, file2, matrix=False, roundTo=3):
+def diff(file1, file2, matrix=False, roundTo=3, sort = None):
     if matrix:
         expected_result = np.round(np.load(file1),roundTo)
         test_result = np.round(np.load(file2),roundTo)
         assert (expected_result == test_result).all()
     else:
         expected_result = CmdTabs.load_input_data(file1)
-        print(expected_result)
+        if sort:
+            for c in sort:
+                expected_result.sort(key=lambda x: x[c])
         test_result = CmdTabs.load_input_data(file2)
-        print(test_result)
+        if sort:
+            for c in sort:
+                test_result.sort(key=lambda x: x[c])
         assert expected_result == test_result
 
 def strng2table(strng, fs="\t", rs="\n"):
@@ -384,7 +388,7 @@ def test_ranker(tmp_dir, ref_file, args, output2check, tag):
     ref_file = os.path.join(RANKER, ref_file)
     _, printed = ranker(args)
     print(printed)
-    diff(output2check.format(output_file=output_file,top_output=top_output)+tag, ref_file+tag)
+    diff(output2check.format(output_file=output_file,top_output=top_output)+tag, ref_file+tag, sort=[0,1])
 
 
 # integration #

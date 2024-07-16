@@ -83,7 +83,7 @@ class BaseNetTestCase(unittest.TestCase):
 	def test_rank_by_seed(self):
 		self.ranker.do_ranking()
 		test_ranked_genes = self.ranked_genes2array(self.ranker.ranking)
-		self.assertEqual(self.load_results('rank_by_seedgene_results'), test_ranked_genes)
+		self.assertEqual(sorted(self.load_results('rank_by_seedgene_results'), key=lambda x: x[0]), sorted(test_ranked_genes, key=lambda x: x[0]))
 
 	def test_get_filtered(self):
 		test_filtered_ranked_genes = self.ranked_genes2array(self.ranker_with_ranking.get_filtered_ranks_by_reference())

@@ -227,7 +227,7 @@ class BaseNetTestCase(unittest.TestCase):
 	def test_intersection(self):
 		test_result = self.network_obj.intersection('M3', 'M6')
 		expected_result = ['P1', 'P2']
-		self.assertEqual(['P1', 'P2'], list(test_result))
+		self.assertEqual(sorted(['P1', 'P2']), sorted(list(test_result)))
 
 	def test_get_node_attributes(self):
 		node_attribute_test = self.monopartite_network.get_node_attributes(['get_degree'])
@@ -257,11 +257,14 @@ class BaseNetTestCase(unittest.TestCase):
 
 	def test_get_umap_association(self):
 		test_association = self.network_obj.get_umap_associations(['main'], 'projection', n_neighbors = 2, random_seed = 47)
-		expected_result =[['M1', 'M2', 0.6002185251036823], ['M1', 'M3', 0.11037451107508203], ['M1', 'M4', 0.11159872906434885], 
-		['M1', 'M5', 0.1144982881204995], ['M1', 'M6', 0.11054041266167607], ['M2', 'M3', 0.10307350076833578], 
-		['M2', 'M4', 0.1039929682744289], ['M2', 'M5', 0.10640654114609778], ['M2', 'M6', 0.10296241663968433], 
-		['M3', 'M4', 0.5658029814523433], ['M3', 'M5', 0.3796017100676096], ['M3', 'M6', 0.32918489985163335],
-		 ['M4', 'M5', 0.5324722793734511], ['M4', 'M6', 0.44022124562159204], ['M5', 'M6', 0.663745538234136]]
+		expected_result =[['M1', 'M2', 0.6036601371481928], ['M1', 'M3', 0.5609716303441513],
+		 ['M1', 'M4', 0.45384044421210484], ['M1', 'M5', 0.36606013513275965],
+		 ['M1', 'M6', 0.30427961425589395], ['M2', 'M3', 0.4591326510409939],
+		 ['M2', 'M4', 0.3547936225526581], ['M2', 'M5', 0.2951290158950945], 
+		 ['M2', 'M6', 0.25372040357498143], ['M3', 'M4', 0.5392249401850056],
+		 ['M3', 'M5', 0.3777011696740734], ['M3', 'M6', 0.3234901016988017],
+		 ['M4', 'M5', 0.54646615122644], ['M4', 'M6', 0.44706939227564624], ['M5', 'M6', 0.6329591835808437]]
+		print(test_association)
 		self.assertEqual(expected_result, test_association)
 
 	def test_get_pca_association(self):

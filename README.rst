@@ -42,6 +42,6 @@ This package is prepared to perform different steps in network analysis and proc
 * Projections: Decrease the number of layers of a network based on the connections of an excluded layer. E.g.: Moving from a Phenotype-Patient-Mutation network to a Patient-Mutation network, connecting the two layers based on the number of common nodes between patient and mutation.
 * Topological Analysis: Obtain different topological graph metrics by node (degree, betweness,etc.) or summarizing for a given network. 
 * Cluster analysis: Able to perform certain metrics on predefined clusters and clusterize based on cdlib library.
-* Embedding of networks (Kernels and node2vec). Define similarity between nodes by different methods of processing context information in networks. The main building blocks are the classical Kernels approach and the additional node2vec approach. With the additional capacity to integrate different layers.
+* Embedding of networks (Kernels and node2vec): Define similarity between nodes by different methods of processing context information in networks. The main building blocks are the classical Kernels approach and the additional node2vec approach. With the additional capacity to integrate different layers.
 * Prioritization: Given a node similarity matrix (the adjacency matrix, for example) and a set of nodes (seed), it is possible to apply propagation algorithm to prioritize by evarage similarity.
 * Net plotting: Provides several tools for graphing networks from different net plotter packages (igraph, cytoscape, graphviz).

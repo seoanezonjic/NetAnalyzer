@@ -34,7 +34,7 @@ NetAnalyzer
 ===========
 
 
-    Python package for network analysis, operations and priorization.
+    Python library for network analysis, operations and priorization.
 
 This package is prepared to perform different steps in network analysis and processing following a modular design. Key features of this library include:
 

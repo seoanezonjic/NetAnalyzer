@@ -97,6 +97,9 @@ def sort_table(table, sort_by, transposed=False):
 		table = sorted(table, key= lambda row: row[sort_by])
 	return table
 
+def dsloutput2tmp(outputdsl, outputtmp):
+    shutil.move(outputdsl,outputtmp)
+
 # netanalyzer #
 ###############
 
@@ -139,10 +142,11 @@ def test_projections(tmp_dir, input_file, ref_file, output_file, args):
 def test_projections_dsl(tmp_dir):
     input_file = os.path.join(DATA_PATH, "bipartite_network_for_validating.txt")
     ref_file = os.path.join(NETANALYZER, "dsl", "jaccard_results.txt")
-    output_file = os.path.join(NETANALYZER, "dsl","output", "jaccard_results.txt")
+    output_file = os.path.join(tmp_dir, "jaccard_results.txt")
     dsl = os.path.join(NETANALYZER, "dsl","jaccard_dsl")
     args = f"-i {input_file} -f pair -l gen,M[0-9]+;pathway,P[0-9]+ --dsl_script {dsl}".split(" ")
     _, printed = netanalyzer_dsl(args)
+    dsloutput2tmp("outpathfile",output_file)
     diff(ref_file, output_file)
     
 
@@ -190,13 +194,12 @@ def test_get_node_graph_attrs(tmp_dir, input_file, ref_file, output_file1, outpu
 def test_get_kernels(tmp_dir, ref_file, output_file2check, args, with_dsl):
     input_file = os.path.join(DATA_PATH, "data_kernel", "adj_mat")
     dsl = os.path.join(NETANALYZER, "dsl","kernel_dsl")
-    if with_dsl:
-        output_file = os.path.join(NETANALYZER, "dsl","output", output_file2check)
-    else:
-        output_file = os.path.join(tmp_dir, output_file2check)
+    output_file = os.path.join(tmp_dir, output_file2check)
     args = args.format(input_file=input_file, output_file=output_file, dsl=dsl).split(" ")
     if with_dsl:
         netanalyzer_dsl(args)
+        for tag in [".npy","_colIds","_rowIds"]:
+            dsloutput2tmp("outpathfile"+tag,output_file+tag)
     else:
         netanalyzer(args)
     diff(output_file + ".npy", ref_file + ".npy", matrix=True)
@@ -208,23 +211,26 @@ def test_filtering(tmp_dir):
     # netanalyzer -i {input_file} -f pair -l main --dsl_script {dsl}
     input_file = os.path.join(DATA_PATH, "monopartite_network_weights_for_validating.txt")
     ref_file = os.path.join(NETANALYZER, "dsl", "filter_cutoff")
-    output_file = os.path.join(NETANALYZER, "dsl","output", "filter_cutoff")
+    output_file = os.path.join(tmp_dir, "filter_cutoff")
     dsl = os.path.join(NETANALYZER, "dsl", "filter_dsl")
     args = f"-i {input_file} -f pair -l main --dsl_script {dsl}".split(" ")
     netanalyzer_dsl(args)
+    dsloutput2tmp("outpathfile",output_file)
     diff(ref_file, output_file)
 
     #netanalyzer -i $data_to_test/bipartite_network_for_validating.txt -f pair -l 'gen,M[0-9]+;pathway,P[0-9]+' --dsl_script $data_test_scripts/dsl/jaccard_count_filter_dsl
     input_file = os.path.join(DATA_PATH, "bipartite_network_for_validating.txt")
     ref_file = os.path.join(NETANALYZER, "dsl", "filter_with_count")
-    output_file = os.path.join(NETANALYZER, "dsl","output", "filter_with_count")
+    output_file = os.path.join(tmp_dir, "filter_with_count")
     dsl = os.path.join(NETANALYZER, "dsl", "jaccard_count_filter_dsl")
     args = f"-i {input_file} -f pair -l gen,M[0-9]+;pathway,P[0-9]+ --dsl_script {dsl}".split(" ")
     _, printed = netanalyzer_dsl(args)
     for tag in ["_colIds", "_rowIds"]:
+        dsloutput2tmp("outpathfile"+tag, output_file+tag)
         diff(ref_file+tag, output_file+tag, matrix=False)
     tag = ".npy"
-    diff(ref_file+".npy", output_file+".npy", matrix=True, roundTo=4)
+    dsloutput2tmp("outpathfile"+tag, output_file+tag)
+    diff(ref_file+tag, output_file+tag, matrix=True, roundTo=4)
 
 def test_communities(tmp_dir):
     # Create communities

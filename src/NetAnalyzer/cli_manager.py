@@ -34,6 +34,21 @@ def group_nodes_parse(string):
 	
 	return group_nodes
 
+def external_cluster_metadata(string):
+	metadata = loading_dic(string)
+	if metadata.get("sim"): 
+		parsed_sim = {} 
+		with open(metadata["sim"]) as file:
+			for line in file:
+				line = line.strip().split("\t")
+				parsed_sim[(line[0],line[1])] = float(line[2])
+				parsed_sim[(line[1],line[0])] =	float(line[2])
+		metadata["sim"] = parsed_sim
+	if metadata.get("metadata_classify"): 
+		metadata["metadata_classify"] = group_nodes_parse(metadata["metadata_classify"])
+	return metadata
+
+
 def graph_options_parse(string):
     graph_options = {}
     for pair in string.split(','):
@@ -165,6 +180,11 @@ def netanalyzer(args=None):
     help="File path or groups separated by ';' and group node ids comma separared")
     parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lambda x: single_split(x, sep=";"),
     help="Remove nodes from file. If PATH;r then nodes not included in file are removed")
+    # parittion metric
+    parser.add_argument("--external_metadata_cluster", dest="external_metadata_cluster", default = None, type = lambda x: external_cluster_metadata(x),
+    	help="Adding external metadata cluster to evaluate with external metrics. You can add similarity between nodes 'sim' or node classification 'metadata_classify' in a two level format with ; and ,")
+    parser.add_argument("--partition_metrics", dest="partition_metrics", default=False, action='store_true',
+    	help="Select this option to obatin global partition metrics")
     # Compare cluster
     parser.add_argument("--overlapping_communities", dest ="overlapping_communities", default=False, action="store_true",
         help=" This is needed to activate overlapping sensitive operations in communities analysis")

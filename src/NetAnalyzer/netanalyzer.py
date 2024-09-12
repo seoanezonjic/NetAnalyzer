@@ -763,10 +763,14 @@ class NetAnalyzer:
                attrs[attr_name] = len(subgraph.nodes())
            elif attr_name == 'edge_density':
                attrs[attr_name] = nx.density(subgraph)
+           elif attr_name == 'edge_size':
+               attrs[attr_name] = len(list(subgraph.edges))
            elif attr_name == 'transitivity' or attr_name == 'global_clustering':
                attrs[attr_name] = nx.transitivity(subgraph)
            elif attr_name == "assorciativity":
                attrs[attr_name] =  nx.degree_assortativity_coefficient(subgraph)
+           elif attr_name == "average_degree":
+               attrs[attr_name] =  np.mean(list(self.get_degree(zscore = False).values()))
 
         graph_attrs = []
         for attr_name, attr_value in attrs.items():
@@ -1094,6 +1098,67 @@ class NetAnalyzer:
             res = class_method(self.graph, communities, summary=False)
             for i, val in enumerate(res): output_metrics[i].append(self.replace_none_vals(val))
             header.append(metric)
+
+    # Evaluating on a family of communities (clusters)
+
+    def community_quality(self, nodes_similarity): # metric obtained from ahn paper doi: 10.1038/nature09182
+        all_sims = list(nodes_similarity.values())
+
+        sims_within_same_cluster = []
+        for g in clusters:
+            for node1 in g:
+                for node2 in g - node:
+                    sims_within_same_cluster.append(nodes_similarity[(node1,node2)])
+
+        enrichment = np.mean(sims_within_same_cluster)/np.mean(all_sims)
+        return enrichment
+
+    def get_node2overlap(self, minimum_size =3):
+        node_overlapping = {}
+        for group in self.group_nodes.values():
+            if len(group) < minimum_size: continue    
+            for node in group:
+                query = node_overlapping.get(node)
+                if query:
+                    node_overlapping[node] = query + 1
+                else:
+                    node_overlapping[node] = 1
+        return node_overlapping
+
+
+    def overlap_quality(self): # metric obtained from ahn paper doi: 10.1038/nature09182
+        # from sklearn.feature_selection import mutual_info_regression
+        # node_overlap_graph = self.get_node2overlap(minimum_size =0)
+        # overlap_graph = []
+        # overlap_metadata = []
+        # for node, overlap_number in node_overlapping.items():
+        #     overlap_graph.append(overlap_number)
+        #     overlap_metadata.append(nodes_overlap_metadata[node])
+        # mi = mutual_info_regression(overlap_graph, overlap_metadata)[0]
+        communities = self.get_communities_as_cdlibObj(self.group_nodes, overlaping=True)
+        ref_communities = self.get_communities_as_cdlibObj(self.group_reference, overlaping=True)
+        res["overlap_quality"] = evaluation.overlap_quality(ref_communities,communities).score
+        return mi
+
+    def community_coverage(self, minimum_size=1):
+        # get number of nodes in network
+        all_nodes = set(self.graph.nodes)
+        # get numer of nodes with a cluster
+        nodes_in_cluster = set()
+        for group in self.group_nodes.values():
+            if len(group) >= minimum_size:
+                nodes_in_cluster = nodes_in_cluster.union(group)
+        community_coverage = len(nodes_in_cluster)/len(all_nodes)
+        return community_coverage
+
+
+    def overlap_coverage(self, minimum_size=3):
+        node2overlap = self.get_node2overlap(minimum_size)
+        all_nodes = len(self.graph.nodes)
+        return sum(node2overlap.values())/all_nodes
+
+
+
 
     # Evaluating comparison between partitions (EXTERNAL EVALUATION IN CDLIB)
 

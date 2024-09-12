@@ -9,7 +9,6 @@ import py_exp_calc.exp_calc as pxc
 from py_report_html import Py_report_html
 from NetAnalyzer import Net_parser, NetAnalyzer
 from NetAnalyzer import Kernels
-from NetAnalyzer import Net_parser, NetAnalyzer
 from NetAnalyzer import Ranker
 from NetAnalyzer import Graph2sim
 from NetAnalyzer import Adv_mat_calc
@@ -230,6 +229,22 @@ def main_netanalyzer(options):
     if options.summarize_metrics:
         fullNet.compute_summarized_group_metrics(
             output_filename=options.output_summarized_metrics, metrics=options.summarize_metrics)
+
+    # Family clusters metric.
+    if options.partition_metrics:
+        partition_metrics = {}
+        if options.external_metadata_cluster:
+            if options.external_metadata_cluster.get("sim"):
+                partition_metrics["community_quality"] = fullNet.community_quality(options.external_metadata_cluster["sim"])
+            if options.external_metadata_cluster.get("metadata_classify"):
+                partition_metrics["overlap_quality"] = fullNet.overlap_quality(options.external_metadata_cluster["metadata_classify"])
+        if options.overlapping_communities:
+            partition_metrics["overlap_coverage"] = fullNet.overlap_coverage()
+        partition_metrics["community_coverage"] = fullNet.community_coverage()
+        for metric_name, metric_value in partition_metrics.items():
+            print(f"{metric_name}\t{metric_value}")
+
+
 
     # Comparing Group Families (Two by now)
     if options.compare_clusters_reference is not None:

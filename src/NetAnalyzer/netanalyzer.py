@@ -763,14 +763,10 @@ class NetAnalyzer:
                attrs[attr_name] = len(subgraph.nodes())
            elif attr_name == 'edge_density':
                attrs[attr_name] = nx.density(subgraph)
-           elif attr_name == 'edge_size':
-               attrs[attr_name] = len(list(subgraph.edges))
            elif attr_name == 'transitivity' or attr_name == 'global_clustering':
                attrs[attr_name] = nx.transitivity(subgraph)
            elif attr_name == "assorciativity":
                attrs[attr_name] =  nx.degree_assortativity_coefficient(subgraph)
-           elif attr_name == "average_degree":
-               attrs[attr_name] =  np.mean(list(self.get_degree(zscore = False).values()))
 
         graph_attrs = []
         for attr_name, attr_value in attrs.items():
@@ -1140,7 +1136,7 @@ class NetAnalyzer:
         res["overlap_quality"] = evaluation.overlap_quality(ref_communities,communities).score
         return mi
 
-    def community_coverage(self, minimum_size=1):
+    def community_coverage(self, minimum_size=3):
         # get number of nodes in network
         all_nodes = set(self.graph.nodes)
         # get numer of nodes with a cluster

@@ -761,6 +761,10 @@ class NetAnalyzer:
         for attr_name in attr_names:
            if attr_name == 'size': 
                attrs[attr_name] = len(subgraph.nodes())
+           if attr_name == 'edge_size': 
+               attrs[attr_name] = len(subgraph.edges())
+           if attr_name == 'average_degree': 
+               attrs[attr_name] = np.mean(list(self.get_degree(zscore = False).values()))
            elif attr_name == 'edge_density':
                attrs[attr_name] = nx.density(subgraph)
            elif attr_name == 'transitivity' or attr_name == 'global_clustering':

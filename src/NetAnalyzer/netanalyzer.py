@@ -769,7 +769,7 @@ class NetAnalyzer:
                attrs[attr_name] = nx.density(subgraph)
            elif attr_name == 'transitivity' or attr_name == 'global_clustering':
                attrs[attr_name] = nx.transitivity(subgraph)
-           elif attr_name == "assorciativity":
+           elif attr_name == "assortativity":
                attrs[attr_name] =  nx.degree_assortativity_coefficient(subgraph)
 
         graph_attrs = []
@@ -1101,6 +1101,8 @@ class NetAnalyzer:
 
     # Evaluating on a family of communities (clusters)
 
+    # filtering clusters by size
+
     def community_quality(self, nodes_similarity): # metric obtained from ahn paper doi: 10.1038/nature09182
         all_sims = list(nodes_similarity.values())
 
@@ -1125,6 +1127,15 @@ class NetAnalyzer:
                     node_overlapping[node] = 1
         return node_overlapping
 
+    def get_triad_numbers(self, minimum_size= 3, ratio=True):
+        nclusters = 0
+        ntriads=0
+        for group in self.group_nodes.values():
+            if len(group) < minimum_size: continue
+            nclusters += 1
+            if len(group) == 3: ntriads += 1
+        if ratio: ntriads = ntriads/nclusters
+        return ntriads
 
     def overlap_quality(self): # metric obtained from ahn paper doi: 10.1038/nature09182
         # from sklearn.feature_selection import mutual_info_regression

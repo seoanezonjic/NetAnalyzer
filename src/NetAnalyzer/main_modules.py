@@ -1,5 +1,6 @@
 import sys
 import os
+import warnings
 import numpy as np
 import random
 import copy
@@ -289,12 +290,18 @@ def main_randomize_clustering(options):
         for node, clusters in node2clusters.items():
             if options["random_type"][0] == "hard_fixed":
                 number_clust = len(clusters)
+                if len(set(clusters)) < number_clust: raise Exception("A node is being defined two or more times to the same cluster")
             elif options["random_type"][1] == "soft_fixed":
                 u_size = len(cluster_universe)
                 k = len(pxc.intersection(clusters,cluster_universe))
                 p = k/u_size
                 number_clust = random.binomial(u_size, p) 
-            for clust in random.sample(cluster_universe,number_clust):
+            try:
+                sampled_clusters = random.sample(cluster_universe, number_clust)
+            except ValueError: #TODO: This is a temporal solution, it should be improved. Tell to FGC
+                warnings.warn(f"Warning: There are only {len(cluster_universe)} available clusters to assign node {node}, but it is needed to assign it to {number_clust} clusters, so it is being limited to {len(cluster_universe)} for the execution not to break")
+                sampled_clusters = random.sample(cluster_universe, len(cluster_universe))
+            for clust in sampled_clusters:
                 if random_clusters.get(clust):
                     random_clusters[clust].append(node)
                 else:

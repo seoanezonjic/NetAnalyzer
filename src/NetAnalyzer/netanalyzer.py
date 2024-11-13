@@ -1127,13 +1127,13 @@ class NetAnalyzer:
                     node_overlapping[node] = 1
         return node_overlapping
 
-    def get_triad_numbers(self, minimum_size= 3, ratio=True):
+    def get_triad_numbers(self, minimum_size= 3, ratio=False):
         nclusters = 0
         ntriads=0
         for group in self.group_nodes.values():
             if len(group) < minimum_size: continue
             nclusters += 1
-            if len(group) == 3: ntriads += 1
+            if len(group) == 3 and len(self.graph.subgraph(group).edges()) == 3 : ntriads += 1
         if ratio: ntriads = ntriads/nclusters
         return ntriads
 

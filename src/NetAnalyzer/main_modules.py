@@ -241,7 +241,10 @@ def main_netanalyzer(options):
                 partition_metrics["overlap_quality"] = fullNet.overlap_quality(options.external_metadata_cluster["metadata_classify"])
         if options.overlapping_communities:
             partition_metrics["overlap_coverage"] = fullNet.overlap_coverage()
+            # partition_metrics["overlap_coverage_no_triads"] = fullNet.overlap_coverage(minimum_size=4)
         partition_metrics["community_coverage"] = fullNet.community_coverage()
+        partition_metrics["community_coverage_no_triads"] = fullNet.community_coverage(minimum_size=4)
+        partition_metrics["triad_number"]=fullNet.get_triad_numbers()
         for metric_name, metric_value in partition_metrics.items():
             print(f"{metric_name}\t{metric_value}")
 

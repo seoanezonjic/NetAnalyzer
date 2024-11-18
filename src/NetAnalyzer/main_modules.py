@@ -441,21 +441,15 @@ def main_ranker(options):
 
     if options.filter is not None:
         ranker.load_references(options.filter, sep=",")
-        if options.cross_validation and options.k_fold is not None:
-            ranker.get_seed_cross_validation(k_fold=options.k_fold)
-        ranker.ranking = ranker.get_filtered_ranks_by_reference()
+        ranker.ranking = ranker.get_filtered_ranks_by_reference(cross_validation=options.cross_validation)
 
     if options.add_tags is not None:
         tags = load_tags(options.add_tags)
         if options.cross_validation:
             for seed, nodes in ranker.seeds.keys():
                 tags[seed] = tags[seed.split("_")[0]]
-        seed_col = len(ranker.attributes["header"]) -1
-        print(tags)
-        print(ranker.ranking)
         for seed, ranking_by_seed in ranker.ranking.items():
             ranker.ranking[seed] = pxc.add_tags(ranking_by_seed, tags[seed], (0,), default_tag = False)
-        print(ranker.ranking)
 
     if ranker.ranking:
         ranker.write_ranking(f"{options.output_file}_all_candidates", add_header=options.header)

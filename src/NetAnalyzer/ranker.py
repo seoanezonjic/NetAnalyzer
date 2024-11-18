@@ -1,5 +1,5 @@
 import numpy as np
-import os
+import os, re
 from itertools import combinations
 from sklearn.model_selection import KFold, LeaveOneOut
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
@@ -201,7 +201,7 @@ class Ranker:
             if cross_validation and k_fold is None:
                 self.attributes["header"] = ["candidates", "score", "normalized_rank", "rank"]
                 rank_list = self.get_loo_ranking(seed_name, seed, metric=metric)
-                print(rank_list)
+                #print(rank_list)
                 for row in rank_list:
                     ranked_lists.append([row[0], [list(row[1:])]])
             else:
@@ -285,15 +285,20 @@ class Ranker:
 
     # Output and parsing ranking
 
-    def get_filtered_ranks_by_reference(self):
+    def get_filtered_ranks_by_reference(self, cross_validation=False):
         filtered_ranked_genes = {}
 
+        if cross_validation:
+            iterate_filter_name = lambda seed_name: re.sub(r"_iteration_.*", "", seed_name)
+        else:
+            iterate_filter_name = lambda seed_name: seed_name
+
         for seed_name, ranking in self.ranking.items():
-            if self.reference_nodes.get(seed_name) is None or not ranking:
+            if self.reference_nodes.get(iterate_filter_name(seed_name)) is None or not ranking:
                 continue
 
             ranking = self.array2hash(ranking, 0, range(0, len(ranking[0])))
-            references = self.reference_nodes[seed_name]
+            references = self.reference_nodes[iterate_filter_name(seed_name)]
             filtered_ranked_genes[seed_name] = []
 
             for reference in references:

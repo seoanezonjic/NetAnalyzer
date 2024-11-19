@@ -240,8 +240,8 @@ class BaseNetTestCase(unittest.TestCase):
 		self.assertEqual(expected_result, node_attribute_test)
 
 	def test_get_graph_attributes(self):
-		test = self.monopartite_network.get_graph_attributes(['size','edge_density','global_clustering', 'assorciativity'])
-		expected_values = [['size', 5], ['edge_density', 0.4], ['global_clustering', 0], ['assorciativity', -0.3333333333333333]]
+		test = self.monopartite_network.get_graph_attributes(['size','edge_density','global_clustering', 'assortativity'])
+		expected_values = [['size', 5], ['edge_density', 0.4], ['global_clustering', 0], ['assortativity', -0.3333333333333333]]
 		self.assertEqual(expected_values, test)
 
 	def test_get_corr_association(self):

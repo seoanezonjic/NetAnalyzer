@@ -171,9 +171,9 @@ class Ranker:
          if metric == "mean":
             R = W @ self.matrix / (nrows - 1)
          elif metric == "max":
-            R = np.zeros(sel.matrix.shape)
+            R = np.zeros(self.matrix.shape)
             for row in range(0,self.matrix.shape[0]):
-                R[row] = (W[row,:] * sefl.matrix).max(0)
+                R[row] = (W[row,:] * self.matrix).max(0)
          scores = R[range(0,nrows), nodes2predict_pos]
          # Calcular los members_below
          if self.seed_presence:

@@ -2,16 +2,8 @@ import sys
 import numpy as np
 from scipy import linalg
 import scipy.stats as stats
-import umap
 from warnings import warn
 class Adv_mat_calc:
-
-	
-	@staticmethod
-	def data2umap(data, n_neighbors = 15, min_dist = 0.1, n_components = 2, metric = 'euclidean', random_seed = None): #2exp?
-	    reducer = umap.UMAP(n_neighbors=n_neighbors, min_dist=min_dist, n_components=n_components, metric=metric, random_state= random_seed)
-	    umap_coords = reducer.fit_transform(data)
-	    return umap_coords
 
 	# Alaimo 2014, doi: 10.3389/fbioe.2014.00071
 	@staticmethod

@@ -399,7 +399,7 @@ class NetAnalyzer:
         if biadj_matrix is None:
             biadj_matrix = self.generate_adjacency_matrix(*layers, base_layer)
         data, rowIds, _ = biadj_matrix
-        umap_coords = Adv_mat_calc.data2umap(data, n_neighbors=n_neighbors, min_dist=min_dist, n_components=n_components, metric=metric, random_seed = random_seed)
+        umap_coords = pxc.data2umap(data, n_neighbors=n_neighbors, min_dist=min_dist, n_components=n_components, metric=metric, random_seed = random_seed)
         umap_sims = np.triu(pxc.coords2sim(umap_coords, sim="euclidean"), k = 1)
         relations = pxc.matrix2relations(umap_sims, rowIds, rowIds)
         relations = [relation for relation in relations if relation[2] != 0]

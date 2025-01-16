@@ -250,8 +250,6 @@ def main_netanalyzer(options):
         for metric_name, metric_value in partition_metrics.items():
             print(f"{metric_name}\t{metric_value}")
 
-
-
     # Comparing Group Families (Two by now)
     if options.compare_clusters_reference is not None:
         fullNet.group_reference = options.compare_clusters_reference
@@ -268,6 +266,9 @@ def main_netanalyzer(options):
             for cl_id, nodes in expanded_clusters.items():
                 for node in nodes:
                     out_file.write(f"{cl_id}\t{node}\n")
+
+    if options.extract_subgraph:
+        fullNet.write_subgraphs_from_communities()
 
     if len(options.get_attributes) > 0:
         fullNet.get_node_attributes(

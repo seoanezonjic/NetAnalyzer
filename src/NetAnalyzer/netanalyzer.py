@@ -598,6 +598,11 @@ class NetAnalyzer:
         edges_with_filtered_values = self.get_direct_conns(_, layers = layers, compute_autorelations= compute_autorelations)
 
         return edges_with_filtered_values
+    
+    def write_subgraphs_from_communities(self):
+        for comm_name, nodes in self.group_nodes.items():
+            subgraph = self.graph.subgraph(nodes)
+            nx.write_weighted_edgelist(subgraph, comm_name + "_subgraph", delimiter="\t")
 
     def write_subgraph(self, layers, output_filename, outFormat='pair'): 
         if outFormat == "pair":

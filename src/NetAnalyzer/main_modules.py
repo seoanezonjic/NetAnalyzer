@@ -197,10 +197,12 @@ def main_netanalyzer(options):
         else:
             layers2kernel = tuple(options.use_layers[0])
 
-
-        fullNet.get_kernel(layers2kernel, options.kernel, options.normalize_kernel,
-                           options.coords2sim_type, embedding_kwargs, add_to_object=True)
-        fullNet.write_kernel(layers2kernel, options.kernel, options.kernel_file)
+        if options.embedding_coords:
+            fullNet.get_embedding_coords(layers2kernel, options.kernel, input_type = "matrix", embedding_kwargs=embedding_kwargs, output_filename=options.kernel_file)
+        else:
+            fullNet.get_kernel(layers2kernel, options.kernel, options.normalize_kernel,
+                               options.coords2sim_type, embedding_kwargs, add_to_object=True)
+            fullNet.write_kernel(layers2kernel, options.kernel, options.kernel_file)
 
     if options.graph_file is not None:
         options.graph_options['output_file'] = options.graph_file

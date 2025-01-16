@@ -649,6 +649,32 @@ class NetAnalyzer:
             elif self.graph.has_edge(nodeA, nodeB):
                 self.graph.remove_edge(nodeA, nodeB)
 
+    ## Graph representation embedding
+    #------------------------------------
+
+    def get_embedding_coords(self, layers, method, input_type = "matrix", embedding_kwargs={}, output_filename=None):
+        
+        if method == "comm_aware":
+            input_type = "graph"
+            clusters=self.group_nodes
+        else:
+            input_type = "matrix"
+            clusters=None
+
+        if input_type == "matrix":
+            if not self.matrices["adjacency_matrices"].get((layers[0],layers[0])):
+                self.generate_adjacency_matrix(self, layers[0], layers[0])    
+            graph, embedding_nodes, _ = self.matrices["adjacency_matrices"][(layers[0],layers[0])]
+        else:
+            graph = self.graph
+            embedding_nodes = list(self.graph.nodes())
+
+        emb_coords = Graph2sim.get_embedding(graph, embedding = method, embedding_nodes=embedding_nodes, clusters=clusters, **embedding_kwargs)
+
+        self.control_output(values = emb_coords, output_filename=output_filename, inFormat="matrix", rowIds = embedding_nodes, colIds = None,
+         outFormat="matrix", add_to_object=False)
+        
+        return emb_coords, embedding_nodes
 
     ## Kernel and similarity methods
     #------------------------------------
@@ -656,15 +682,25 @@ class NetAnalyzer:
     def get_kernel(self, layers, method, normalization=False, sim_type= "dotProduct", embedding_kwargs={}, output_filename=None, outFormat='matrix', add_to_object= False):
         #embedding_kwargs accept: dimensions, walk_length, num_walks, p, q, workers, window, min_count, seed, quiet, batch_words
 
+        if method == "comm_aware":
+            input_type = "graph"
+        else:
+            input_type = "matrix"
+
+        if input_type == "matrix":
+            if not self.matrices["adjacency_matrices"].get((layers[0],layers[0])):
+                self.generate_adjacency_matrix(self, layers[0], layers[0])    
+            graph, rowIds, colIds = self.matrices["adjacency_matrices"][(layers[0],layers[0])]
+        else:
+            graph = self.graph
+            rowIds = list(self.graph.nodes())
+
         if method in Graph2sim.allowed_embeddings:
-            adj_mat, embedding_nodes, _ = self.matrices["adjacency_matrices"][(layers[0],layers[0])]
-            emb_coords = Graph2sim.get_embedding(adj_mat, embedding = method, embedding_nodes=embedding_nodes, **embedding_kwargs)
+            emb_coords = Graph2sim.get_embedding(graph, embedding = method, embedding_nodes=rowIds, **embedding_kwargs)
             kernel = Graph2sim.emb_coords2kernel(emb_coords, normalization, sim_type= sim_type)
-            rowIds = embedding_nodes
             colIds = rowIds
         elif method[0:2] in Graph2sim.allowed_kernels:
-            adj_mat, rowIds, colIds = self.matrices["adjacency_matrices"][(layers[0],layers[0])]
-            kernel = Graph2sim.get_kernel(adj_mat, method, normalization=normalization)
+            kernel = Graph2sim.get_kernel(graph, method, normalization=normalization)
 
         self.control_output(values = kernel, rowIds = rowIds, colIds = colIds, output_filename=output_filename, inFormat="matrix",
          outFormat=outFormat, add_to_object=add_to_object, matrix_keys= ("kernels", layers, method))
@@ -688,8 +724,6 @@ class NetAnalyzer:
         self.control_output(values = similarity_pairs, output_filename=output_filename, inFormat="nested_pairs",
          outFormat=outFormat, add_to_object=add_to_object, matrix_keys= ("semantic_sims", layers, sim_type))
         return similarity_pairs
-
-
 
     def shortest_path(self, source, target):
         return nx.shortest_path(self.graph, source, target)
@@ -1298,7 +1332,10 @@ class NetAnalyzer:
                 # This is posible just when len(matrix_keys) == 3
                 self.matrices[path_keys[0]][path_keys[1]] = {final_key: [matrix, rowIds, colIds]}
         elif output_filename != None: 
-            obj, rowIds, colIds = pxc.transform2obj(values, inFormat= inFormat, outFormat= outFormat, rowIds = rowIds, colIds = colIds)
+            if inFormat != outFormat:
+                obj, rowIds, colIds = pxc.transform2obj(values, inFormat= inFormat, outFormat= outFormat, rowIds = rowIds, colIds = colIds)
+            else:
+                obj = values
             self.write_obj(obj, output_filename, Format=outFormat, rowIds=rowIds, colIds=colIds)
 
 

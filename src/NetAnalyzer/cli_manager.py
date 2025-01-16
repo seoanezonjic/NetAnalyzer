@@ -166,6 +166,7 @@ def netanalyzer(args=None):
     parser.add_argument("-z","--normalize_kernel_values", dest="normalize_kernel", default=False, action='store_true',
     help="Apply cosine normalization to the obtained kernel")
     parser.add_argument("--coords2sim_type", dest="coords2sim_type", default="dotProduct", help= "Select the type of transformation from coords to similarity: dotProduct, normalizedScaling, infinity and int or float numbers")
+    parser.add_argument("--embedding_coords", dest= "embedding_coords", default=False, action="store_true", help="Use this flag in case of obtaining the coordinates of the system")
     parser.add_argument("-K","--kernel_file", dest="kernel_file", default='kernel_file',
     help="Output file name for kernel values")
     # Plotting

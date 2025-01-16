@@ -267,7 +267,7 @@ def main_netanalyzer(options):
                 for node in nodes:
                     out_file.write(f"{cl_id}\t{node}\n")
 
-    if options.extract_subgraph:
+    if options.extract_subgraphs:
         fullNet.write_subgraphs_from_communities()
 
     if len(options.get_attributes) > 0:

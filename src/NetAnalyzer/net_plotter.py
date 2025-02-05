@@ -82,19 +82,33 @@ class Net_plotter:
         node_base_color[3] = 0.25
         node_base_color = tuple(node_base_color)
         node_colors = [node_base_color] * len(node_ids)
-        # Node color
+        # Node color and size
+        vertex_size = 7
+        if self.reference_nodes: vertex_size = [vertex_size] * len(node_ids)
         count = 1
-        for groupID, gNodes in self.group_nodes.items():
+
+        for nodeID in self.reference_nodes: # specific color for  each reference node
+            color = cmap(count)
+            idx = node_ids.index(nodeID)
+            node_colors[idx] = color
+            vertex_size[idx] = 30
+            count += 1
+
+        for groupID, gNodes in self.group_nodes.items(): # color for nodes in groups
             color = cmap(count)
             for n in gNodes:
                 idx = node_ids.index(n)
                 node_colors[idx] = color
             count += 1
 
+
         # Node order: tag each node with a int that says in which order mut be plotted. 0 is the first node to be plotted and N node the last (so the first in the image)
         node_order=[0] * len(node_ids)
         node_count = len(node_ids) -1
         node_dict = {}
+        for nodeID in self.reference_nodes:
+            node_dict[nodeID] = node_count
+            node_count -= 1
         for groupID, gNodes in self.group_nodes.items():
             for n in gNodes:
                 node_dict[n] = node_count
@@ -107,7 +121,7 @@ class Net_plotter:
             node_order[i] = order
         opts = {
             'bbox' : (2400, 2400),
-            'vertex_size' : 7,
+            'vertex_size' : vertex_size,
             'layout' : "drl",
             'edge_color' : norm_net_edge_weight,
             'vertex_color': node_colors,
@@ -131,7 +145,7 @@ class Net_plotter:
         else:
             layout_custom_opts = {}
             custom_opts_string = opts.get('custom_opts')
-            if layout_custom_opts != None: layout_custom_opts = eval(re.sub(';', ',', custom_opts_string))
+            if custom_opts_string != None: layout_custom_opts = eval(re.sub(';', ',', custom_opts_string))
             layout = igraph_obj.layout(layout_name, **layout_custom_opts)
         save_path = opts.get('save')
         if save_path != None:

@@ -157,6 +157,13 @@ class NetAnalyzer:
         elif mode == 'r': # reverse selection
             self.graph.remove_nodes_from(list(n for n in self.graph.nodes if n not in node_list ))
 
+    def delete_connected_component_by_size(self, minimum_connected_component_size):
+        node_list = set()
+        for cc in nx.connected_components(G):
+            if len(cc) >= connected_component_size:
+                node_list.union(cc)
+        self.delete_nodes(node_list, "r")
+
     def get_connected_nodes(self, node_id, from_layer):
         return [n for n in self.graph.neighbors(node_id) if self.graph.nodes[n]['layer'] == from_layer ]
 

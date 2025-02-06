@@ -145,6 +145,9 @@ def netanalyzer(args=None):
     add_random_seed(parser, default_seed=None)
     parser.add_argument("-O", "--ontology", dest="ontologies", default=[], type=lambda x: double_split(x, sep1=";",sep2=","),
                         help="String that define which ontologies must be used with each layer. String definition:'layer_name1,path_to_obo_file1;layer_name2,path_to_obo_file2'")
+    # Filters
+    parser.add_argument("--filter_connected_components", dest="filter_connected_components", default=None, type= lambda x: int(x),
+        help= "Specify the minimim size of the connected component to be taken into account")
     # Assoc
     parser.add_argument("-P","--use_pairs", dest="use_pairs", default='conn',
     help="Which pairs must be computed. 'all' means all posible pair node combinations and 'conn' means the pair are truly connected in the network. Default 'conn' ")
@@ -179,6 +182,8 @@ def netanalyzer(args=None):
     help="Node ids comma separared")
     parser.add_argument("-G","--group_nodes", dest="group_nodes", default={}, type= group_nodes_parse,
     help="File path or groups separated by ';' and group node ids comma separared")
+    parser.add_argument("--split_groups", dest="split_groups", default=False, action= "store_true",  
+        help="Split groups in subgroups based on clustering methods")
     parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lambda x: single_split(x, sep=";"),
     help="Remove nodes from file. If PATH;r then nodes not included in file are removed")
     # Extract subgraph

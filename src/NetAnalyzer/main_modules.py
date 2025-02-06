@@ -145,6 +145,9 @@ def main_netanalyzer(options):
         mode = options.delete_nodes[1] if len(options.delete_nodes) > 1 else 'd'
         fullNet.delete_nodes(node_list, mode)
 
+    if options.filter_connected_components:
+        fullNet.delete_connected_component_by_size(options.filter_connected_components)
+
     if options.dsl_script is not None:
         execute_dsl_script(fullNet, options.dsl_script)
         sys.exit()
@@ -211,17 +214,14 @@ def main_netanalyzer(options):
     # Group creation
     if options.build_cluster_alg is not None:
         clust_kwargs = eval('{' + options.build_clusters_add_options +'}')
-        fullNet.discover_clusters(
-            options.build_cluster_alg, clust_kwargs, **{'seed': options.seed})
-
-        if options.output_build_clusters is None:
-            options.output_build_clusters = options.build_cluster_alg + \
-                '_' + 'discovered_clusters.txt'
-
-        with open(options.output_build_clusters, 'w') as out_file:
-            for cl_id, nodes in fullNet.group_nodes.items():
-                for node in nodes:
-                    out_file.write(f"{cl_id}\t{node}\n")
+        
+        if fullNet.group_nodes:
+            for group_id, nodes in fullNet.group_nodes.items():
+                subNet = fullNet.clone()
+                subNet = subNet.delete_nodes(nodes,"r")
+                discover_and_write_cluster(fullNet, options.build_cluster_alg, clust_kwargs, options.seed, options.output_build_clusters, group_id)
+        else:
+            discover_and_write_cluster(fullNet, options.build_cluster_alg, clust_kwargs, options.seed, options.output_build_clusters, None)
 
     # Group metrics by cluster.
     if options.group_metrics:
@@ -521,6 +521,22 @@ def execute_dsl_script(net_obj, dsl_path):
             func = getattr(net_obj, command.pop(0))
             args, kwargs = get_args(command)
             func(*args, **kwargs)
+
+def discover_and_write_cluster(net, cluster_alg, clust_kwargs, seed, output_build_clusters, group_id):
+        net.discover_clusters(
+            cluster_alg, clust_kwargs, **{'seed': seed})
+
+        if output_build_clusters is None:
+            output_build_clusters = cluster_alg + \
+                '_' + 'discovered_clusters.txt'
+
+        with open(output_build_clusters, 'w') as out_file:
+            for cl_id, nodes in net.group_nodes.items():
+                for node in nodes:
+                    if group_id:
+                        out_file.write(f"{group_id}\t{cl_id}\t{node}\n")
+                    else:
+                        out_file.write(f"{cl_id}\t{node}\n")
                
 # METHODS FOR RANDOMIZE CLUSTERING
 ###################################

@@ -277,6 +277,9 @@ def main_netanalyzer(options):
         fullNet.get_graph_attributes(
             options.get_graph_attributes, output_filename="graph_attributes.txt")
 
+    if options.output_network:
+        fullNet.write_network(options.output_network)
+
 def main_randomize_clustering(options):
     options = vars(options)
     if options["seed"]: random.seed(options["seed"])

@@ -207,6 +207,13 @@ def test_get_kernels(tmp_dir, ref_file, output_file2check, args, with_dsl):
     diff(output_file + "_rowIds", ref_file + "_rowIds")
 
 def test_filtering(tmp_dir):
+    # filter bycomponent
+    input_file = os.path.join(DATA_PATH, "monopartite_network_weights_for_validating.txt")
+    ref_file = os.path.join(NETANALYZER, "filter", "filter_by_ccomponent")
+    output_file = os.path.join(tmp_dir, "filter_by_ccomponent")
+    args = f"-i {input_file} -f pair -l main --filter_connected_components 4 --output_network {output_file}".split(" ")
+    netanalyzer(args)
+    diff(ref_file, output_file)
 
     # netanalyzer -i {input_file} -f pair -l main --dsl_script {dsl}
     input_file = os.path.join(DATA_PATH, "monopartite_network_weights_for_validating.txt")
@@ -244,6 +251,13 @@ def test_communities(tmp_dir):
     ref_file = os.path.join(NETANALYZER, "clustering", "der_discovered_clusters.txt")
     output_dir = os.path.join(tmp_dir)
     args=f"-i {input_file} -f pair -o {output_dir} -l genes -b der --seed 1 --output_build_clusters {output_dir}/der_discovered_clusters.txt".split(" ")
+    netanalyzer(args)
+    diff(ref_file, f"{output_dir}/der_discovered_clusters.txt")
+
+    ref_file = os.path.join(NETANALYZER, "clustering", "der_discovered_clusters_by_subgroup.txt")
+    output_dir = os.path.join(tmp_dir)
+    group_file = os.path.join(NETANALYZER, "clustering", "clusters_toy.txt")
+    args=f"-i {input_file} -f pair -o {output_dir} -l genes -b der -G {group_file} --seed 1 --output_build_clusters {output_dir}/der_discovered_clusters.txt".split(" ")
     netanalyzer(args)
     diff(ref_file, f"{output_dir}/der_discovered_clusters.txt")
 

@@ -229,6 +229,9 @@ def netanalyzer(args=None):
     # DSL section
     parser.add_argument("--dsl_script", dest="dsl_script", default=None,
     help="Path to dsl script to perform complex analysis")
+    # output network
+    parser.add_argument("--output_network", dest="output_network", default=None,
+        help="Output of the network modified during process")
     # Resources
     add_resources_flags(parser=parser, default_opt={"threads": 2})
 

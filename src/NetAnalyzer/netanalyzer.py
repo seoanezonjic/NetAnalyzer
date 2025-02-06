@@ -159,10 +159,10 @@ class NetAnalyzer:
 
     def delete_connected_component_by_size(self, minimum_connected_component_size):
         node_list = set()
-        for cc in nx.connected_components(G):
-            if len(cc) >= connected_component_size:
-                node_list.union(cc)
-        self.delete_nodes(node_list, "r")
+        for cc in nx.connected_components(self.graph):
+            if len(cc) < minimum_connected_component_size:
+                node_list.update(cc)
+        self.delete_nodes(node_list)
 
     def get_connected_nodes(self, node_id, from_layer):
         return [n for n in self.graph.neighbors(node_id) if self.graph.nodes[n]['layer'] == from_layer ]
@@ -606,6 +606,9 @@ class NetAnalyzer:
 
         return edges_with_filtered_values
     
+    def write_network(self, output_name):
+        nx.write_weighted_edgelist(self.graph, output_name, delimiter="\t")
+
     def write_subgraphs_from_communities(self):
         for comm_name, nodes in self.group_nodes.items():
             subgraph = self.graph.subgraph(nodes)

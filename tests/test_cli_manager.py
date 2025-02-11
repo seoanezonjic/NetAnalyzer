@@ -256,7 +256,7 @@ def test_communities(tmp_dir):
 
     ref_file = os.path.join(NETANALYZER, "clustering", "der_discovered_clusters_by_subgroup.txt")
     output_dir = os.path.join(tmp_dir)
-    group_file = os.path.join(NETANALYZER, "clustering", "clusters_toy.txt")
+    group_file = os.path.join(NETANALYZER, "clustering", "clusters_toy_subgroup.txt")
     args=f"-i {input_file} -f pair -o {output_dir} -l genes -b der -G {group_file} --seed 1 --output_build_clusters {output_dir}/der_discovered_clusters.txt".split(" ")
     netanalyzer(args)
     diff(ref_file, f"{output_dir}/der_discovered_clusters.txt")

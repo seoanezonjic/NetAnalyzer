@@ -216,10 +216,15 @@ def main_netanalyzer(options):
         clust_kwargs = eval('{' + options.build_clusters_add_options +'}')
         
         if fullNet.group_nodes:
+            first_to_add = True
             for group_id, nodes in fullNet.group_nodes.items():
                 subNet = fullNet.clone()
-                subNet = subNet.delete_nodes(nodes,"r")
-                discover_and_write_cluster(fullNet, options.build_cluster_alg, clust_kwargs, options.seed, options.output_build_clusters, group_id)
+                subNet.delete_nodes(nodes,"r")
+                if first_to_add:
+                    discover_and_write_cluster(subNet, options.build_cluster_alg, clust_kwargs, options.seed, options.output_build_clusters, group_id)
+                else:
+                    discover_and_write_cluster(subNet, options.build_cluster_alg, clust_kwargs, options.seed, options.output_build_clusters, group_id, 'a')
+                first_to_add = False
         else:
             discover_and_write_cluster(fullNet, options.build_cluster_alg, clust_kwargs, options.seed, options.output_build_clusters, None)
 
@@ -525,7 +530,7 @@ def execute_dsl_script(net_obj, dsl_path):
             args, kwargs = get_args(command)
             func(*args, **kwargs)
 
-def discover_and_write_cluster(net, cluster_alg, clust_kwargs, seed, output_build_clusters, group_id):
+def discover_and_write_cluster(net, cluster_alg, clust_kwargs, seed, output_build_clusters, group_id, type_write='w'):
         net.discover_clusters(
             cluster_alg, clust_kwargs, **{'seed': seed})
 
@@ -533,7 +538,7 @@ def discover_and_write_cluster(net, cluster_alg, clust_kwargs, seed, output_buil
             output_build_clusters = cluster_alg + \
                 '_' + 'discovered_clusters.txt'
 
-        with open(output_build_clusters, 'w') as out_file:
+        with open(output_build_clusters, type_write) as out_file:
             for cl_id, nodes in net.group_nodes.items():
                 for node in nodes:
                     if group_id:

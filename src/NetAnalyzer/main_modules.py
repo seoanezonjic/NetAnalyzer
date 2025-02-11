@@ -214,12 +214,14 @@ def main_netanalyzer(options):
     # Group creation
     if options.build_cluster_alg is not None:
         clust_kwargs = eval('{' + options.build_clusters_add_options +'}')
-        
+        import networkx as nx
         if fullNet.group_nodes:
             first_to_add = True
             for group_id, nodes in fullNet.group_nodes.items():
                 subNet = fullNet.clone()
                 subNet.delete_nodes(nodes,"r")
+                subNet.group_nodes = {}
+                subNet.delete_isolated_nodes()
                 if first_to_add:
                     discover_and_write_cluster(subNet, options.build_cluster_alg, clust_kwargs, options.seed, options.output_build_clusters, group_id)
                 else:
@@ -538,6 +540,7 @@ def discover_and_write_cluster(net, cluster_alg, clust_kwargs, seed, output_buil
             output_build_clusters = cluster_alg + \
                 '_' + 'discovered_clusters.txt'
 
+        print(net.group_nodes)
         with open(output_build_clusters, type_write) as out_file:
             for cl_id, nodes in net.group_nodes.items():
                 for node in nodes:

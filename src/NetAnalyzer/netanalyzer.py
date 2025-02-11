@@ -164,6 +164,9 @@ class NetAnalyzer:
                 node_list.update(cc)
         self.delete_nodes(node_list)
 
+    def delete_isolated_nodes(self):
+        self.graph.remove_nodes_from(list(nx.isolates(self.graph)))
+
     def get_connected_nodes(self, node_id, from_layer):
         return [n for n in self.graph.neighbors(node_id) if self.graph.nodes[n]['layer'] == from_layer ]
 

@@ -11,6 +11,8 @@ import random
 import numpy as np
 import pickle
 from py_report_html import Py_report_html
+import networkx as nx
+
 class Net_plotter:
 
     TEMPLATES = os.path.join(os.path.dirname(__file__), 'templates')
@@ -24,7 +26,7 @@ class Net_plotter:
 
         if options['method'] == 'graphviz':
             self.plot_dot(options)
-        if options['method'] == 'igraph':
+        elif options['method'] == 'igraph':
             self.plot_igraph(options)            
         elif options['method'] == 'cyt_app':
             self.plot_cyt_app(options)
@@ -67,6 +69,8 @@ class Net_plotter:
     ##########################################################################
     def plot_igraph(self, user_options = {}):
         random.seed(1234)
+        if not nx.get_edge_attributes(self.graph, 'weight'):
+            nx.set_edge_attributes(self.graph, values = 1, name = 'weight')
         ig_net = ig.Graph.from_networkx(self.graph)
         net_edge_weight = ig_net.es['weight']
         newMax= np.percentile(net_edge_weight, 90)
@@ -193,7 +197,7 @@ class Net_plotter:
         if len(self.reference_nodes) > 0:
             cyt_node['data']['ref'] = 'y' if node in self.reference_nodes else 'n'
         if len(group_nodes) > 0:
-            query = group_nodes[node]
+            query = group_nodes.get(node)
             if query != None: cyt_node['data']['group'] = query
         nodes.append(cyt_node)
 

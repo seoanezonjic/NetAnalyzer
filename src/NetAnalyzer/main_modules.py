@@ -504,7 +504,7 @@ def main_text2binary_matrix(options):
 
     if options.output_type == 'bin':
         np.save(options.output_file, matrix)
-    elif options.output_type == 'mat':
+    elif options.output_type == 'matrix':
         np.savetxt(options.output_file, matrix, delimiter='\t')
 
 # METHODS FOR NETANALYZER

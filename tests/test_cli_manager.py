@@ -346,8 +346,8 @@ def test_randomize(tmp_dir):
     ('set_diagonal_matrix', '{output_file}', '-i {input_file1} -t bin -o {output_file} -d', True), # setting diagonal to 1
     ('test_matrix_bin', '{output_file}', '-i {input_file1} -t bin -o {output_file} -O bin', True), # checking reading
     ('statistics_from_text2bin', '{statistics_file}', '-i {input_file1} -t bin -s {statistics_file} -o {output_file}', False), # extract stats from matrix
-    ('test_matrixfrommatrix', '{output_file}', '-i {input_file2} -t matrix -O mat -o {output_file}', False), # matrix with input in text matrix file
-    ('matrix_from_pairs', '{output_file}', '-i {input_file3} -t pair -O mat -o {output_file}', False) # Transform matrix from pairs
+    ('test_matrixfrommatrix', '{output_file}', '-i {input_file2} -t matrix -O matrix -o {output_file}', False), # matrix with input in text matrix file
+    ('matrix_from_pairs', '{output_file}', '-i {input_file3} -t pair -O matrix -o {output_file}', False) # Transform matrix from pairs
 ])
 def test_text2binary_matrix(tmp_dir, ref_name, ref_output, args, matrix):
     input_file1 = os.path.join(TEXT2BINARY_MATRIX, "test_matrix_bin.npy")

@@ -321,8 +321,6 @@ def text2binary_matrix(args=None):
     add_output_flags(parser, default_opt={"output_file": None})
     parser.add_argument('-i', '--input_file', dest="input_file", default=None,
     help="input file")
-    parser.add_argument('-b', '--byte_format', dest="byte_format", default="float64",
-    help='Format of the numeric values stored in matrix. Default: float64, warning set this to less precission can modify computation results using this matrix.')
     parser.add_argument('-t', '--input_type', dest="input_type", default='pair',
     help='Set input format file. "pair", "matrix" or "bin"')
     parser.add_argument('-O', '--output_type', dest="output_type", default='bin',

@@ -478,7 +478,7 @@ def main_text2binary_matrix(options):
     elif options.input_type == 'matrix':
         matrix = load_matrix_file(source)
     elif options.input_type == 'pair':
-        matrix, names = load_pair_file(source, options.byte_format)
+        matrix, names = load_pair_file(source)
         with open(options.output_file + ".lst", 'w') as f:
             f.write("\n".join(names))
 
@@ -626,7 +626,7 @@ def load_matrix_file(source, splitChar = "\t"):
 
     return matrix
 
-def load_pair_file(source, byte_format = "float32"): 
+def load_pair_file(source): 
     # Not used byte_forma parameter
     connections = {}
     for line in source:

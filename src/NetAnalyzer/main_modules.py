@@ -137,7 +137,7 @@ def main_netanalyzer(options):
         fullNet.ontologies
 
     if options.group_nodes:
-        fullNet.set_groups(options.group_nodes)
+        fullNet.set_groups(load_clusters(opts))
 
     if options.delete_nodes:
         node_list = CmdTabs.load_input_data(options.delete_nodes[0])
@@ -291,6 +291,7 @@ def main_randomize_clustering(options):
     options = vars(options)
     if options["seed"]: random.seed(options["seed"])
     cluster2nodes = load_clusters(options)
+    cluster2nodes = {cluster: pxc.uniq(nodes) for cluster, nodes in cluster2nodes.items()} # ensuring a cluster doesnt cotain replicates.
     random_clusters = {}
     # Reverse should go to expcalc
     node2clusters = {}
@@ -312,11 +313,6 @@ def main_randomize_clustering(options):
                 k = len(pxc.intersection(clusters,cluster_universe))
                 p = k/u_size
                 number_clust = random.binomial(u_size, p) 
-            try:
-                sampled_clusters = random.sample(cluster_universe, number_clust)
-            except ValueError: #TODO: This is a temporal solution, it should be improved. Tell to FGC
-                warnings.warn(f"Warning: There are only {len(cluster_universe)} available clusters to assign node {node}, but it is needed to assign it to {number_clust} clusters, so it is being limited to {len(cluster_universe)} for the execution not to break")
-                sampled_clusters = random.sample(cluster_universe, len(cluster_universe))
             for clust in sampled_clusters:
                 if random_clusters.get(clust):
                     random_clusters[clust].append(node)
@@ -554,20 +550,24 @@ def discover_and_write_cluster(net, cluster_alg, clust_kwargs, seed, output_buil
 
 def load_clusters(options):
     clusters = {}
-    with open(options['input_file'], "r") as f:
-        for line in f:
-            line = line.rstrip().split(options['column_sep'])
-            cluster = line[options['cluster_index']]
-            node = line[options['node_index']]
-            if options.get('node_sep') != None: 
-                node = node.split(options['node_sep'])
-                clusters[cluster] = node
-            else:
-                query = clusters.get(cluster)
-                if query == None: 
-                    clusters[cluster] = [node] 
+    if os.path.isfile(options['group_nodes']):
+        with open(options['group_nodes'], "r") as f:
+            for line in f:
+                line = line.rstrip().split("\t")
+                cluster = line[options['group_cluster_index']]
+                node = line[options['group_node_index']]
+                if options.get('node_sep') != None: 
+                    node = node.split(options['node_sep'])
+                    clusters[cluster] = node
                 else:
-                    query.append(node)
+                    query = clusters.get(cluster)
+                    if query == None: 
+                        clusters[cluster] = [node] 
+                    else:
+                        query.append(node)
+    else:
+        for i, group in enumerate(options['group_nodes'].split(";")):
+            clusters[i] = group.split(',')
     return clusters
 
 def random_sample(nodes, replacement, all_sizes, seed):

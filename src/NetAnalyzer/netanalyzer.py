@@ -1294,29 +1294,27 @@ class NetAnalyzer:
         random_network.graph = nx.relabel_nodes(self.graph, new_mapping)
         return random_network
 
-    def randomize_monopartite_net_by_links(self):
-        source = []
-        target = []
-        weigth = []
-        for e, datadict in self.graph.edges.items():
-            source.append(e[0])
-            target.append(e[1])
-            w = datadict.get('weigth')
-            if w != None: weigth.append(w)
-        random.shuffle(target)
-        random_network = self.clone() # TODO # Change to new instance with only an empty graph and layers defined
-        random_network.graph.clear()
-        for src in source:
-            i = 0
-            while src == target[i] or (random_network.graph.has_node(src) and target[i] in random_network.graph[src]):
-                i += 1
-            targ = target.pop(i)
-            if len(weigth) > 0:
-                random_network.graph.add_edge(src, targ, {'weigth' : weigth.pop()})
-            else:
-                random_network.graph.add_edge(src, targ)
-        return random_network
+    # def randomize_monopartite_net_by_links(self):
+    #     random_network = self.clone() # TODO # Change to new instance with only an empty graph and layers defined
+    #     random_network.graph.clear()
+    #     random_edges = list(self.graph.edges())
+    #     random.shuffle(random_edges)
+    #     while random_edges:
+    #         src, targ = random_edges.pop() 
+    #         if not random_edges:
+    #             break
+    #         new_src, new_targ = random_edges.pop()
+    #         if src != new_targ and new_src != targ: 
+    #             random_network.graph.add_edge(src, new_targ)
+    #             random_network.graph.add_edge(new_src, targ)
+    #         else:
+    #             random_edges.append((src, targ)) 
+    #     return random_network
 
+    def randomize_monopartite_net_by_links(self):
+        random_network = self.clone()  # Copy structure
+        nx.double_edge_swap(random_network.graph, max_tries= 1000)
+        return random_network
 
     def randomize_network(self, random_type, **user_options):
         if user_options.get("seed") != None: self.set_seed(user_options.get("seed"))

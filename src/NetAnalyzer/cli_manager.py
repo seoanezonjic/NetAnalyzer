@@ -106,6 +106,14 @@ def add_input_graph_flags(parser, multinet = False):
     parser.add_argument("--both_repre_formats", dest="load_both", default=False, action='store_true',
                         help="If we need to load the adjacency matrixes and the graph object")
 
+def add_cluster_flags(parser):
+    parser.add_argument("-G","--group_nodes", dest="group_nodes", default=None,
+    help="File path or groups separated by ';' and group node ids comma separared")
+    parser.add_argument("--group_node_column", dest="group_node_index", default= 1, type=based_0, 
+    help="Number of the nodes column")
+    parser.add_argument("--group_cluster_column", dest="group_cluster_index", default= 0, type=based_0, 
+    help="Number of the clusters column")
+
 def add_resources_flags(parser, default_opt={"threads": 1}):
     parser.add_argument("-T", "--threads", dest="threads", default=default_opt["threads"], type=int,
         help="Number of threads to use in computation.")
@@ -143,6 +151,7 @@ def netanalyzer(args=None):
     add_input_graph_flags(parser)
     add_output_flags(parser, default_opt={"output_file": "output_file"})
     add_random_seed(parser, default_seed=None)
+    add_cluster_flags(parser)
     parser.add_argument("-O", "--ontology", dest="ontologies", default=[], type=lambda x: double_split(x, sep1=";",sep2=","),
                         help="String that define which ontologies must be used with each layer. String definition:'layer_name1,path_to_obo_file1;layer_name2,path_to_obo_file2'")
     # Filters
@@ -180,8 +189,6 @@ def netanalyzer(args=None):
     # Nodes states
     parser.add_argument("-r","--reference_nodes", dest="reference_nodes", default=[], type= lambda x: single_split(x, sep=","),
     help="Node ids comma separared")
-    parser.add_argument("-G","--group_nodes", dest="group_nodes", default={}, type= group_nodes_parse,
-    help="File path or groups separated by ';' and group node ids comma separared")
     parser.add_argument("--split_groups", dest="split_groups", default=False, action= "store_true",  
         help="Split groups in subgroups based on clustering methods")
     parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lambda x: single_split(x, sep=";"),
@@ -237,22 +244,13 @@ def netanalyzer(args=None):
 
     opts = parser.parse_args(args)
     main_netanalyzer(opts)
-	
+
 def randomize_clustering(args=None):
     parser = argparse.ArgumentParser(description='Perform clusters randomization')
     add_output_flags(parser, default_opt={"output_file": "random_clusters.txt"})
-    parser.add_argument("-i", "--input_file", dest="input_file", default= None, 
-    help="Input file to create networks for further analysis")
-    parser.add_argument("-S", "--split_char", dest="column_sep", default = "\t", 
-    help="Character for splitting input file. Default: tab")
+    add_cluster_flags(parser)
     parser.add_argument("-a", "--aggregate_sep", dest="aggregate_sep", default = None, 
     help="This option activates aggregation in output. Separator character must be provided")
-    parser.add_argument("-N", "--node_column", dest="node_index", default= 1, type=based_0, 
-    help="Number of the nodes column")
-    parser.add_argument("-C", "--cluster_column", dest="cluster_index", default= 0, type=based_0, 
-    help="Number of the clusters column")
-    parser.add_argument("-s", "--node_sep", dest="node_sep", default = None, 
-    help="Node split character. This option must to be used when input file is aggregated")
     # random conf
     parser.add_argument("-r", "--random_type", dest="random_type", default = ["hard_fixed"], type = lambda x: single_split(x,sep=":"), 
     help="""Indicate random mode. First, the not custom randomization, where cluster size is the same: 
@@ -329,7 +327,7 @@ def text2binary_matrix(args=None):
     parser.add_argument('-d', '--set_diagonal', dest="set_diagonal", default=False, action='store_true',
     help='Set to 1.0 the main diagonal')
     parser.add_argument('-B', '--binarize', dest="binarize", default=None, type = float,
-    help='Binarize matrix changin x >= thr to one and any other to zero into matrix given')
+    help='Binarize matrix changing x >= thr to one and any other to zero into matrix given')
     parser.add_argument('-c', '--cutoff', dest="cutoff", default=None, type = float,
     help='Cutoff matrix values keeping just x >= and setting any other to zero into matrix given')
     # Get stats
@@ -340,7 +338,7 @@ def text2binary_matrix(args=None):
     main_text2binary_matrix(opts)
 
 def net_explorer(args=None, test=False):
-    parser = argparse.ArgumentParser(description="Transforming matrix format and obtaining statistics")
+    parser = argparse.ArgumentParser(description="Exploring different networks attributes")
     add_common_relations_process(parser) # Common relations options
     add_input_graph_flags(parser, multinet = True) # Input graph
     add_seed_flags(parser) # Adding seeds

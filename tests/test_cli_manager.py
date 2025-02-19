@@ -318,15 +318,16 @@ def test_randomize(tmp_dir):
     input_file = os.path.join(DATA_PATH, "bipartite_network_for_validating.txt")
     output_file = os.path.join(tmp_dir, "random_clusters.txt")
     ref_file = os.path.join(RANDOMIZE_CLUSTERING, "random_clusters.txt")
-    args=f"-i {input_file} -o {output_file} -r custom:3:3:nr".split(" ")
+    args=f"-G {input_file} -o {output_file} -r custom:3:3:nr".split(" ")
     _, printed = randomize_clustering(args)
     diff(ref_file, output_file)
 
     input_file = os.path.join(DATA_PATH, "minicluster")
     output_file = os.path.join(tmp_dir, "random_clusters.txt")
     ref_file = os.path.join(RANDOMIZE_CLUSTERING, "random_minicluster.txt")
-    args=f"-i {input_file} -o {output_file} -r hard_fixed --seed 111".split(" ")
+    args=f"-G {input_file} -o {output_file} -r hard_fixed --seed 111".split(" ")
     _, printed = randomize_clustering(args)
+    print(printed)
     diff(ref_file, output_file)
 
     # Randomize network

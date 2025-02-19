@@ -313,6 +313,7 @@ def main_randomize_clustering(options):
                 k = len(pxc.intersection(clusters,cluster_universe))
                 p = k/u_size
                 number_clust = random.binomial(u_size, p) 
+            sampled_clusters = random.sample(cluster_universe, number_clust)
             for clust in sampled_clusters:
                 if random_clusters.get(clust):
                     random_clusters[clust].append(node)

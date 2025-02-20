@@ -336,7 +336,7 @@ def main_randomize_clustering(options):
                 i += len(nodes)
     else:
         all_sizes = [int(options['random_type'][2])] * int(options['random_type'][1])
-        all_nodes = list(node2clusters.keys())
+        all_nodes = [node for node, _ in node2clusters]
         random_clusters = random_sample(all_nodes, options['random_type'][3] == "r", all_sizes, options['seed']) 
 
     write_clusters(random_clusters, options['output_file'], options['aggregate_sep'])

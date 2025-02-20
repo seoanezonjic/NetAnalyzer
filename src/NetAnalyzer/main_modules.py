@@ -301,10 +301,12 @@ def main_randomize_clustering(options):
                 node2clusters[node] = [cluster]
             else:
                 node2clusters[node].append(cluster) 
+    node2clusters = list(node2clusters.items())
+    node2clusters.sort(key=lambda x: -len(x[1]))
     if options["random_type"][0] == "hard_fixed" or options["random_type"] == "soft_fixed":
         # Setting universe com and exiled:
         cluster_universe = list(cluster2nodes.keys())
-        for node, clusters in node2clusters.items():
+        for node, clusters in node2clusters:
             if options["random_type"][0] == "hard_fixed":
                 number_clust = len(clusters)
                 if len(set(clusters)) < number_clust: raise Exception("A node is being defined two or more times to the same cluster")
@@ -333,7 +335,6 @@ def main_randomize_clustering(options):
                 random_clusters[cluster] = all_nodes[i, i+len(nodes)]
                 i += len(nodes)
     else:
-        # Hacemos el procedimiento que se seguia con anterioridad r/nr
         all_sizes = [int(options['random_type'][2])] * int(options['random_type'][1])
         all_nodes = list(node2clusters.keys())
         random_clusters = random_sample(all_nodes, options['random_type'][3] == "r", all_sizes, options['seed']) 

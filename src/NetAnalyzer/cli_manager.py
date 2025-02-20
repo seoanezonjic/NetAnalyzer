@@ -213,7 +213,7 @@ def netanalyzer(args=None):
     help="Type of cluster algorithm")
     parser.add_argument("-B", "--build_clusters_add_options", dest="build_clusters_add_options", default="",
     help="Additional options for clustering methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...'")
-    parser.add_argument("--output_build_clusters", dest="output_build_clusters", default=None, help= "output name for discovered clusters")
+    parser.add_argument("--output_build_clusters", dest="output_build_clusters", default="discovered_clusters.txt", help= "output name for discovered clusters")
     # Expand cluster
     parser.add_argument("-x","--expand_clusters", dest="expand_clusters", default=None,
     help="Method to expand clusters Available methods: sht_path")
@@ -223,7 +223,7 @@ def netanalyzer(args=None):
     # Cluster metrics
     parser.add_argument("-M", "--group_metrics", dest="group_metrics", default=None, type= lambda x: single_split(x, sep=";"),
     help="Perform group group_metrics")
-    parser.add_argument("--output_metrics_by_cluster", dest="output_metrics_by_cluster", default='group_metrics.txt', help= "output name for metrics by cluster file")
+    parser.add_argument("--output_metrics_by_cluster", dest="output_metrics_by_cluster", default='group_metrics.txt', help= "output name for metrics by cluster file, by default: group_metrics.txt")
     parser.add_argument("-S", "--summarize_metrics", dest="summarize_metrics", default=None, type= lambda x: single_split(x, sep=";"),
     help="Summarize metrics from groups")
     parser.add_argument("--output_summarized_metrics", dest="output_summarized_metrics", default='group_metrics_summarized.txt', help= "output name for summarized metrics file")

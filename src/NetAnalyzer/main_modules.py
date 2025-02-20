@@ -538,7 +538,6 @@ def discover_and_write_cluster(net, cluster_alg, clust_kwargs, seed, output_buil
             output_build_clusters = cluster_alg + \
                 '_' + 'discovered_clusters.txt'
 
-        print(net.group_nodes)
         with open(output_build_clusters, type_write) as out_file:
             for cl_id, nodes in net.group_nodes.items():
                 for node in nodes:

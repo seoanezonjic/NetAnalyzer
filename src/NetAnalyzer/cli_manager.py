@@ -166,7 +166,7 @@ def netanalyzer(args=None):
     help="Output file name for association values")
     parser.add_argument("-p","--performance_file", dest="performance_file", default='perf_values.txt',
     help="Output file name for performance values")
-    parser.add_argument("-u","--use_layers", dest="use_layers", default=[], type= lambda x: double_split(x, sep1=";",sep2=","),
+    parser.add_argument("-u","--use_layers", dest="use_layers", default=[['layer']], type= lambda x: double_split(x, sep1=";",sep2=","),
     help="Set which layers must be used on association methods: layer1,layer2;layerA,layerB")
     parser.add_argument("-c","--control_file", dest="control_file", default=None,
     help="Control file name")

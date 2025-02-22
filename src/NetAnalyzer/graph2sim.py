@@ -72,18 +72,19 @@ class Graph2sim:
     allowed_embeddings = ['node2vec', 'deepwalk', 'prone', 'comm_aware', 'ggvec', 'grarep', 'glove']
     allowed_kernels = ['el', 'ct', 'rf', 'me', 'vn', 'rl', 'ka', 'md']
 
-    def get_embedding(adj_mat, embedding_nodes, embedding = "node2vec", quiet=False, seed = None, clusters=None, embedding_kwargs={}):
+    def get_embedding(adj_mat, embedding_nodes, embedding = "node2vec", quiet=True, seed = None, clusters=None, embedding_kwargs={}):
         default_options = {"dimensions":64}
         comm_aware_options={"clusters": None, "neigh_w":1, "comm_w":1, "hs" : 0}
         random_walker_options={"walk_length":30, "num_walks": 200}
         w2v_options={"hs" : 0,"sg" : 0, "negative":5, "p" : 1, "q" : 1, "workers" : 16, "window" : 10, "min_count":1, 
                     "seed": None, "batch_words":4}
         prone_options={"step":10, "mu":0.2, "theta":0.5, "exponent":0.75}
-        glove_options={"tol":0.0001, "max_epoch":1000,"max_count":50, "learning_rate":0.1,
-                        "max_loss":10., "exponent":0.5,"threads":0}
-        grape_options={"order":2}
+        glove_options={"tol":"auto", "max_epoch":350,"max_count":50, "learning_rate":0.1,
+                        "max_loss":10., "exponent": 0.33,"threads":0}
+        ggvec_optinos={"tol_samples":30, "negative_ratio":0.15}
+        grape_options={"order":1}
         default_options = {**default_options, **grape_options, **glove_options, **prone_options, 
-                           **comm_aware_options, **random_walker_options, **w2v_options, **embedding_kwargs}
+                           **comm_aware_options, **random_walker_options, **w2v_options, **ggvec_optinos}
         default_options.update(embedding_kwargs)
 
         emb_coords = None
@@ -123,7 +124,10 @@ class Graph2sim:
                                         theta=default_options["theta"], exponent=default_options["exponent"], verbose=verbose)
             elif embedding == "ggvec":
                 # "Best on large graphs and for visualization" from nodevectors repository
-                g2v = nodevectors.GGVec()
+                g2v = nodevectors.GGVec(n_components=default_options["dimensions"], order=default_options["order"], learning_rate=default_options["learning_rate"], 
+                                        max_loss=default_options["learning_rate"], tol=default_options["tol"], tol_samples=default_options["tol_samples"], 
+                                        exponent=default_options["exponent"], threads=default_options["threads"], negative_ratio=default_options["negative_ratio"], 
+                                        max_epoch=default_options["max_epoch"], verbose=verbose)
             elif embedding == "grarep":
                 # https://dl.acm.org/doi/abs/10.1145/2806416.2806512
                 g2v = nodevectors.GraRep(n_components=default_options["dimensions"],order=default_options["order"],verbose=verbose)

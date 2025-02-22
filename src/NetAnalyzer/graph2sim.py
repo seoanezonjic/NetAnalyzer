@@ -1,6 +1,10 @@
 import sys 
 import numpy as np
-from scipy import linalg
+import scipy
+from scipy import sparse, linalg
+from scipy.sparse import csr_matrix
+from sklearn import preprocessing
+from sklearn.utils.extmath import randomized_svd
 from warnings import warn
 import networkx as nx
 #from NetAnalyzer.adv_mat_calc import Adv_mat_calc
@@ -9,6 +13,111 @@ from pecanpy import pecanpy
 from gensim.models import Word2Vec
 import random # for the random walker
 
+class ProNE:
+        def __init__(self, n_components=32, step=10, mu=0.2, theta=0.5, 
+                exponent=0.75, verbose=True):
+            self.model = None
+            self.n_components = n_components
+            self.step = step
+            self.mu = mu
+            self.theta = theta
+            self.exponent = exponent
+            self.verbose = verbose
+        
+        def fit(self, adj_matrix, nodes):
+            adj_matrix = csr_matrix(adj_matrix)
+            features_matrix = self.pre_factorization(adj_matrix,
+                                                     self.n_components, 
+                                                     self.exponent)
+            vectors = self.chebyshev_gaussian(
+                adj_matrix, features_matrix, self.n_components,
+                step=self.step, mu=self.mu, theta=self.theta)
+            self.model = dict(zip(nodes, vectors))
+
+        def tsvd_rand(self, matrix, n_components):
+            """
+            Sparse randomized tSVD for fast embedding
+            """
+            l = matrix.shape[0]
+            smat = sparse.csc_matrix(matrix)
+            U, Sigma, VT = randomized_svd(smat, 
+                n_components=n_components, 
+                n_iter=5, random_state=None)
+            U = U * np.sqrt(Sigma)
+            U = preprocessing.normalize(U, "l2")
+            return U
+
+        def pre_factorization(self, G, n_components, exponent):
+            """
+            Network Embedding as Sparse Matrix Factorization
+            """
+            C1 = preprocessing.normalize(G, "l1")
+            # Prepare negative samples
+            neg = np.array(C1.sum(axis=0))[0] ** exponent
+            neg = neg / neg.sum()
+            neg = sparse.diags(neg, format="csr")
+            neg = G.dot(neg)
+            # Set negative elements to 1 -> 0 when log
+            C1.data[C1.data <= 0] = 1
+            neg.data[neg.data <= 0] = 1
+            C1.data = np.log(C1.data)
+            neg.data = np.log(neg.data)
+            C1 -= neg
+            features_matrix = self.tsvd_rand(C1, n_components=n_components)
+            return features_matrix
+
+        def chebyshev_gaussian(self, G, a, n_components=32, step=10, 
+                           mu=0.5, theta=0.5):
+            """
+            NE Enhancement via Spectral Propagation
+            G : Graph (csr graph matrix)
+            a : features matrix from tSVD
+            mu : damping factor
+            theta : bessel function parameter
+            """
+            nnodes = G.shape[0]
+            if step == 1:
+                return a
+            A = sparse.eye(nnodes) + G
+            DA = preprocessing.normalize(A, norm='l1')
+            # L is graph laplacian
+            L = sparse.eye(nnodes) - DA
+            M = L - mu * sparse.eye(nnodes)
+            Lx0 = a
+            Lx1 = M.dot(a)
+            Lx1 = 0.5 * M.dot(Lx1) - a
+            conv = scipy.special.iv(0, theta) * Lx0
+            conv -= 2 * scipy.special.iv(1, theta) * Lx1
+            # Use Bessel function to get Chebyshev polynomials
+            for i in range(2, step):
+                Lx2 = M.dot(Lx1)
+                Lx2 = (M.dot(Lx2) - 2 * Lx1) - Lx0
+                if i % 2 == 0:
+                    conv += 2 * scipy.special.iv(i, theta) * Lx2
+                else:
+                    conv -= 2 * scipy.special.iv(i, theta) * Lx2
+                Lx0 = Lx1
+                Lx1 = Lx2
+                del Lx2
+            mm = A.dot(a - conv)
+            emb = self.svd_dense(mm, n_components)
+            return emb
+        
+        def svd_dense(self, matrix, dimension):
+            """
+            dense embedding via linalg SVD
+            """
+            U, s, Vh = linalg.svd(matrix, full_matrices=False, 
+                                  check_finite=False, 
+                                  overwrite_a=True)
+            U = np.array(U)
+            U = U[:, :dimension]
+            s = s[:dimension]
+            s = np.sqrt(s)
+            U = U * s
+            U = preprocessing.normalize(U, "l2")
+            return U
+                
 class RandomWalker:
 
     def __init__(self, G, neigh_w, comm_w, community_nodes, num_walks, walk_length):
@@ -69,7 +178,7 @@ class RandomWalker:
 
 class Graph2sim:
 
-    allowed_embeddings = ['node2vec', 'deepwalk', 'comm_aware']
+    allowed_embeddings = ['node2vec', 'deepwalk', 'prone', 'comm_aware']
     allowed_kernels = ['el', 'ct', 'rf', 'me', 'vn', 'rl', 'ka', 'md']
 
     def get_embedding(adj_mat, embedding_nodes, embedding = "node2vec", clusters=None, neigh_w=1, comm_w=1,
@@ -106,13 +215,16 @@ class Graph2sim:
                              workers=workers, hs= hs, sg = sg,
                              negative=negative) # point to extend
             list_arrays=[model.wv.get_vector(str(n)) for n in embedding_nodes]
-            n_cols=list_arrays[0].shape[0] # Number of col
-            n_rows=len(list_arrays)# Number of rows
-            emb_coords = np.concatenate(list_arrays).reshape([n_rows,n_cols]) # Concat all the arrays at one.
+        elif embedding == "prone":
+                g2v = ProNE()
+                g2v.fit(adj_mat, embedding_nodes)
+                list_arrays=[g2v.model[node] for node in embedding_nodes]
         else:
             print('Warning: The embedding method was not specified or not exists.')                                                                                                      
             sys.exit(0)
-
+        n_cols=list_arrays[0].shape[0] # Number of col
+        n_rows=len(list_arrays)# Number of rows
+        emb_coords = np.concatenate(list_arrays).reshape([n_rows,n_cols]) # Concat all the arrays at one.
         return emb_coords
 
     def emb_coords2kernel(emb_coords, normalization = False, sim_type= "dotProduct"):

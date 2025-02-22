@@ -714,7 +714,7 @@ class NetAnalyzer:
             rowIds = list(self.graph.nodes())
 
         if method in Graph2sim.allowed_embeddings:
-            emb_coords = Graph2sim.get_embedding(graph, embedding = method, embedding_nodes=rowIds, **embedding_kwargs)
+            emb_coords = Graph2sim.get_embedding(graph, embedding = method, embedding_nodes=rowIds, clusters= self.group_nodes, embedding_kwargs=embedding_kwargs)
             kernel = Graph2sim.emb_coords2kernel(emb_coords, normalization, sim_type= sim_type)
             colIds = rowIds
         elif method[0:2] in Graph2sim.allowed_kernels:

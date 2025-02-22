@@ -150,6 +150,11 @@ class Graph2sim:
         kernel = pxc.coords2sim(emb_coords, sim = sim_type)
         if normalization: kernel = pxc.cosine_normalization(kernel)
         return kernel
+    
+    def kernel2emb_coords(kernel):
+        U, S, _ = np.linalg.svd(kernel)
+        emb_coords = U @ np.diag(np.sqrt(S))
+        return emb_coords
 
     def get_kernel(matrix, kernel, normalization=False): #2exp?
         #I = identity matrix

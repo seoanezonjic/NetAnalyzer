@@ -6,13 +6,13 @@ class Net_parser:
 	def load(options):
 		net = None
 		if options['input_format'] == 'pair':
-		  net = Net_parser.load_network_by_pairs(options['input_file'], options['layers'], options['split_char'])
+			net = Net_parser.load_network_by_pairs(options['input_file'], options['layers'], options['split_char'])
 		elif options['input_format'] == 'bin':
-		  net = Net_parser.load_network_by_bin_matrix(options['input_file'], options['node_files'], options['layers'])
+			net = Net_parser.load_network_by_bin_matrix(options['input_file'], options['node_files'], options['layers'])
 		elif options['input_format'] == 'matrix':
-		  net = Net_parser.load_network_by_plain_matrix(options['input_file'], options['node_files'], options['layers'], options['split_char'])
+			net = Net_parser.load_network_by_plain_matrix(options['input_file'], options['node_files'], options['layers'], options['split_char'])
 		else:
-		  raise("ERROR: The format " + options['input_format'] + " is not defined")
+			raise("ERROR: The format " + options['input_format'] + " is not defined")
 
 		if options.get('load_both'): # TODO: Not tested Yet.
 			if not net.graph:

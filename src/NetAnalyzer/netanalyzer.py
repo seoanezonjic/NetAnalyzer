@@ -141,6 +141,10 @@ class NetAnalyzer:
     def adjMat2netObj(self, layerA, layerB):
         matrix, rowIds, colIds = self.matrices["adjacency_matrices"][(layerA, layerB)] 
 
+        if not self.graph.nodes:
+            nodes_to_remove = {node for node in self.graph.nodes if self.graph.nodes[node].get("layer") in {layerA, layerB}}
+            self.graph.remove_nodes_from(nodes_to_remove)
+
         self.graph = nx.Graph()
         for rowId in rowIds: self.add_node(rowId, layerA)
         for colId in colIds: self.add_node(colId, layerB)

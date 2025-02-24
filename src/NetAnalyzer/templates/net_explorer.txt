@@ -1,13 +1,27 @@
 <%
     import pandas as pd
     def plot_embdedding(data, plotter_list):
-        plotter_list["sns"].scatterplot(data=data[data['group_seed'] == 'background'], x='coord1', y='coord2', color='lightgrey', label='background', zorder=1)
-        plotter_list["sns"].scatterplot(data=df[df['group_seed'] != 'background'], x='coord1', y='coord2', hue='group_seed', palette='Set2', legend=True, zorder=2)
+        plotter_list["sns"].scatterplot(data=data[data['group_seed'] == 'background'], x='coord1', y='coord2', 
+            color='lightgrey', label='background', zorder=1, s=30)
+
+        if 'group' in data.columns:
+            plotter_list["sns"].scatterplot(data=data[data['group'] != 'background'], x='coord1', y='coord2', hue='group', palette='Set2', 
+                color='lightgrey', legend=True, zorder=2, s=30)
+
+        plotter_list["sns"].scatterplot(data=df[df['group_seed'] != 'background'], x='coord1', y='coord2',
+         hue='group_seed', palette='bright', legend=True, zorder=3, s=50).legend(title=None)
+        
     
     node2seed = {}
     for seed, nodes in plotter.hash_vars["seeds2explore"].items():
         for node in nodes:
             if not node2seed.get(node): node2seed[node] = seed
+
+    node2group = {}
+    if plotter.hash_vars["groups2explore"]:
+        for group, nodes in plotter.hash_vars["groups2explore"].items():
+            for node in nodes:
+                if not node2group.get(node): node2group[node] = group
 %>
 
 ## Seeds LCC.
@@ -20,12 +34,13 @@ for seed, net_lcc in plotter.hash_vars["seeds2lcc"].items():
     for net, lcc in net_lcc.items():
         table_lcc.append([seed, net, lcc])
 plotter.hash_vars["table_lcc"] = table_lcc
+print(table_lcc)
 %>
 ${plotter.barplot(id='table_lcc', responsive= False, header=True,
                          fields = [0,2],
                          x_label = 'LCC size',
                          height = '400px', width= '400px',
-                         var_attr = [0,1],
+                         smp_attr = [1], title="",
                          config = {
                                 'showLegend' : True,
                                 'colorBy' : 'seed_name',
@@ -47,10 +62,12 @@ ${plotter.create_title(f"Group of genes: {seed}", id='net_study', hlevel=2, inde
 % for net, subgraph in net2subgraph.items():
 ${plotter.create_title(f"<b>{net}</b>", id='net_study', hlevel=3, indexable=True, clickable=False)}
 <% key = net+"_"+seed
-plotter.hash_vars[key] = {"graph": subgraph, "layers": ["layer", "layer"], "reference_nodes": plotter.hash_vars["seeds2explore"][seed], "group_nodes": []}  
-layout = "forcedir" if plotter.hash_vars["plot_method"] == "elgrapho" else None
+plotter.hash_vars[key] = {"graph": subgraph, 
+    "layers": ["layer", "layer"], 
+    "reference_nodes": plotter.hash_vars["seeds2explore"][seed], 
+    "group_nodes": plotter.hash_vars["groups2explore"] if plotter.hash_vars.get("groups2explore") else {}}  
 %>
-${plotter.network(id = key, method = plotter.hash_vars["plot_method"], layout=layout)} 
+${plotter.network(id = key, **plotter.hash_vars["plot_options"])} 
 %endfor
 %endfor
 %endif
@@ -63,6 +80,11 @@ ${plotter.create_title(f"embedding in {graph}", id=f"net_emb_{graph}", hlevel=2,
 coords, nodes = embedding 
 df = pd.DataFrame(coords, columns= ["coord1","coord2"])
 df = df.assign(group_seed=[node2seed[node] if node2seed.get(node) else "background" for node in nodes]) 
+
+if plotter.hash_vars["groups2explore"]:
+    print(node2group)
+    df = df.assign(group=[node2group[node] if node2group.get(node) else "background" for node in nodes]) 
+
 plotter.hash_vars["net_proj"] = df
 %>
 ${plotter.static_plot_main(id="net_proj", raw= True, plotting_function= lambda data, plotter_list: plot_embdedding(data, plotter_list))} 

@@ -21,18 +21,28 @@ def main_net_explorer(options, test = False):
     # loading gene seeds.
     options = vars(options)
     if options["seed_nodes"]: seeds2explore, _ = SeedParser.load_nodes_by_group(options["seed_nodes"], sep=options["seed_sep"])
+    if options["group_nodes"]: 
+        groups2explore = load_clusters(options)
+    else:
+        groups2explore = None
 
+    print(groups2explore)
     # Loading multinet operations
     multinet = {}
     for net_id, net_file in options["input_file"].items():
-        nodes = options['node_files'][net_id]
-        multinet[net_id] = Net_parser.load_network_by_bin_matrix(net_file, [nodes], [['layer', '-']])
+        options_single_net = {'input_format': options['input_format'], 'input_file': net_file,
+                              'node_files': [options['node_files'][net_id]] if options['node_files'] else None,
+                              'layers': [['layer', '-']],
+                              'split_char': options['split_char'],
+                              'load_both': True}
+        print(options_single_net)
+        multinet[net_id] = Net_parser.load(options_single_net)
         cutoff = options["layer_cutoff"].get(net_id)
         if options["no_autorelations"]: np.fill_diagonal(multinet[net_id].matrices['adjacency_matrices'][('layer','layer')][0], 0)
         if cutoff:
             cutoff = float(cutoff)
             multinet[net_id].filter_matrix( mat_keys=('adjacency_matrices',('layer','layer')),operation='filter_cutoff', options={'cutoff': cutoff}, add_to_object=True)
-        multinet[net_id].adjMat2netObj('layer','layer')
+            multinet[net_id].adjMat2netObj('layer','layer')
 
     # extract a subgraph for each
     if options["seed_nodes"]:
@@ -44,11 +54,16 @@ def main_net_explorer(options, test = False):
             for net_id, net in multinet.items():
                 # get neighbor from node
                 nodes_with_neigh = set(nodes)
-                neigh_level = int(options["neigh_level"].get(net_id)) if options["neigh_level"].get(net_id) else 0
-                for i in range(0, neigh_level): nodes_with_neigh = get_neigh_set(net, nodes_with_neigh)
-                seeds2subgraph[seed][net_id] = net.graph.subgraph(nodes_with_neigh)
+                if options["neigh_level"].get(net_id):
+                    neigh_level = int(options["neigh_level"].get(net_id))
+                    for i in range(0, neigh_level): nodes_with_neigh = get_neigh_set(net, nodes_with_neigh)
+                    seeds2subgraph[seed][net_id] = net.graph.subgraph(nodes_with_neigh)
+                else:
+                    seeds2subgraph[seed][net_id] = net.graph
+                print(seeds2subgraph[seed][net_id].nodes())
                 largest_cc = len(max(nx.connected_components(seeds2subgraph[seed][net_id]), key=len))
                 seeds2lcc[seed][net_id] = largest_cc
+                print(seeds2lcc)
 
     # # If mention, add node2vec coordinates with a tnse proyection.
     net2embedding_proj = None
@@ -61,6 +76,7 @@ def main_net_explorer(options, test = False):
             net2embedding_proj[net_id] = [umap_coords, embedding_nodes]
 
     # Comparing nets:
+    net_sims = None
     if options["compare_nets"]:
         network_ids = list(options["input_file"].keys())
         num_nets = len(network_ids)
@@ -73,15 +89,20 @@ def main_net_explorer(options, test = False):
                 sim_nets[i,j+i] = sim_i_j
                 sim_nets[j+i,i] = sim_i_j
         net_sims = [sim_nets, network_ids]
-                
-
+               
     # Execute the reports in the process.
     template = open(str(os.path.join(os.path.dirname(__file__), 'templates','net_explorer.txt'))).read()
-    container = {"seeds2explore": seeds2explore, "seeds2subgraph": seeds2subgraph, "seeds2lcc":seeds2lcc, "net2embedding_proj": net2embedding_proj, "net_sims": net_sims, "plot_method": options["plot_network_method"]}
+    container = {"seeds2explore": seeds2explore, 
+                "seeds2subgraph": seeds2subgraph, 
+                "seeds2lcc":seeds2lcc, 
+                "net2embedding_proj": net2embedding_proj, 
+                "net_sims": net_sims, 
+                "groups2explore": groups2explore,
+                "plot_options": options["graph_options"]}
 
     report = Py_report_html(container, 'Network explorer')
     report.build(template)
-    report.write(options["output_file"]+".html")
+    report.write(options["graph_file"]+".html")
 
     if test: return container
 

@@ -437,7 +437,7 @@ def test_integration(tmp_dir, ref_file, output_file, args):
 ################
 
 @pytest.mark.parametrize("args", [
-    ( "-i graphA,{net1}.npy;graphB,{net2}.npy -n graphA,{net1}.lst;graphB,{net2}.lst -N --neigh_level layerA,1;layerB,2 --seed_nodes {seeds} -o {output_file} --embedding_proj umap --plot_network_method pyvis --compare_nets")
+    ( "-i graphA,{net1}.npy;graphB,{net2}.npy -n graphA,{net1}.lst;graphB,{net2}.lst -f bin --neigh_level 0 -N --neigh_level layerA,1;layerB,2 --seed_nodes {seeds} -g {output_file} --embedding_proj umap --compare_nets")
 ])
 def test_net_explorer(tmp_dir, args):
     output_file = os.path.join(tmp_dir, "output_file")

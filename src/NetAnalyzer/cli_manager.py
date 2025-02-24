@@ -122,6 +122,12 @@ def add_resources_flags(parser, default_opt={"threads": 1}):
 def add_common_relations_process(parser):
     parser.add_argument("-N","--no_autorelations", dest="no_autorelations", default=False, action='store_true',
                         help="No processing autorelations")
+    
+def add_plotting_options(parser, default_opt={"graph_file": None}):
+    parser.add_argument("-g", "--graph_file", dest="graph_file", default=default_opt["graph_file"],
+        help="Build a graphic representation of the network")
+    parser.add_argument("--graph_options", dest="graph_options", default={'method': 'elgrapho', 'layout': 'forcedir', 'steps': '30'}, type= graph_options_parse,
+        help="Set graph parameters as 'NAME1=value1,NAME2=value2,...")
 
 ##############################################
 
@@ -182,10 +188,7 @@ def netanalyzer(args=None):
     parser.add_argument("-K","--kernel_file", dest="kernel_file", default='kernel_file',
     help="Output file name for kernel values")
     # Plotting
-    parser.add_argument("-g", "--graph_file", dest="graph_file", default=None,
-    help="Build a graphic representation of the network")
-    parser.add_argument("--graph_options", dest="graph_options", default={'method': 'elgrapho', 'layout': 'forcedir', 'steps': '30'}, type= graph_options_parse,
-    help="Set graph parameters as 'NAME1=value1,NAME2=value2,...")
+    add_plotting_options(parser)
     # Nodes states
     parser.add_argument("-r","--reference_nodes", dest="reference_nodes", default=[], type= lambda x: single_split(x, sep=","),
     help="Node ids comma separared")
@@ -342,15 +345,14 @@ def net_explorer(args=None, test=False):
     add_common_relations_process(parser) # Common relations options
     add_input_graph_flags(parser, multinet = True) # Input graph
     add_seed_flags(parser) # Adding seeds
-    add_output_flags(parser, default_opt={"output_file": "output_file"})
+    add_cluster_flags(parser)
+    add_plotting_options(parser, default_opt={"graph_file": "output_file"})
     # layer processing
     parser.add_argument('-c', '--layer_cutoff', dest="layer_cutoff", default={}, type = lambda string: loading_dic(string, sep1=";", sep2=","),
     help='Cutoff to apply to every layer in the multiplexed one')
     # Analysis options
-    parser.add_argument("-l", "--neigh_level", dest="neigh_level", default={}, type = lambda string: loading_dic(string, sep1=";", sep2=","),
+    parser.add_argument("--neigh_level", dest="neigh_level", default={}, type = lambda string: loading_dic(string, sep1=";", sep2=","),
     help="Defining the level of neighbourhood on the initial set of nodes")
-    parser.add_argument("--plot_network_method", dest="plot_network_method", default="pyvis",
-    help="Defining the plot method used on report")
     parser.add_argument("--embedding_proj", dest="embedding_proj", default=None,
     help="Select different projections methods: umap")
     parser.add_argument("--compare_nets", dest="compare_nets", default=False, action="store_true")

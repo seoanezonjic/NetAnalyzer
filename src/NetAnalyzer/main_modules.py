@@ -26,7 +26,6 @@ def main_net_explorer(options, test = False):
     else:
         groups2explore = None
 
-    print(groups2explore)
     # Loading multinet operations
     multinet = {}
     for net_id, net_file in options["input_file"].items():
@@ -35,7 +34,6 @@ def main_net_explorer(options, test = False):
                               'layers': [['layer', '-']],
                               'split_char': options['split_char'],
                               'load_both': True}
-        print(options_single_net)
         multinet[net_id] = Net_parser.load(options_single_net)
         cutoff = options["layer_cutoff"].get(net_id)
         if options["no_autorelations"]: np.fill_diagonal(multinet[net_id].matrices['adjacency_matrices'][('layer','layer')][0], 0)
@@ -371,7 +369,7 @@ def main_randomize_network(options):
         for e in randomNet.graph.edges:
             outfile.write(f"{e[0]}\t{e[1]}\n")
 
-def worker_ranker(seed_groups, seed_weight, opts, nodes, all_rankings, lock):
+def worker_ranker(seed_groups, seed_weight, opts, nodes, all_rankings, matrix, lock):
     ranker = Ranker()
     if opts["seed_presence"] == "remove":
         ranker.seed_presence = False
@@ -380,7 +378,8 @@ def worker_ranker(seed_groups, seed_weight, opts, nodes, all_rankings, lock):
     for sg_id, ws in seed_weight:
         if ws is not None: ranker.weights[sg_id] = ws
     # LOAD KERNEL
-    load_kernel(ranker, opts)
+    #load_kernel(ranker, opts)
+    ranker.matrix = matrix
     # DO RANKING
     propagate_options = eval('{' + opts["propagate_options"] +'}')
     ranker.do_ranking(cross_validation=opts.get("cross_validation"), propagate=opts["propagate"],
@@ -427,7 +426,19 @@ def main_ranker(options):
     if discarded_seeds:
         with open(options.output_file + "_discarded", "w") as f:
             for seed_name, seed in discarded_seeds: f.write(f"{seed_name}\t{options.seed_sep.join(seed)}"+"\n")
-    
+    # LOAD TRAINING DATASET
+    if options.score2pvalue:
+        load_kernel(ranker, vars(options))
+        if options.score2pvalue == "logistic":
+            if options.training_dataset:
+                ranker.load_training_dataset(options.training_dataset)
+            else:
+                ranker.network = Net_parser.load_network_by_bin_matrix(options.adj_matrix, [options.node_files], [['layer', '-']])
+                ranker.network.adjMat2netObj('layer','layer')
+                ranker.generate_training_dataset("edges")
+                print(ranker.training_dataset)
+        ranker.score2pvalue_matrix(options.score2pvalue)
+        
     # DO PARALLEL RANKING
     chunk_size = int(len(ranker.seeds)/options.threads)
     seeds = list(ranker.seeds.items())
@@ -454,7 +465,7 @@ def main_ranker(options):
             seeds = seeds[0:offset]
             if len(seeds) < chunk_size: records.extend(seeds) # There is no enough record for other chunk so we merge the remanent records t this chunk
             records_weight = [ (record[0], ranker.weights.get(record[0])) for record in records ]
-            p = Process(target=worker_ranker, args=(records, records_weight, opts, ranker.nodes, all_rankings, lock))
+            p = Process(target=worker_ranker, args=(records, records_weight, opts, ranker.nodes, all_rankings, ranker.matrix, lock))
             processes.append(p)
             p.start()
         for p in processes: p.join() # first we have to start ALL the processes before ask to wait for their termination. For this reason, the join MUST be in an independent loop
@@ -502,6 +513,12 @@ def main_text2binary_matrix(options):
             f.write("\n".join(names))
 
     source.close()
+
+    if options.coords2kernel:
+        matrix = pxc.coords2sim(matrix, sim = options.coords2kernel)
+    
+    if options.cosine_normalization: 
+        matrix = pxc.cosine_normalization(matrix)
 
     if options.set_diagonal:
         elements = matrix.shape[-1]

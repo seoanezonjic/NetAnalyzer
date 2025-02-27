@@ -312,6 +312,11 @@ def ranker(args=None):
     parser.add_argument("--add_tags", dest="add_tags", default=None, help="Adding node attribute by seed: format seed\\tnode\\tattr")
     parser.add_argument("--representation_seed_metric", dest = "representation_seed_metric", default = "mean", 
         help = "select the type of representation on seed, default mean, options: mean and max")
+    parser.add_argument("--score2pvalue", dest="score2pvalue", default=None, help="""Passing score matrix to pvalue matrix to use as new scores
+        , the modes to pass to pvalues are: znormalization, quantile, logistic. When using logistic systems would train a logistic regression model.""",)
+    parser.add_argument("--training_dataset", dest="training_dataset", default=None, help="""Path to training 
+        dataset must be specified, where the format is: node1\\tnode2\\tP (Positive) or N (Negative)""")
+    parser.add_argument("--adj_matrix", dest="adj_matrix", default=None, help="""Path to the original adjacency matrix""")
     # Resources
     add_resources_flags(parser=parser, default_opt={"threads": 1})
     opts = parser.parse_args(args)
@@ -336,6 +341,8 @@ def text2binary_matrix(args=None):
     # Get stats
     parser.add_argument('-s', '--get_stats', dest="stats", default=None,
     help='Get stats from the processed matrix')
+    parser.add_argument('--coords2kernel', dest="coords2kernel",help="passing coordinates to kernel",default=None)
+    parser.add_argument('--cosine_normalization', dest='cosine_normalization', help="activate cosine normalization", default=False, action="store_true")
     
     opts = parser.parse_args(args)
     main_text2binary_matrix(opts)

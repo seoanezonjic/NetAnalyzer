@@ -4,8 +4,13 @@ from itertools import combinations
 from sklearn.model_selection import KFold, LeaveOneOut
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 from NetAnalyzer.seed_parser import SeedParser
+import scipy.stats as stats
 import py_exp_calc.exp_calc as pxc
-    
+import networkx as nx
+import random 
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+
 class Ranker:
 
     def __init__(self):
@@ -20,7 +25,9 @@ class Ranker:
         self.discarded_seeds = {}
         self.in_names = True
         self.seed_presence = True
+        self.training_dataset = {"score":[], "label":[]} # [score, label], 0 negative or 1 positive
         self.attributes = {"header": ["candidates", "score", "normalized_rank", "rank", "uniq_rank"]}
+        self.network = None
 
     # Normalization and filtering matrix
     def normalize_matrix(self, mode="by_column"):
@@ -37,6 +44,82 @@ class Ranker:
     def filter_matrix(self, whitelist):
         self.matrix, self.nodes, _ = Adv_mat_calc.filter_rowcols_by_whitelist(
             self.matrix, self.nodes, self.nodes, whitelist, symmetric=True)
+        
+    def score2pvalue_matrix(self, mode="znormalization"):
+        if mode == "znormalization":
+            mean_score = np.mean(self.matrix)
+            std_score = np.std(self.matrix)
+            z_scores = (self.matrix - mean_score) / std_score
+            p_values = 1 - stats.norm.cdf(z_scores)  # convert to p-values
+        elif mode == "quantile":
+            ranks = rankdata(self.matrix, method="average") 
+            p_values = 1 - (ranks / (scores.size + 1)) # Pseudo p-values
+        elif mode == "logistic":
+            logistic_model = self.train_logistic_model()
+            #print(logistic_model.predict_proba(self.matrix[1].reshape(-1, 1))[:,1])
+            p_values = np.array([logistic_model.predict_proba(self.matrix[i].reshape(-1, 1))[:,1] for i in range(len(self.matrix))])
+            print(p_values)
+            #p_values = 1 / (1 + np.exp(-scores))
+        self.matrix = p_values
+
+    def train_logistic_model(self):
+        model = LogisticRegression()
+        print(self.training_dataset["label"])
+        model.fit(np.array(self.training_dataset["score"]).reshape(-1,1), self.training_dataset["label"])
+        print("ajaj"*30)
+        return model
+
+    def load_training_dataset(training_dataset_path):
+        with open(training_dataset_path, "r") as f:
+            for line in f:
+                line = line.strip().split("\t")
+                node1 = line[0]
+                node2 = line[1]
+                label = 1 if line[2] == "P" else 0
+                row = self.nodes.index(node1)
+                col = self.nodes.index(node2)
+                score = self.matrix[row,col]
+                self.training_dataset["score"].append(score)
+                self.training_dataset["label"].append(label)
+
+    def generate_training_dataset(self, info_to_use="edges", seed = 42):
+        if info_to_use == "edges":
+            # Collect positives
+            for edge in self.network.graph.edges():
+                node1 = self.nodes.index(edge[0])
+                node2 = self.nodes.index(edge[1])
+                print(node1)
+                print(node2)
+                print(self.matrix.shape)
+                score = self.matrix[node1,node2]
+                self.training_dataset["score"].append(score)
+                self.training_dataset["label"].append(1)
+            # Collect negatives
+            self.generate_neg_edges(self.network.graph, len(self.training_dataset["score"]), seed)
+        else:
+            raise Exception(f"Sorry, the method {info_to_use} doesn't exist for generate training dataset")
+
+    def generate_neg_edges(self, G, testing_edges_num, seed=42):
+        # Code from: https://github.com/VHRanger/nodevectors/blob/master/nodevectors/evaluation/link_pred.py
+        nnodes = G.number_of_nodes()
+        negG = np.ones((nnodes, nnodes))
+        np.fill_diagonal(negG, 0.)
+        original_graph = nx.to_numpy_array(G)
+        negG -= original_graph
+        neg_edges = np.where(negG > 0)
+        neg_edge_indices = list(zip(neg_edges[0], neg_edges[1]))
+        testing_edges_num = min(testing_edges_num, len(neg_edge_indices))
+        random.seed(seed)
+        rng_edges = random.sample(neg_edge_indices, testing_edges_num)
+        # return edges in (src, dst) tuple format
+        for src_idx, dst_idx in rng_edges:
+            node1 = list(G.nodes)[src_idx]
+            node2 = list(G.nodes)[dst_idx]
+            self.training_dataset["score"].append(self.score_from_edge(node1, node2))
+            self.training_dataset["label"].append(0)
+
+    def score_from_edge(self, node1, node2):
+        return self.matrix[self.nodes.index(node1), self.nodes.index(node2)]
 
     # loading and cleaning list of nodes
     def load_nodes_from_file(self, file):
@@ -259,6 +342,27 @@ class Ranker:
                 else:
                     integrated_gen_values = subsets_gen_values.sum(0)
                     gen_list = (1/number_of_seed_genes) * integrated_gen_values
+            elif metric == "bayesian":
+                #p_values = np.clip(subsets_gen_values, 1e-100, 1 - 1e-100)
+                p_values = subsets_gen_values
+                print(p_values)
+                gen_list = 1 - np.prod(1 - p_values, axis=0)
+                gen_list = 1 - gen_list
+            elif metric == "fisher":
+                p_values = np.clip(subsets_gen_values, 1e-10, 1)
+                chi2_stat = -2 * np.sum(np.log(p_values), axis=0)
+                gen_list = 1 - stats.chi2.cdf(chi2_stat, df=2 * p_values.shape[0])
+            elif metric == "stouffer":
+                def stouffer_combination(p_values, weights=None):
+                    if weights is None:
+                        weights = np.ones(len(p_values))  
+                    z_scores = stats.norm.ppf(1 - np.clip(p_values, 1e-10, 1))
+                    z_combined = np.sum(weights[:, np.newaxis] * z_scores, axis=0) / np.sum(weights)
+                    p_combined = 1 - stats.norm.cdf(z_combined)
+                    
+                    return p_combined
+                gen_list = stouffer_combination(subsets_gen_values, weights)
+                gen_list = 1 - gen_list
         return gen_list
 
     def propagate_seed(self, matrix, seed_attr, tol=1e-6, n=1000, restart_factor=0):

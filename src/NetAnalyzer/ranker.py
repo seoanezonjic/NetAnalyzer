@@ -58,15 +58,12 @@ class Ranker:
             logistic_model = self.train_logistic_model()
             #print(logistic_model.predict_proba(self.matrix[1].reshape(-1, 1))[:,1])
             p_values = np.array([logistic_model.predict_proba(self.matrix[i].reshape(-1, 1))[:,1] for i in range(len(self.matrix))])
-            print(p_values)
             #p_values = 1 / (1 + np.exp(-scores))
         self.matrix = p_values
 
     def train_logistic_model(self):
         model = LogisticRegression()
-        print(self.training_dataset["label"])
         model.fit(np.array(self.training_dataset["score"]).reshape(-1,1), self.training_dataset["label"])
-        print("ajaj"*30)
         return model
 
     def load_training_dataset(training_dataset_path):
@@ -88,9 +85,6 @@ class Ranker:
             for edge in self.network.graph.edges():
                 node1 = self.nodes.index(edge[0])
                 node2 = self.nodes.index(edge[1])
-                print(node1)
-                print(node2)
-                print(self.matrix.shape)
                 score = self.matrix[node1,node2]
                 self.training_dataset["score"].append(score)
                 self.training_dataset["label"].append(1)
@@ -345,9 +339,7 @@ class Ranker:
             elif metric == "bayesian":
                 #p_values = np.clip(subsets_gen_values, 1e-100, 1 - 1e-100)
                 p_values = subsets_gen_values
-                print(p_values)
                 gen_list = 1 - np.prod(1 - p_values, axis=0)
-                gen_list = 1 - gen_list
             elif metric == "fisher":
                 p_values = np.clip(subsets_gen_values, 1e-10, 1)
                 chi2_stat = -2 * np.sum(np.log(p_values), axis=0)

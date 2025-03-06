@@ -58,10 +58,8 @@ def main_net_explorer(options, test = False):
                     seeds2subgraph[seed][net_id] = net.graph.subgraph(nodes_with_neigh)
                 else:
                     seeds2subgraph[seed][net_id] = net.graph
-                print(seeds2subgraph[seed][net_id].nodes())
                 largest_cc = len(max(nx.connected_components(seeds2subgraph[seed][net_id]), key=len))
                 seeds2lcc[seed][net_id] = largest_cc
-                print(seeds2lcc)
 
     # # If mention, add node2vec coordinates with a tnse proyection.
     net2embedding_proj = None
@@ -426,9 +424,9 @@ def main_ranker(options):
     if discarded_seeds:
         with open(options.output_file + "_discarded", "w") as f:
             for seed_name, seed in discarded_seeds: f.write(f"{seed_name}\t{options.seed_sep.join(seed)}"+"\n")
+    load_kernel(ranker, vars(options))
     # LOAD TRAINING DATASET
     if options.score2pvalue:
-        load_kernel(ranker, vars(options))
         if options.score2pvalue == "logistic":
             if options.training_dataset:
                 ranker.load_training_dataset(options.training_dataset)
@@ -436,7 +434,6 @@ def main_ranker(options):
                 ranker.network = Net_parser.load_network_by_bin_matrix(options.adj_matrix, [options.node_files], [['layer', '-']])
                 ranker.network.adjMat2netObj('layer','layer')
                 ranker.generate_training_dataset("edges")
-                print(ranker.training_dataset)
         ranker.score2pvalue_matrix(options.score2pvalue)
         
     # DO PARALLEL RANKING
@@ -448,7 +445,7 @@ def main_ranker(options):
         header = ["candidates", "score", "normalized_rank", "rank"]
     else:
         header = ["candidates", "score", "normalized_rank", "rank", "uniq_rank"]
-        
+
     with Manager() as manager:
         all_rankings = manager.dict()
         processes = []
@@ -513,6 +510,9 @@ def main_text2binary_matrix(options):
             f.write("\n".join(names))
 
     source.close()
+    if options.umap:
+        matrix = pxc.data2umap(matrix, n_neighbors = 30, min_dist = 0.1, n_components = 2, 
+        metric = 'euclidean', random_seed = 123)
 
     if options.coords2kernel:
         matrix = pxc.coords2sim(matrix, sim = options.coords2kernel)

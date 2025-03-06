@@ -311,7 +311,7 @@ def ranker(args=None):
     help="File to save Top N genes")
     parser.add_argument("--add_tags", dest="add_tags", default=None, help="Adding node attribute by seed: format seed\\tnode\\tattr")
     parser.add_argument("--representation_seed_metric", dest = "representation_seed_metric", default = "mean", 
-        help = "select the type of representation on seed, default mean, options: mean and max")
+        help = "select the type of representation on seed, default mean, options: mean, max, bayesian, stouffer, fisher")
     parser.add_argument("--score2pvalue", dest="score2pvalue", default=None, help="""Passing score matrix to pvalue matrix to use as new scores
         , the modes to pass to pvalues are: znormalization, quantile, logistic. When using logistic systems would train a logistic regression model.""",)
     parser.add_argument("--training_dataset", dest="training_dataset", default=None, help="""Path to training 
@@ -342,8 +342,9 @@ def text2binary_matrix(args=None):
     parser.add_argument('-s', '--get_stats', dest="stats", default=None,
     help='Get stats from the processed matrix')
     parser.add_argument('--coords2kernel', dest="coords2kernel",help="passing coordinates to kernel",default=None)
+    parser.add_argument('--umap', dest='umap', help="projects coords in umap",default=False, action="store_true")
     parser.add_argument('--cosine_normalization', dest='cosine_normalization', help="activate cosine normalization", default=False, action="store_true")
-    
+
     opts = parser.parse_args(args)
     main_text2binary_matrix(opts)
 

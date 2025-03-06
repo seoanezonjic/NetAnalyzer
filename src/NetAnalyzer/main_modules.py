@@ -36,7 +36,9 @@ def main_net_explorer(options, test = False):
                               'load_both': True}
         multinet[net_id] = Net_parser.load(options_single_net)
         cutoff = options["layer_cutoff"].get(net_id)
-        if options["no_autorelations"]: np.fill_diagonal(multinet[net_id].matrices['adjacency_matrices'][('layer','layer')][0], 0)
+        if options["no_autorelations"]: 
+            np.fill_diagonal(multinet[net_id].matrices['adjacency_matrices'][('layer','layer')][0], 0)
+            multinet[net_id].adjMat2netObj('layer','layer')
         if cutoff:
             cutoff = float(cutoff)
             multinet[net_id].filter_matrix( mat_keys=('adjacency_matrices',('layer','layer')),operation='filter_cutoff', options={'cutoff': cutoff}, add_to_object=True)

@@ -337,13 +337,13 @@ class Ranker:
                     integrated_gen_values = subsets_gen_values.sum(0)
                     gen_list = (1/number_of_seed_genes) * integrated_gen_values
             elif metric == "bayesian":
-                #p_values = np.clip(subsets_gen_values, 1e-100, 1 - 1e-100)
+                p_values = np.clip(subsets_gen_values, 1e-10, 1 - 1e-10)
                 p_values = subsets_gen_values
                 gen_list = 1 - np.prod(1 - p_values, axis=0)
             elif metric == "fisher":
-                p_values = np.clip(subsets_gen_values, 1e-10, 1)
-                chi2_stat = -2 * np.sum(np.log(p_values), axis=0)
-                gen_list = 1 - stats.chi2.cdf(chi2_stat, df=2 * p_values.shape[0])
+                p_values = np.clip(subsets_gen_values, 1e-10, 1 - 1e-10)
+                chi2_stat = -2 * np.sum(np.log(1-p_values), axis=0)
+                gen_list = stats.chi2.cdf(chi2_stat, df=2 * p_values.shape[0])
             elif metric == "stouffer":
                 def stouffer_combination(p_values, weights=None):
                     if weights is None:

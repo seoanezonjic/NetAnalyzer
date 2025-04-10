@@ -409,7 +409,7 @@ class Ranker:
 
     def write_ranking(self, output_name, add_header=True, top_n=None): 
         if add_header:
-            header = self.attributes["header"]
+            header = list(self.attributes["header"])
             header.append("seed_group")
         if top_n is not None:
             rankings = self.get_top(top_n)

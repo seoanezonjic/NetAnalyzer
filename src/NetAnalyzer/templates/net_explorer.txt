@@ -1,15 +1,22 @@
 <%
     import pandas as pd
     def plot_embdedding(data, plotter_list):
-        plotter_list["sns"].scatterplot(data=data[data['group_seed'] == 'background'], x='coord1', y='coord2', 
-            color='lightgrey', label='background', zorder=1, s=30)
+        ax = plotter_list["sns"].scatterplot(data=data[data['group_seed'] == 'other'], x='coord1', y='coord2', 
+            color='lightgrey', label='other', zorder=1, s=30)
 
         if 'group' in data.columns:
-            plotter_list["sns"].scatterplot(data=data[data['group'] != 'background'], x='coord1', y='coord2', hue='group', palette='Set2', 
+            ax = plotter_list["sns"].scatterplot(data=data[data['group'] != 'other'], x='coord1', y='coord2', hue='group', palette='Set2', 
                 color='lightgrey', legend=True, zorder=2, s=30)
 
-        plotter_list["sns"].scatterplot(data=df[df['group_seed'] != 'background'], x='coord1', y='coord2',
-         hue='group_seed', palette='bright', legend=True, zorder=3, s=50).legend(title=None)
+        ax = plotter_list["sns"].scatterplot(data=df[df['group_seed'] != 'other'], x='coord1', y='coord2',
+         hue='group_seed', palette='bright', legend=True, zorder=3, s=50)
+        ax.legend(title=None)
+        
+        handles, labels = ax.get_legend_handles_labels()
+        ax.get_legend().remove()
+        ax.legend(handles, labels, ncol=2, columnspacing=0.5, handletextpad=0.03, loc='upper left', bbox_to_anchor=(1.05, 1), frameon=False)
+        plotter_list["plt"].tight_layout()
+        plotter_list["plt"].subplots_adjust(right=0.7)  # Make space on the right
         
     
     node2seed = {}
@@ -79,11 +86,11 @@ ${plotter.create_title(f"embedding in {graph}", id=f"net_emb_{graph}", hlevel=2,
 <% 
 coords, nodes = embedding 
 df = pd.DataFrame(coords, columns= ["coord1","coord2"])
-df = df.assign(group_seed=[node2seed[node] if node2seed.get(node) else "background" for node in nodes]) 
+df = df.assign(group_seed=[node2seed[node] if node2seed.get(node) else "other" for node in nodes]) 
 
 if plotter.hash_vars["groups2explore"]:
     print(node2group)
-    df = df.assign(group=[node2group[node] if node2group.get(node) else "background" for node in nodes]) 
+    df = df.assign(group=[node2group[node] if node2group.get(node) else "other" for node in nodes]) 
 
 plotter.hash_vars["net_proj"] = df
 %>

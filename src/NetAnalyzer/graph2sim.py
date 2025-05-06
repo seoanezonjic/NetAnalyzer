@@ -116,26 +116,26 @@ class Graph2sim:
                              workers=default_options["workers"], hs= default_options["hs"], sg = default_options["sg"],
                              negative=default_options["negative"]) # point to extend
             list_arrays=[model.wv.get_vector(str(n)) for n in embedding_nodes]
-        elif embedding in ["prone", "ggvec"]:
+        elif embedding in ["prone", "ggvec", "grarep", "glove"]:
             # embeddings from nodevectos repository: https://github.com/VHRanger/nodevectors.git
             if embedding == "prone":
                 # best performance than node2vec: https://www.ijcai.org/proceedings/2019/0594.pdf
-                g2v = nodevectors.ProNE(n_components=default_options["dimensions"], step=default_options["step"], mu=default_options["mu"], 
-                                        theta=default_options["theta"], exponent=default_options["exponent"], verbose=verbose)
+                g2v = nodevectors.ProNE(n_components=default_options["dimensions"])#, step=default_options["step"], mu=default_options["mu"], 
+                                        #theta=default_options["theta"], exponent=default_options["exponent"], verbose=verbose)
             elif embedding == "ggvec":
                 # "Best on large graphs and for visualization" from nodevectors repository
-                g2v = nodevectors.GGVec(n_components=default_options["dimensions"], order=default_options["order"], learning_rate=default_options["learning_rate"], 
-                                        max_loss=default_options["learning_rate"], tol=default_options["tol"], tol_samples=default_options["tol_samples"], 
-                                        exponent=default_options["exponent"], threads=default_options["threads"], negative_ratio=default_options["negative_ratio"], 
-                                        max_epoch=default_options["max_epoch"], verbose=verbose)
+                g2v = nodevectors.GGVec(n_components=default_options["dimensions"])#, order=default_options["order"], learning_rate=default_options["learning_rate"], 
+                                        #max_loss=default_options["learning_rate"], tol=default_options["tol"], tol_samples=default_options["tol_samples"], 
+                                        #exponent=default_options["exponent"], threads=default_options["threads"], negative_ratio=default_options["negative_ratio"], 
+                                        #max_epoch=default_options["max_epoch"], verbose=verbose)
             elif embedding == "grarep":
                 # https://dl.acm.org/doi/abs/10.1145/2806416.2806512
-                g2v = nodevectors.GraRep(n_components=default_options["dimensions"],order=default_options["order"],verbose=verbose)
+                g2v = nodevectors.GraRep(n_components=default_options["dimensions"])#,order=default_options["order"],verbose=verbose)
             elif embedding == "glove":
                 # Useful to embed sparse matrices of positive count, like pathway, phenotype, word co-occurence, etc.
-                g2v = nodevectors.Glove(n_components=default_options["dimensions"],tol=default_options["tol"], max_epoch=default_options["max_epoch"],
-                                         max_count=default_options["max_count"], learning_rate=default_options["learning_rate"], 
-                                         max_loss=default_options["max_loss"], exponent=default_options["exponent"],threads=default_options["threads"], verbose=verbose)
+                g2v = nodevectors.Glove(n_components=default_options["dimensions"])#,tol=default_options["tol"], max_epoch=default_options["max_epoch"],
+                                         #max_count=default_options["max_count"], learning_rate=default_options["learning_rate"], 
+                                         #max_loss=default_options["max_loss"], exponent=default_options["exponent"],threads=default_options["threads"], verbose=verbose)
             g2v.fit(adj_mat)
             list_arrays=[nodevec for nodevec in g2v.model.values()]
         else:

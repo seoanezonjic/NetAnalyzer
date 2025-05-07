@@ -8,6 +8,80 @@ from pecanpy import pecanpy
 from gensim.models import Word2Vec
 import nodevectors
 import random # for the random walker
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import networkx as nx
+
+
+class LINE(nn.Module):
+    def __init__(self, num_nodes, embedding_dim=128, order=2, negative_ratio=5, learning_rate=0.01):
+        super(LINE, self).__init__()
+        
+        self.num_nodes = num_nodes
+        self.embedding_dim = embedding_dim
+        self.order = order
+        self.negative_ratio = negative_ratio
+        
+        self.embedding = nn.Embedding(num_nodes, embedding_dim)
+        
+        if order == 2:
+            self.context_embedding = nn.Embedding(num_nodes, embedding_dim)
+        
+        nn.init.xavier_uniform_(self.embedding.weight)
+        if order == 2:
+            nn.init.xavier_uniform_(self.context_embedding.weight)
+        
+        self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
+    
+    def negative_sampling(self, pos_edges, num_neg):
+        neg_edges = []
+        for src, _ in pos_edges:
+            for _ in range(num_neg):
+                dst = random.randint(0, self.num_nodes - 1)
+                neg_edges.append((src, dst))
+        return neg_edges
+
+    def forward(self, src_nodes, dst_nodes, is_positive=True):
+        src_embed = self.embedding(src_nodes)
+        
+        if self.order == 2:
+            dst_embed = self.context_embedding(dst_nodes)
+        else:
+            dst_embed = self.embedding(dst_nodes)
+        
+        dot_product = torch.sum(src_embed * dst_embed, dim=1)
+        
+        if is_positive:
+            return -F.logsigmoid(dot_product).mean()
+        else:
+            return -F.logsigmoid(-dot_product).mean()
+
+    def train_model(self, edges, epochs=50):
+        for epoch in range(epochs):
+            self.optimizer.zero_grad()
+            
+            pos_src = torch.tensor([e[0] for e in edges], dtype=torch.long)
+            pos_dst = torch.tensor([e[1] for e in edges], dtype=torch.long)
+            
+            neg_edges = self.negative_sampling(edges, self.negative_ratio)
+            neg_src = torch.tensor([e[0] for e in neg_edges], dtype=torch.long)
+            neg_dst = torch.tensor([e[1] for e in neg_edges], dtype=torch.long)
+            
+            pos_loss = self.forward(pos_src, pos_dst, is_positive=True)
+            neg_loss = self.forward(neg_src, neg_dst, is_positive=False)
+            
+            loss = pos_loss + neg_loss
+            loss.backward()
+            self.optimizer.step()
+            
+            if epoch % 10 == 0:
+                print(f"Epoch {epoch}: Loss = {loss.item():.4f}")
+    
+    def get_embeddings(self):
+        return self.embedding.weight.detach().cpu().numpy()
                 
 class RandomWalker:
 
@@ -69,7 +143,7 @@ class RandomWalker:
 
 class Graph2sim:
 
-    allowed_embeddings = ['node2vec', 'deepwalk', 'prone', 'comm_aware', 'ggvec', 'grarep', 'glove']
+    allowed_embeddings = ['node2vec', 'deepwalk', 'prone', 'comm_aware', 'ggvec', 'grarep', 'glove','line']
     allowed_kernels = ['el', 'ct', 'rf', 'me', 'vn', 'rl', 'ka', 'md']
 
     def get_embedding(adj_mat, embedding_nodes, embedding = "node2vec", quiet=True, seed = None, clusters=None, embedding_kwargs={}):
@@ -92,8 +166,8 @@ class Graph2sim:
         if embedding in ['node2vec', 'deepwalk', 'comm_aware']: # TODO 'metapath2vec',
             if embedding == 'node2vec' or embedding == "deepwalk":
                 if embedding == "deepwalk":
-                    p = 1
-                    q = 1 
+                    default_options["p"] = 1
+                    default_options["q"] = 1 
                 g = pecanpy.DenseOTF(p=default_options["p"], q=default_options["q"], workers=default_options["workers"], verbose= verbose)
                 g = g.from_mat(adj_mat=adj_mat, node_ids=embedding_nodes)
                 walks = g.simulate_walks(num_walks=default_options["num_walks"], walk_length=default_options["walk_length"])
@@ -116,6 +190,18 @@ class Graph2sim:
                              workers=default_options["workers"], hs= default_options["hs"], sg = default_options["sg"],
                              negative=default_options["negative"]) # point to extend
             list_arrays=[model.wv.get_vector(str(n)) for n in embedding_nodes]
+        elif embedding == "line":
+            g = nx.from_numpy_array(adj_mat)
+            num_nodes = len(embedding_nodes)
+            dim_each = default_options["dimensions"] // 2  
+            line_model1 = LINE(num_nodes, embedding_dim=dim_each, order=1)
+            line_model2 = LINE(num_nodes, embedding_dim=dim_each, order=2)
+            edges = [(int(u), int(v)) for u, v in zip(*np.where(adj_mat))]
+            line_model1.train_model(edges, epochs=50)
+            line_model2.train_model(edges, epochs=50)
+            emb1 = line_model1.get_embeddings()
+            emb2 = line_model2.get_embeddings()
+            list_arrays = [np.concatenate([emb1[i], emb2[i]]) for i in range(num_nodes)] # Concatenate embeddings for each node
         elif embedding in ["prone", "ggvec", "grarep", "glove"]:
             # embeddings from nodevectos repository: https://github.com/VHRanger/nodevectors.git
             if embedding == "prone":
@@ -218,3 +304,4 @@ class Graph2sim:
             # This allows process a previous kernel and perform the normalization in a separated step.
         if normalization: matrix_result = pxc.cosine_normalization(matrix_result)  #TODO: check implementation with Numo::array
         return matrix_result
+    

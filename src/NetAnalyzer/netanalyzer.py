@@ -691,7 +691,7 @@ class NetAnalyzer:
             graph = self.graph
             embedding_nodes = list(self.graph.nodes())
 
-        emb_coords = Graph2sim.get_embedding(graph, embedding = method, embedding_nodes=embedding_nodes, clusters=clusters, **embedding_kwargs)
+        emb_coords = Graph2sim.get_embedding(graph, embedding = method, embedding_nodes=embedding_nodes, clusters=clusters, embedding_kwargs= embedding_kwargs)
 
         self.control_output(values = emb_coords, output_filename=output_filename, inFormat="matrix", rowIds = embedding_nodes, colIds = None,
          outFormat="matrix", add_to_object=False)

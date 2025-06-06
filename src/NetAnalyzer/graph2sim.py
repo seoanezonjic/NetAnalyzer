@@ -94,7 +94,7 @@ class Graph2sim:
                 if embedding == "deepwalk":
                     p = 1
                     q = 1 
-                g = pecanpy.DenseOTF(p=default_options["p"], q=default_options["q"], workers=default_options["workers"], verbose= verbose)
+                g = pecanpy.DenseOTF(p=default_options["p"], q=default_options["q"], workers=default_options["workers"], random_state=1, verbose= verbose)
                 g = g.from_mat(adj_mat=adj_mat, node_ids=embedding_nodes)
                 walks = g.simulate_walks(num_walks=default_options["num_walks"], walk_length=default_options["walk_length"])
             elif embedding == "comm_aware": # Based on CRARE paper and modified in HLC paper
@@ -114,7 +114,7 @@ class Graph2sim:
             model = Word2Vec(walks, vector_size=default_options["dimensions"], 
                              window=default_options["window"], min_count=default_options["min_count"],
                              workers=default_options["workers"], hs= default_options["hs"], sg = default_options["sg"],
-                             negative=default_options["negative"]) # point to extend
+                             negative=default_options["negative"], seed=1) # point to extend
             list_arrays=[model.wv.get_vector(str(n)) for n in embedding_nodes]
         elif embedding in ["prone", "ggvec"]:
             # embeddings from nodevectos repository: https://github.com/VHRanger/nodevectors.git

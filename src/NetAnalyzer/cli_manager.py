@@ -355,14 +355,15 @@ def net_explorer(args=None, test=False):
     add_seed_flags(parser) # Adding seeds
     add_cluster_flags(parser)
     add_plotting_options(parser, default_opt={"graph_file": "output_file"})
+    add_resources_flags(parser)
     # layer processing
     parser.add_argument('-c', '--layer_cutoff', dest="layer_cutoff", default={}, type = lambda string: loading_dic(string, sep1=";", sep2=","),
-    help='Cutoff to apply to every layer in the multiplexed one')
+        help='Cutoff to apply to every layer in the multiplexed one')
     # Analysis options
     parser.add_argument("--neigh_level", dest="neigh_level", default={}, type = lambda string: loading_dic(string, sep1=";", sep2=","),
-    help="Defining the level of neighbourhood on the initial set of nodes")
+        help="Defining the level of neighbourhood on the initial set of nodes")
     parser.add_argument("--embedding_proj", dest="embedding_proj", default=None,
-    help="Select different projections methods: umap")
+        help="Select different projections methods: umap")
     parser.add_argument("--compare_nets", dest="compare_nets", default=False, action="store_true")
     opts = parser.parse_args(args)
     to_test = main_net_explorer(opts, test)

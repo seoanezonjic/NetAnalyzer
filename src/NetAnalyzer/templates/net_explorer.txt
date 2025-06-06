@@ -2,22 +2,22 @@
     import pandas as pd
     def plot_embdedding(data, plotter_list):
         ax = plotter_list["sns"].scatterplot(data=data[data['group_seed'] == 'other'], x='coord1', y='coord2', 
-            color='lightgrey', label='other', zorder=1, s=30)
+            color='lightgrey', label='other', zorder=1, s=25, alpha=0.4, edgecolor="black", linewidth=0.6)
 
         if 'group' in data.columns:
             ax = plotter_list["sns"].scatterplot(data=data[data['group'] != 'other'], x='coord1', y='coord2', hue='group', palette='Set2', 
-                color='lightgrey', legend=True, zorder=2, s=30)
+                color='lightgrey', legend=True, zorder=2, s=25, edgecolor="black", linewidth=0.6)
 
         ax = plotter_list["sns"].scatterplot(data=df[df['group_seed'] != 'other'], x='coord1', y='coord2',
-         hue='group_seed', palette='bright', legend=True, zorder=3, s=50)
+         hue='group_seed', palette='pastel', color='white', legend=True, zorder=3, s=50, marker='D', edgecolor="black", linewidth=0.6)
         ax.legend(title=None)
         
         handles, labels = ax.get_legend_handles_labels()
         ax.get_legend().remove()
-        ax.legend(handles, labels, ncol=2, columnspacing=0.5, handletextpad=0.03, loc='upper left', bbox_to_anchor=(1.05, 1), frameon=False)
+        ax.legend(handles, labels, ncols=8, columnspacing=0.1, handletextpad=0.03, loc='lower center', bbox_to_anchor=(.5, 1), frameon=False)
         plotter_list["plt"].tight_layout()
         plotter_list["plt"].subplots_adjust(right=0.7)  # Make space on the right
-        
+
     
     node2seed = {}
     for seed, nodes in plotter.hash_vars["seeds2explore"].items():
@@ -62,40 +62,41 @@ ${plotter.barplot(id='table_lcc', responsive= False, header=True,
 %endif
 ## Seeds subgraphs.
 % if plotter.hash_vars.get("seeds2subgraph"):
-<% plotter.set_header() %>
-${plotter.create_title("Network study on every group of genes", id='net_study', hlevel=1, indexable=True, clickable=False)}
-% for seed, net2subgraph in plotter.hash_vars["seeds2subgraph"].items():
-${plotter.create_title(f"Group of genes: {seed}", id='net_study', hlevel=2, indexable=True, clickable=False)}
-% for net, subgraph in net2subgraph.items():
-${plotter.create_title(f"<b>{net}</b>", id='net_study', hlevel=3, indexable=True, clickable=False)}
-<% key = net+"_"+seed
-plotter.hash_vars[key] = {"graph": subgraph, 
-    "layers": ["layer", "layer"], 
-    "reference_nodes": plotter.hash_vars["seeds2explore"][seed], 
-    "group_nodes": plotter.hash_vars["groups2explore"] if plotter.hash_vars.get("groups2explore") else {}}  
-%>
-${plotter.network(id = key, **plotter.hash_vars["plot_options"])} 
-%endfor
-%endfor
+    <% plotter.set_header() %>
+    ${plotter.create_title("Network study on every group of genes", id='net_study', hlevel=1, indexable=True, clickable=False)}
+    % for seed, net2subgraph in plotter.hash_vars["seeds2subgraph"].items():
+        ${plotter.create_title(f"Group of genes: {seed}", id='net_study', hlevel=2, indexable=True, clickable=False)}
+        % for net, subgraph in net2subgraph.items():
+            ${plotter.create_title(f"<b>{net}</b>", id='net_study', hlevel=3, indexable=True, clickable=False)}
+            <% 
+            key = net+"_"+seed
+            plotter.hash_vars[key] = {"graph": subgraph, 
+                "layers": ["layer", "layer"], 
+                "reference_nodes": plotter.hash_vars["seeds2explore"][seed], 
+                "group_nodes": plotter.hash_vars["groups2explore"] if plotter.hash_vars.get("groups2explore") else {}}  
+            %>
+            ${plotter.network(id = key, **plotter.hash_vars["plot_options"])} 
+        %endfor
+    %endfor
 %endif
 
 % if plotter.hash_vars["net2embedding_proj"]:
-${plotter.create_title("Network embedding and projection", id='net_emb', hlevel=1, indexable=True, clickable=False)}
-% for graph, embedding in plotter.hash_vars["net2embedding_proj"].items():
-${plotter.create_title(f"embedding in {graph}", id=f"net_emb_{graph}", hlevel=2, indexable=True, clickable=False)}
-<% 
-coords, nodes = embedding 
-df = pd.DataFrame(coords, columns= ["coord1","coord2"])
-df = df.assign(group_seed=[node2seed[node] if node2seed.get(node) else "other" for node in nodes]) 
+    ${plotter.create_title("Network embedding and projection", id='net_emb', hlevel=1, indexable=True, clickable=False)}
+    % for graph, embedding in plotter.hash_vars["net2embedding_proj"].items():
+        ${plotter.create_title(f"embedding in {graph}", id=f"net_emb_{graph}", hlevel=2, indexable=True, clickable=False)}
+        <% 
+        coords, nodes = embedding 
+        df = pd.DataFrame(coords, columns= ["coord1","coord2"])
+        df = df.assign(group_seed=[node2seed[node] if node2seed.get(node) else "other" for node in nodes]) 
 
-if plotter.hash_vars["groups2explore"]:
-    print(node2group)
-    df = df.assign(group=[node2group[node] if node2group.get(node) else "other" for node in nodes]) 
+        if plotter.hash_vars["groups2explore"]:
+            print(node2group)
+            df = df.assign(group=[node2group[node] if node2group.get(node) else "other" for node in nodes]) 
 
-plotter.hash_vars["net_proj"] = df
-%>
-${plotter.static_plot_main(id="net_proj", raw= True, plotting_function= lambda data, plotter_list: plot_embdedding(data, plotter_list))} 
-% endfor
+        plotter.hash_vars["net_proj"] = df
+        %>
+        ${plotter.static_plot_main(id="net_proj", raw= True, plotting_function= lambda data, plotter_list: plot_embdedding(data, plotter_list), theme='fast', width=800, height=800, dpi=150)} 
+    % endfor
 % endif
 
 ## Net sims

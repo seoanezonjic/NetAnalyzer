@@ -69,8 +69,8 @@ def main_net_explorer(options, test = False):
         net2embedding_proj = {}
         for net_id, net in multinet.items():
             adj_mat, embedding_nodes, _ = net.matrices["adjacency_matrices"][("layer", "layer")] 
-            emb_coords = Graph2sim.get_embedding(adj_mat, embedding = "node2vec", embedding_nodes=embedding_nodes)
-            umap_coords = pxc.data2umap(emb_coords,  n_neighbors = 15, min_dist = 0.1, n_components = 2, metric = 'euclidean', random_seed = None)
+            emb_coords = Graph2sim.get_embedding(adj_mat, embedding = "node2vec", embedding_nodes=embedding_nodes, embedding_kwargs= {'workers': options["threads"]})
+            umap_coords = pxc.data2umap(emb_coords,  n_neighbors = 15, min_dist = 0.1, n_components = 2, metric = 'euclidean', random_seed = 1)
             net2embedding_proj[net_id] = [umap_coords, embedding_nodes]
 
     # Comparing nets:

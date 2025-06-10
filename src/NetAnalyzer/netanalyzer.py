@@ -685,7 +685,7 @@ class NetAnalyzer:
 
         if input_type == "matrix":
             if not self.matrices["adjacency_matrices"].get((layers[0],layers[0])):
-                self.generate_adjacency_matrix(self, layers[0], layers[0])    
+                self.generate_adjacency_matrix(layers[0], layers[0])  
             graph, embedding_nodes, _ = self.matrices["adjacency_matrices"][(layers[0],layers[0])]
         else:
             graph = self.graph

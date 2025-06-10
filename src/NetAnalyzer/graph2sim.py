@@ -60,7 +60,7 @@ class LINE(nn.Module):
         else:
             return -F.logsigmoid(-dot_product).mean()
 
-    def train_model(self, edges, epochs=50):
+    def train_model(self, edges, epochs=5):
         for epoch in range(epochs):
             self.optimizer.zero_grad()
             

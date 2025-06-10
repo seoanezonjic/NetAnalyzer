@@ -5,6 +5,7 @@ from warnings import warn
 #from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 import py_exp_calc.exp_calc as pxc
 from pecanpy import pecanpy
+import numba #To control pecanpy threading
 from gensim.models import Word2Vec
 import nodevectors
 import random # for the random walker
@@ -165,11 +166,14 @@ class Graph2sim:
         verbose = not quiet
         if embedding in ['node2vec', 'deepwalk', 'comm_aware']: # TODO 'metapath2vec',
             if embedding == 'node2vec' or embedding == "deepwalk":
+                if default_options["workers"] == 0:
+                    default_options["workers"] = numba.config.NUMBA_DEFAULT_NUM_THREADS
+                numba.set_num_threads(default_options["workers"]) # To config real threading in pecanpy
+                workers = default_options["workers"]
                 if embedding == "deepwalk":
                     default_options["p"] = 1
                     default_options["q"] = 1 
-                g = pecanpy.DenseOTF(p=default_options["p"], q=default_options["q"], workers=default_options["workers"], random_state=1, verbose= verbose)
-                g = g.from_mat(adj_mat=adj_mat, node_ids=embedding_nodes)
+                g = pecanpy.DenseOTF.from_mat(adj_mat=adj_mat, node_ids=embedding_nodes,p=default_options["p"], q=default_options["q"], workers=default_options["workers"], random_state=123456, verbose= verbose)
                 walks = g.simulate_walks(num_walks=default_options["num_walks"], walk_length=default_options["walk_length"])
             elif embedding == "comm_aware": # Based on CRARE paper and modified in HLC paper
                 # Following paper CRARE: params 
@@ -188,7 +192,7 @@ class Graph2sim:
             model = Word2Vec(walks, vector_size=default_options["dimensions"], 
                              window=default_options["window"], min_count=default_options["min_count"],
                              workers=default_options["workers"], hs= default_options["hs"], sg = default_options["sg"],
-                             negative=default_options["negative"], seed=1) # point to extend
+                             negative=default_options["negative"], seed=123456) # point to extend
             list_arrays=[model.wv.get_vector(str(n)) for n in embedding_nodes]
         elif embedding == "line":
             g = nx.from_numpy_array(adj_mat)

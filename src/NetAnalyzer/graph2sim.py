@@ -6,6 +6,7 @@ from warnings import warn
 import py_exp_calc.exp_calc as pxc
 from pecanpy import pecanpy
 import numba #To control pecanpy threading
+from numba import njit, set_num_threads
 from gensim.models import Word2Vec
 import nodevectors
 import random # for the random walker
@@ -15,6 +16,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import networkx as nx
+import os
 
 
 class LINE(nn.Module):
@@ -148,7 +150,7 @@ class Graph2sim:
     allowed_kernels = ['el', 'ct', 'rf', 'me', 'vn', 'rl', 'ka', 'md']
 
     def get_embedding(adj_mat, embedding_nodes, embedding = "node2vec", quiet=True, seed = None, clusters=None, embedding_kwargs={}):
-        default_options = {"dimensions":64}
+        default_options = {"dimensions":64, "random_seed":None}
         comm_aware_options={"clusters": None, "neigh_w":1, "comm_w":1, "hs" : 0}
         random_walker_options={"walk_length":30, "num_walks": 200}
         w2v_options={"hs" : 0,"sg" : 0, "negative":5, "p" : 1, "q" : 1, "workers" : 16, "window" : 10, "min_count":1, 
@@ -162,13 +164,30 @@ class Graph2sim:
                            **comm_aware_options, **random_walker_options, **w2v_options, **ggvec_optinos}
         default_options.update(embedding_kwargs)
 
+        if default_options["random_seed"]:
+            # number of workers to 1
+            default_options["workers"] = 1
+            ## numba 
+            set_num_threads(default_options["workers"])
+            default_options["random_seed"] = int(default_options["random_seed"])
+            # random
+            random.seed(default_options["random_seed"])
+            # numpy
+            np.random.seed(default_options["random_seed"])
+            # numba
+            @njit
+            def seed_numba(a):
+                np.random.seed(a)
+            seed_numba(default_options["random_seed"])
+            torch.manual_seed(default_options["random_seed"])
+
         emb_coords = None
         verbose = not quiet
         if embedding in ['node2vec', 'deepwalk', 'comm_aware']: # TODO 'metapath2vec',
             if embedding == 'node2vec' or embedding == "deepwalk":
                 if default_options["workers"] == 0:
                     default_options["workers"] = numba.config.NUMBA_DEFAULT_NUM_THREADS
-                numba.set_num_threads(default_options["workers"]) # To config real threading in pecanpy
+                #numba.set_num_threads(default_options["workers"]) # To config real threading in pecanpy
                 workers = default_options["workers"]
                 if embedding == "deepwalk":
                     default_options["p"] = 1
@@ -192,7 +211,7 @@ class Graph2sim:
             model = Word2Vec(walks, vector_size=default_options["dimensions"], 
                              window=default_options["window"], min_count=default_options["min_count"],
                              workers=default_options["workers"], hs= default_options["hs"], sg = default_options["sg"],
-                             negative=default_options["negative"], seed=123456) # point to extend
+                             negative=default_options["negative"], seed=default_options["random_seed"]) # point to extend
             list_arrays=[model.wv.get_vector(str(n)) for n in embedding_nodes]
         elif embedding == "line":
             g = nx.from_numpy_array(adj_mat)
@@ -214,7 +233,7 @@ class Graph2sim:
                                         #theta=default_options["theta"], exponent=default_options["exponent"], verbose=verbose)
             elif embedding == "ggvec":
                 # "Best on large graphs and for visualization" from nodevectors repository
-                g2v = nodevectors.GGVec(n_components=default_options["dimensions"])#, order=default_options["order"], learning_rate=default_options["learning_rate"], 
+                g2v = nodevectors.GGVec(n_components=default_options["dimensions"],threads=default_options["workers"])#, order=default_options["order"], learning_rate=default_options["learning_rate"], 
                                         #max_loss=default_options["learning_rate"], tol=default_options["tol"], tol_samples=default_options["tol_samples"], 
                                         #exponent=default_options["exponent"], threads=default_options["threads"], negative_ratio=default_options["negative_ratio"], 
                                         #max_epoch=default_options["max_epoch"], verbose=verbose)
@@ -223,7 +242,7 @@ class Graph2sim:
                 g2v = nodevectors.GraRep(n_components=default_options["dimensions"])#,order=default_options["order"],verbose=verbose)
             elif embedding == "glove":
                 # Useful to embed sparse matrices of positive count, like pathway, phenotype, word co-occurence, etc.
-                g2v = nodevectors.Glove(n_components=default_options["dimensions"])#,tol=default_options["tol"], max_epoch=default_options["max_epoch"],
+                g2v = nodevectors.Glove(n_components=default_options["dimensions"],threads=default_options["workers"])#,tol=default_options["tol"], max_epoch=default_options["max_epoch"],
                                          #max_count=default_options["max_count"], learning_rate=default_options["learning_rate"], 
                                          #max_loss=default_options["max_loss"], exponent=default_options["exponent"],threads=default_options["threads"], verbose=verbose)
             g2v.fit(adj_mat)

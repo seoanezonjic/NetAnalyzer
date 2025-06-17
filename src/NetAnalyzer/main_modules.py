@@ -512,9 +512,9 @@ def main_text2binary_matrix(options):
         pairs = load_pair_file(source)
         matrix, rowIds, colIds = pxc.pairs2matrix(pairs, symm=True)
         with open(options.output_file + "_rowIds" ".lst", 'w') as f:
-            f.write("\n".join(names))
+            f.write("\n".join(rowIds))
         with open(options.output_file + "_colIds" ".lst", 'w') as f:
-            f.write("\n".join(names))
+            f.write("\n".join(colIds))
 
     # bsr, coo, csc, csr, dia, dok, lil
 

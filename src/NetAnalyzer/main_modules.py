@@ -16,6 +16,8 @@ from NetAnalyzer import Adv_mat_calc
 from NetAnalyzer.performancer import Performancer
 from NetAnalyzer.seed_parser import SeedParser
 import networkx as nx
+from scipy.sparse import bsr_matrix, coo_matrix, csc_matrix, csr_matrix, dia_matrix, dok_matrix, lil_matrix
+from scipy.sparse import save_npz
 
 def main_net_explorer(options, test = False):
     # loading gene seeds.
@@ -507,9 +509,18 @@ def main_text2binary_matrix(options):
     elif options.input_type == 'matrix':
         matrix = load_matrix_file(source)
     elif options.input_type == 'pair':
-        matrix, names = load_pair_file(source)
-        with open(options.output_file + ".lst", 'w') as f:
+        pairs = load_pair_file(source)
+        matrix, rowIds, colIds = pxc.pairs2matrix(pairs, symm=True)
+        with open(options.output_file + "_rowIds" ".lst", 'w') as f:
             f.write("\n".join(names))
+        with open(options.output_file + "_colIds" ".lst", 'w') as f:
+            f.write("\n".join(names))
+
+    # bsr, coo, csc, csr, dia, dok, lil
+
+    if options.input_type != "pair" and options.node_files:
+        rowIds = Net_parser.load_input_list(options.node_files[0])
+        colIds = Net_parser.load_input_list(options.node_files[1])
 
     source.close()
     if options.umap:
@@ -541,9 +552,34 @@ def main_text2binary_matrix(options):
                 f.write("\t".join([str(item) for item in row]) + "\n")
 
     if options.output_type == 'bin':
-        np.save(options.output_file, matrix)
+        # bsr, coo, csc, csr, dia, dok, lil
+        if options.sparse_type:
+            if options.sparse_type == "bsr":
+                sparse_matrix = bsr_matrix(matrix)
+            elif options.sparse_type == "coo":
+                sparse_matrix = coo_matrix(matrix)
+            elif options.sparse_type == "csc":
+                sparse_matrix = csc_matrix(matrix)
+            elif options.sparse_type == "csr":
+                sparse_matrix = csr_matrix(matrix)
+            elif options.sparse_type == "dia":
+                sparse_matrix = dia_matrix(matrix)
+            elif options.sparse_type == "dok":
+                sparse_matrix = dok_matrix(matrix)
+            elif options.sparse_type == "lil":
+                sparse_matrix = lil_matrix(matrix)
+            save_npz(f"{options.output_file}.npz", sparse_matrix)
+        else:
+            np.save(options.output_file, matrix)
     elif options.output_type == 'matrix':
         np.savetxt(options.output_file, matrix, delimiter='\t')
+    elif options.output_type == "pair":
+        pairs = pxc.matrix2relations(matrix, rowIds, colIds, symm = False)
+        with open(options.output_file, "w") as f:
+            for pair in pairs:
+                pair[2] = str(pair[2])
+                f.write("\t".join(pair) + "\n")
+
 
 # METHODS FOR NETANALYZER
 #########################
@@ -655,9 +691,10 @@ def load_tags(file):
 def load_matrix_file(source, splitChar = "\t"):
     matrix = None
     counter = 0
+    col_names = []
+    row_names = []
     for line in source:
         line = line.strip()
-        
         row = [float(c) for c in line.split(splitChar)]
         if matrix is None:
             matrix = np.zeros((len(row), len(row)))
@@ -669,7 +706,7 @@ def load_matrix_file(source, splitChar = "\t"):
 
 def load_pair_file(source): 
     # Not used byte_forma parameter
-    connections = {}
+    pairs = []
     for line in source:
         line = line.strip().split("\t")
         if len(line) == 3:
@@ -678,23 +715,5 @@ def load_pair_file(source):
         else:
             node_a, node_b = line
             weight = 1.0
-        pxc.add_nested_value(connections, (node_a, node_b), weight)
-        pxc.add_nested_value(connections, (node_b, node_a), weight)
-
-    matrix, names = dicti2wmatrix_squared(connections)
-    return matrix, names
-
-def dicti2wmatrix_squared(dicti,symm= True):
-    element_names = dicti.keys()
-    matrix = np.zeros((len(element_names), len(element_names)))
-    i = 0
-    for  elementA, relations in dicti.items():
-        for j, elementB in enumerate(element_names):
-            if elementA != elementB:
-                query = relations.get(elementB)
-                if query is not None:
-                    matrix[i, j] = query
-                    if symm:
-                        matrix[j, i] = query 
-        i += 1
-    return matrix, element_names
+        pairs.append([node_a, node_b, weight])
+    return pairs

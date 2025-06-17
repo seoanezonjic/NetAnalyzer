@@ -327,23 +327,28 @@ def text2binary_matrix(args=None):
     add_output_flags(parser, default_opt={"output_file": None})
     parser.add_argument('-i', '--input_file', dest="input_file", default=None,
     help="input file")
+    parser.add_argument("-n","--node_names_file", dest="node_files", default=None, type = lambda x: single_split(x, sep=","),
+                        help="Files with node names corresponding to the input matrix, only use when -i is set to bin or matrix, could be two paths, indicating rows and cols, respectively. If just one path added, it is assumed to be for rows and cols")
     parser.add_argument('-t', '--input_type', dest="input_type", default='pair',
-    help='Set input format file. "pair", "matrix" or "bin"')
+            help='Set input format file. "pair", "matrix" or "bin"')
     parser.add_argument('-O', '--output_type', dest="output_type", default='bin',
-    help='Set output format file. "bin" for binary (default) or "mat" for tabulated text file matrix')
+            help='Set output format file. "bin" for binary (default) or "mat" for tabulated text file matrix')
     # Process matrix
     parser.add_argument('-d', '--set_diagonal', dest="set_diagonal", default=False, action='store_true',
-    help='Set to 1.0 the main diagonal')
+            help='Set to 1.0 the main diagonal')
     parser.add_argument('-B', '--binarize', dest="binarize", default=None, type = float,
-    help='Binarize matrix changing x >= thr to one and any other to zero into matrix given')
+            help='Binarize matrix changing x >= thr to one and any other to zero into matrix given')
     parser.add_argument('-c', '--cutoff', dest="cutoff", default=None, type = float,
-    help='Cutoff matrix values keeping just x >= and setting any other to zero into matrix given')
+            help='Cutoff matrix values keeping just x >= and setting any other to zero into matrix given')
     # Get stats
     parser.add_argument('-s', '--get_stats', dest="stats", default=None,
-    help='Get stats from the processed matrix')
+            help='Get stats from the processed matrix')
     parser.add_argument('--coords2kernel', dest="coords2kernel",help="passing coordinates to kernel",default=None)
     parser.add_argument('--umap', dest='umap', help="projects coords in umap",default=False, action="store_true")
     parser.add_argument('--cosine_normalization', dest='cosine_normalization', help="activate cosine normalization", default=False, action="store_true")
+    parser.add_argument('--sparse_type', dest="sparse_type", help="""The type of sparse matrix for the output, this option is useful when output type is 
+         set to bin. The options are: bsr, coo, csc, csr, dia, dok, lil""",
+        default=None)
 
     opts = parser.parse_args(args)
     main_text2binary_matrix(opts)

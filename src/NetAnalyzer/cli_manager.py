@@ -346,9 +346,10 @@ def text2binary_matrix(args=None):
     parser.add_argument('--coords2kernel', dest="coords2kernel",help="passing coordinates to kernel",default=None)
     parser.add_argument('--umap', dest='umap', help="projects coords in umap",default=False, action="store_true")
     parser.add_argument('--cosine_normalization', dest='cosine_normalization', help="activate cosine normalization", default=False, action="store_true")
-    parser.add_argument('--sparse_type', dest="sparse_type", help="""The type of sparse matrix for the output, this option is useful when output type is 
-         set to bin. The options are: bsr, coo, csc, csr, dia, dok, lil""",
-        default=None)
+    parser.add_argument('--sparse_type', dest="sparse_type", default=None, help="""The type of sparse matrix for the output, this option is useful when output type is 
+         set to bin. The options are: bsr, coo, csc, csr, dia, dok, lil""")
+    # normalize matrix
+    parser.add_argument("--normalize_by", dest="normalize_by", default=None, type=str, help="Type of normalization for matrix: cosine, rows_cols, min_max")
 
     opts = parser.parse_args(args)
     main_text2binary_matrix(opts)

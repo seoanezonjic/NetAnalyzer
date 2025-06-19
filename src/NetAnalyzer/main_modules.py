@@ -530,8 +530,8 @@ def main_text2binary_matrix(options):
     if options.coords2kernel:
         matrix = pxc.coords2sim(matrix, sim = options.coords2kernel)
     
-    if options.cosine_normalization: 
-        matrix = pxc.cosine_normalization(matrix)
+    if options.normalize_by: 
+        matrix = pxc.normalize_matrix(matrix, method=options.normalize_by)
 
     if options.set_diagonal:
         elements = matrix.shape[-1]

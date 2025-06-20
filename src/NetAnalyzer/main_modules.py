@@ -11,7 +11,7 @@ from py_report_html import Py_report_html
 from NetAnalyzer import Net_parser, NetAnalyzer
 from NetAnalyzer import Kernels
 from NetAnalyzer import Ranker
-from NetAnalyzer import Graph2sim
+#from NetAnalyzer import Graph2sim
 from NetAnalyzer import Adv_mat_calc
 from NetAnalyzer.performancer import Performancer
 from NetAnalyzer.seed_parser import SeedParser
@@ -68,6 +68,7 @@ def main_net_explorer(options, test = False):
     # # If mention, add node2vec coordinates with a tnse proyection.
     net2embedding_proj = None
     if options["embedding_proj"]:
+        from NetAnalyzer.graph2sim import Graph2sim # for optimization in loading times
         net2embedding_proj = {}
         for net_id, net in multinet.items():
             adj_mat, embedding_nodes, _ = net.matrices["adjacency_matrices"][("layer", "layer")]

@@ -13,12 +13,10 @@ import warnings
 import logging
 from cdlib import algorithms, viz, evaluation
 from cdlib import NodeClustering
-import py_semtools # For external_data
-from py_semtools import Ontology
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 import py_exp_calc.exp_calc as pxc
 from NetAnalyzer.net_plotter import Net_plotter
-from NetAnalyzer.graph2sim import Graph2sim
+#from NetAnalyzer.graph2sim import Graph2sim
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from scipy.stats import zscore
@@ -182,6 +180,8 @@ class NetAnalyzer:
         return relations
 
     def link_ontology(self, ontology_file_path, layer_name):
+        import py_semtools # For external_data
+        from py_semtools import Ontology
         if ontology_file_path not in self.loaded_obos: #Load new ontology
             ontology = Ontology(file = ontology_file_path, load_file = True)
             ontology.precompute()
@@ -675,6 +675,7 @@ class NetAnalyzer:
     #------------------------------------
 
     def get_embedding_coords(self, layers, method, input_type = "matrix", embedding_kwargs={}, output_filename=None):
+        from NetAnalyzer.graph2sim import Graph2sim # Here for optimization in loading times
         
         if method == "comm_aware":
             input_type = "graph"
@@ -703,6 +704,7 @@ class NetAnalyzer:
 
     def get_kernel(self, layers, method, normalization=False, sim_type= "dotProduct", embedding_kwargs={}, output_filename=None, outFormat='matrix', add_to_object= False):
         #embedding_kwargs accept: dimensions, walk_length, num_walks, p, q, workers, window, min_count, seed, quiet, batch_words
+        from NetAnalyzer.graph2sim import Graph2sim # for optimization in loading times
 
         if method == "comm_aware":
             input_type = "graph"
@@ -735,6 +737,8 @@ class NetAnalyzer:
         self.write_nodelist(rowIds, output_file + "_colIds")
 
     def get_similarity(self, layers, base_layer, sim_type='lin', options={}, output_filename=None, outFormat='pair', add_to_object= False):
+        import py_semtools # For external_data
+        from py_semtools import Ontology
         # options--> options['term_filter'] = GO:00001
         ontology = self.layer_ontologies[base_layer]
         relations = self.get_layers_as_dict(layers, base_layer)

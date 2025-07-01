@@ -160,6 +160,8 @@ def main_netanalyzer(options):
 
     if options.group_nodes:
         fullNet.set_groups(load_clusters(opts))
+        if not fullNet.group_nodes:
+            raise Exception("No nodes in the groups were detected")
 
     if options.delete_nodes:
         node_list = CmdTabs.load_input_data(options.delete_nodes[0])
@@ -387,6 +389,7 @@ def worker_ranker(seed_groups, seed_weight, opts, nodes, all_rankings, matrix, l
     propagate_options = eval('{' + opts["propagate_options"] +'}')
     ranker.do_ranking(cross_validation=opts.get("cross_validation"), propagate=opts["propagate"],
                       k_fold=opts.get("k_fold"), metric = opts["representation_seed_metric"], options=propagate_options)
+
     with lock: # lock avoids that several processes write at same time in the dictionary
         data_package = {} # Create chunks of results to reduce using too much RAM in pickle process and process piping overload
         added_records = 0
@@ -424,6 +427,7 @@ def main_ranker(options):
     # LOAD SEEDS
     ranker.load_nodes_from_file(options.node_files)
     ranker.load_seeds(options.seed_nodes, sep=options.seed_sep) # TODO: Add when 3 columns is needed for weigths
+
     ranker.clean_seeds(options.minimum_size)
     discarded_seeds = [ [seed_name, seed] for seed_name, seed in ranker.discarded_seeds.items()]
     if discarded_seeds:

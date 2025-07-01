@@ -278,7 +278,6 @@ class Ranker:
             if cross_validation and k_fold is None:
                 self.attributes["header"] = ["candidates", "score", "normalized_rank", "rank"]
                 rank_list = self.get_loo_ranking(seed_name, seed, metric=metric)
-                #print(rank_list)
                 for row in rank_list:
                     ranked_lists.append([row[0], [list(row[1:])]])
             else:

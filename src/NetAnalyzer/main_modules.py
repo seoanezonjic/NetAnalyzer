@@ -158,11 +158,6 @@ def main_netanalyzer(options):
         fullNet.link_ontology(ontology_file_path, layer_name)
         fullNet.ontologies
 
-    if options.group_nodes:
-        fullNet.set_groups(load_clusters(opts))
-        if not fullNet.group_nodes:
-            raise Exception("No nodes in the groups were detected")
-
     if options.delete_nodes:
         node_list = CmdTabs.load_input_data(options.delete_nodes[0])
         node_list = [item for sublist in node_list for item in sublist]
@@ -171,6 +166,11 @@ def main_netanalyzer(options):
 
     if options.filter_connected_components:
         fullNet.delete_connected_component_by_size(options.filter_connected_components)
+
+    if options.group_nodes:
+        fullNet.set_groups(load_clusters(opts))
+        if not fullNet.group_nodes:
+            raise Exception("No nodes in the groups were detected")
 
     if options.dsl_script is not None:
         execute_dsl_script(fullNet, options.dsl_script)

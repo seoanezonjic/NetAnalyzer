@@ -343,6 +343,8 @@ def text2binary_matrix(args=None):
     # Get stats
     parser.add_argument('-s', '--get_stats', dest="stats", default=None,
             help='Get stats from the processed matrix')
+    parser.add_argument('--non_symmetric', dest="symmetric", default=True, action='store_false',
+            help='Set to use non symmetric matrix. By default is symmetric')    
     parser.add_argument('--matrix_row_index', dest="rowids_index", default=None,
             help='File with ROW names to use as index to build the matrix. Order is take into account')
     parser.add_argument('--matrix_col_index', dest="colids_index", default=None,

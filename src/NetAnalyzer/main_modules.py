@@ -515,7 +515,7 @@ def main_text2binary_matrix(options):
         matrix = load_matrix_file(source)
     elif options.input_type == 'pair':
         pairs = load_pair_file(source)
-        matrix, rowIds, colIds = pxc.pairs2matrix(pairs, symm=True)
+        matrix, rowIds, colIds = pxc.pairs2matrix(pairs, symm=True, a_index = options.rowids_index, b_index = options.colids_index)
         with open(options.output_file + "_rowIds" ".lst", 'w') as f:
             f.write("\n".join(rowIds))
         with open(options.output_file + "_colIds" ".lst", 'w') as f:

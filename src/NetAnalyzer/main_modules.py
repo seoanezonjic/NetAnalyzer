@@ -16,8 +16,6 @@ from NetAnalyzer import Adv_mat_calc
 from NetAnalyzer.performancer import Performancer
 from NetAnalyzer.seed_parser import SeedParser
 import networkx as nx
-from scipy.sparse import bsr_matrix, coo_matrix, csc_matrix, csr_matrix, dia_matrix, dok_matrix, lil_matrix
-from scipy.sparse import save_npz
 
 def main_net_explorer(options, test = False):
     # loading gene seeds.
@@ -504,30 +502,22 @@ def main_ranker(options):
         ranker.write_ranking(f"{options.output_file}_all_candidates", add_header=options.header)
 
 def main_text2binary_matrix(options):
-    if options.input_file == '-':
-        source = sys.stdin
-    else:
-        source = open(options.input_file)
 
-    if options.input_type == 'bin':
-        matrix = np.load(options.input_file)
-    elif options.input_type == 'matrix':
-        matrix = load_matrix_file(source)
-    elif options.input_type == 'pair':
-        pairs = load_pair_file(source)
-        matrix, rowIds, colIds = pxc.pairs2matrix(pairs, symm=options.symmetric, a_index = options.rowids_index, b_index = options.colids_index)
-        with open(options.output_file + "_rowIds" ".lst", 'w') as f:
-            f.write("\n".join(rowIds))
-        with open(options.output_file + "_colIds" ".lst", 'w') as f:
-            f.write("\n".join(colIds))
+    if options.node_files:
+        x_axis_file=options.node_files[0]
+        y_axis_file=options.node_files[1]
+    else:
+        x_axis_file=None 
+        y_axis_file=None
+
+
+    matrix, rowIds, colIds = pxc.load(options.input_file, 
+            x_axis_file=x_axis_file, y_axis_file=y_axis_file, 
+            format_type=options.input_type, symm=options.symmetric, 
+            sparse_type=options.sparse_type)
 
     # bsr, coo, csc, csr, dia, dok, lil
 
-    if options.input_type != "pair" and options.node_files:
-        rowIds = Net_parser.load_input_list(options.node_files[0])
-        colIds = Net_parser.load_input_list(options.node_files[1])
-
-    source.close()
     if options.umap:
         matrix = pxc.data2umap(matrix, n_neighbors = 30, min_dist = 0.1, n_components = 2, 
         metric = 'euclidean', random_seed = 123)
@@ -558,33 +548,22 @@ def main_text2binary_matrix(options):
 
     if options.output_type == 'bin':
         # bsr, coo, csc, csr, dia, dok, lil
-        if options.sparse_type:
-            if options.sparse_type == "bsr":
-                sparse_matrix = bsr_matrix(matrix)
-            elif options.sparse_type == "coo":
-                sparse_matrix = coo_matrix(matrix)
-            elif options.sparse_type == "csc":
-                sparse_matrix = csc_matrix(matrix)
-            elif options.sparse_type == "csr":
-                sparse_matrix = csr_matrix(matrix)
-            elif options.sparse_type == "dia":
-                sparse_matrix = dia_matrix(matrix)
-            elif options.sparse_type == "dok":
-                sparse_matrix = dok_matrix(matrix)
-            elif options.sparse_type == "lil":
-                sparse_matrix = lil_matrix(matrix)
-            save_npz(f"{options.output_file}.npz", sparse_matrix)
-        else:
-            np.save(options.output_file, matrix)
+        pxc.save(matrix, options.output_file, 
+            x_axis_names=rowIds, x_axis_file=options.output_file+"_rowIds.lst", 
+            y_axis_names=colIds, y_axis_file=options.output_file+"_colIds.lst", 
+            sparse_type=options.sparse_type)
     elif options.output_type == 'matrix':
         np.savetxt(options.output_file, matrix, delimiter='\t')
+        pxc.write_lst_files(            
+            x_axis_names=rowIds, x_axis_file=options.output_file+"_rowIds.lst", 
+            y_axis_names=colIds, y_axis_file=options.output_file+"_colIds.lst"
+            )
     elif options.output_type == "pair":
         pairs = pxc.matrix2relations(matrix, rowIds, colIds, symm = False)
         with open(options.output_file, "w") as f:
             for pair in pairs:
                 pair[2] = str(pair[2])
                 f.write("\t".join(pair) + "\n")
-
 
 # METHODS FOR NETANALYZER
 #########################
@@ -689,36 +668,3 @@ def load_tags(file):
             line = line.strip().split("\t")
             pxc.add_nested_value(tags, (line[0],line[1]), line[2])
     return tags
-
-# METHODS FOR TEXT2BINARY
-#########################
-
-def load_matrix_file(source, splitChar = "\t"):
-    matrix = None
-    counter = 0
-    col_names = []
-    row_names = []
-    for line in source:
-        line = line.strip()
-        row = [float(c) for c in line.split(splitChar)]
-        if matrix is None:
-            matrix = np.zeros((len(row), len(row)))
-        for i, val in enumerate(row):
-            matrix[counter, i] = val    
-        counter += 1
-
-    return matrix
-
-def load_pair_file(source): 
-    # Not used byte_forma parameter
-    pairs = []
-    for line in source:
-        line = line.strip().split("\t")
-        if len(line) == 3:
-            node_a, node_b, weight = line
-            weight = float(weight) 
-        else:
-            node_a, node_b = line
-            weight = 1.0
-        pairs.append([node_a, node_b, weight])
-    return pairs

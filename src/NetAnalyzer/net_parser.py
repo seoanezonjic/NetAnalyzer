@@ -14,7 +14,7 @@ class Net_parser:
 		else:
 			raise("ERROR: The format " + options['input_format'] + " is not defined")
 
-		if options.get('load_both'): # TODO: Not tested Yet.
+		if options.get('load_both'): 
 			if not net.graph:
 				layerA, layerB = list(net.matrices["adjacency_matrices"].keys())[0]
 				net.adjMat2netObj(layerA,layerB)				

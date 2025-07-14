@@ -345,10 +345,6 @@ def text2binary_matrix(args=None):
             help='Get stats from the processed matrix')
     parser.add_argument('--non_symmetric', dest="symmetric", default=True, action='store_false',
             help='Set to use non symmetric matrix. By default is symmetric')    
-    parser.add_argument('--matrix_row_index', dest="rowids_index", default=None,
-            help='File with ROW names to use as index to build the matrix. Order is take into account')
-    parser.add_argument('--matrix_col_index', dest="colids_index", default=None,
-            help='File with COLUMN names to use as index to build the matrix. Order is take into account')
     parser.add_argument('--coords2kernel', dest="coords2kernel",help="passing coordinates to kernel",default=None)
     parser.add_argument('--umap', dest='umap', help="projects coords in umap",default=False, action="store_true")
     parser.add_argument('--cosine_normalization', dest='cosine_normalization', help="activate cosine normalization", default=False, action="store_true")

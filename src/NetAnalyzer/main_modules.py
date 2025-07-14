@@ -540,6 +540,9 @@ def main_text2binary_matrix(options):
     if options.cutoff is not None and options.binarize is None:
         matrix = pxc.filter_cutoff_mat(matrix, options.cutoff)
 
+    if options.round:
+        matrix = np.round(matrix, options.round)
+
     if options.stats is not None:
         stats = pxc.get_stats_from_matrix(matrix)
         with open(options.stats, 'w') as f:

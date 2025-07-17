@@ -512,9 +512,10 @@ def main_text2binary_matrix(options):
 
 
     matrix, rowIds, colIds = pxc.load(options.input_file, 
-            x_axis_file=x_axis_file, y_axis_file=y_axis_file, 
-            format_type=options.input_type, symm=options.symmetric, 
-            sparse_type=options.sparse_type)
+        x_axis_file=x_axis_file, y_axis_file=y_axis_file, 
+        x_idx_file=options.rowids_index, y_idx_file=options.colids_index,
+        format_type=options.input_type, symm=options.symmetric,
+        init_matrix_type = options.init_matrix_type, output_matrix_type=options.output_matrix_type)
 
     # bsr, coo, csc, csr, dia, dok, lil
 
@@ -549,24 +550,10 @@ def main_text2binary_matrix(options):
             for row in stats:
                 f.write("\t".join([str(item) for item in row]) + "\n")
 
-    if options.output_type == 'bin':
-        # bsr, coo, csc, csr, dia, dok, lil
-        pxc.save(matrix, options.output_file, 
-            x_axis_names=rowIds, x_axis_file=options.output_file+"_rowIds.lst", 
-            y_axis_names=colIds, y_axis_file=options.output_file+"_colIds.lst", 
-            sparse_type=options.sparse_type)
-    elif options.output_type == 'matrix':
-        np.savetxt(options.output_file, matrix, delimiter='\t')
-        pxc.write_lst_files(            
-            x_axis_names=rowIds, x_axis_file=options.output_file+"_rowIds.lst", 
-            y_axis_names=colIds, y_axis_file=options.output_file+"_colIds.lst"
-            )
-    elif options.output_type == "pair":
-        pairs = pxc.matrix2relations(matrix, rowIds, colIds, symm = False)
-        with open(options.output_file, "w") as f:
-            for pair in pairs:
-                pair[2] = str(pair[2])
-                f.write("\t".join(pair) + "\n")
+    pxc.save(matrix, options.output_file, 
+        x_axis_names=rowIds, x_axis_file=options.output_file+"_rowIds.lst", 
+        y_axis_names=colIds, y_axis_file=options.output_file+"_colIds.lst", 
+        format_type=options.output_type, symm = options.symmetric, output_matrix_type=options.output_matrix_type)
 
 # METHODS FOR NETANALYZER
 #########################

@@ -353,7 +353,15 @@ def text2binary_matrix(args=None):
     parser.add_argument("--round", dest="round", default=None, type=int, help="choose this to round in the i-th digit for all the values in the matrix or relations")
     # normalize matrix
     parser.add_argument("--normalize_by", dest="normalize_by", default=None, type=str, help="Type of normalization for matrix: cosine, rows_cols, min_max")
-
+    # order
+    parser.add_argument('--matrix_row_index', dest="rowids_index", default=None,
+            help='File with ROW names to use as index to build the matrix. Order is take into account')
+    parser.add_argument('--matrix_col_index', dest="colids_index", default=None,
+            help='File with COLUMN names to use as index to build the matrix. Order is take into account')
+    parser.add_argument('--init_matrix_type', dest="init_matrix_type", default="dense",
+            help='Select this to specify which is the matrix type during the intitialization of the matrix. Possible values: dense or an sparse type of scipy (bsr, coo, csc, csr, dia, dok, lil).')
+    parser.add_argument('--output_matrix_type', dest="output_matrix_type", default="dense",
+            help='Select this to specify which is the matrix type during the intitialization of the matrix. Possible values: dense or an sparse type of scipy (bsr, coo, csc, csr, dia, dok, lil).')
     opts = parser.parse_args(args)
     main_text2binary_matrix(opts)
 

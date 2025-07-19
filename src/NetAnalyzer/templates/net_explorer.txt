@@ -1,22 +1,27 @@
 <%
     import pandas as pd
     def plot_embdedding(data, plotter_list):
-        ax = plotter_list["sns"].scatterplot(data=data[data['group_seed'] == 'other'], x='coord1', y='coord2', 
-            color='lightgrey', label='other', zorder=1, s=25, alpha=0.4, edgecolor="black", linewidth=0.6)
+        sns = plotter_list["sns"]
+        ax = sns.scatterplot(data=data[data['group_seed'] == 'other'], x='coord1', y='coord2', 
+            color='lightgrey', legend=False, zorder=1, s=5, alpha=0.4, edgecolor="black", linewidth=0.6)
 
         if 'group' in data.columns:
-            ax = plotter_list["sns"].scatterplot(data=data[data['group'] != 'other'], x='coord1', y='coord2', hue='group', palette='Set2', 
-                color='lightgrey', legend=True, zorder=2, s=25, edgecolor="black", linewidth=0.6)
+            ax = sns.scatterplot(data=data[data['group'] != 'other'], x='coord1', y='coord2', hue='group', palette='Set2', 
+                color='lightgrey', legend=True, zorder=2, s=13, edgecolor="black", linewidth=0.6)
 
-        ax = plotter_list["sns"].scatterplot(data=df[df['group_seed'] != 'other'], x='coord1', y='coord2',
-         hue='group_seed', palette='pastel', color='white', legend=True, zorder=3, s=50, marker='D', edgecolor="black", linewidth=0.6)
-        ax.legend(title=None)
-        
+        ax = sns.scatterplot(data=df[df['group_seed'] != 'other'], x='coord1', y='coord2',
+         hue='group_seed', palette='pastel', color='white', legend=False, zorder=3, s=30, marker='D', edgecolor="black", linewidth=0.6)
+    
         handles, labels = ax.get_legend_handles_labels()
-        ax.get_legend().remove()
-        ax.legend(handles, labels, ncols=8, columnspacing=0.1, handletextpad=0.03, loc='lower center', bbox_to_anchor=(.5, 1), frameon=False)
-        plotter_list["plt"].tight_layout()
-        plotter_list["plt"].subplots_adjust(right=0.7)  # Make space on the right
+        sorted_labels = sorted(labels)
+        new_order = [ labels.index(lab) for lab in sorted_labels]
+        ax.legend([handles[idx] for idx in new_order], sorted_labels)
+        #ax.get_legend().remove() # Commented for single plot
+        #ax.legend(handles, labels)
+        sns.move_legend(ax, "lower center", bbox_to_anchor=(0.5, 1), title=None, ncols=8, columnspacing=0.1, handletextpad=0.03, frameon=False)
+        #ax.legend(handles, labels, ncols=8, columnspacing=0.1, handletextpad=0.03, loc='lower center', bbox_to_anchor=(.5, 1), frameon=False)
+        #plotter_list["plt"].tight_layout() # Commented for single plot
+        #plotter_list["plt"].subplots_adjust(right=0.7)  # Make space on the right # Commented for single plot
 
     
     node2seed = {}

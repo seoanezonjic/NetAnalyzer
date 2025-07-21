@@ -373,6 +373,7 @@ def net_explorer(args=None, test=False):
     add_cluster_flags(parser)
     add_plotting_options(parser, default_opt={"graph_file": "output_file"})
     add_resources_flags(parser)
+    add_random_seed(parser)
     # layer processing
     parser.add_argument('-c', '--layer_cutoff', dest="layer_cutoff", default={}, type = lambda string: loading_dic(string, sep1=";", sep2=","),
         help='Cutoff to apply to every layer in the multiplexed one')

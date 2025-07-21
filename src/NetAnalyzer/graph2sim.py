@@ -149,7 +149,8 @@ class Graph2sim:
     allowed_embeddings = ['node2vec', 'deepwalk', 'prone', 'comm_aware', 'ggvec', 'grarep', 'glove','line']
     allowed_kernels = ['el', 'ct', 'rf', 'me', 'vn', 'rl', 'ka', 'md']
 
-    def get_embedding(adj_mat, embedding_nodes, embedding = "node2vec", quiet=True, seed = None, clusters=None, embedding_kwargs={}):
+    def get_embedding(adj_mat, embedding_nodes, embedding = "node2vec", quiet=True,
+     clusters=None, embedding_kwargs={}):
         default_options = {"dimensions":64, "random_seed":None}
         comm_aware_options={"clusters": None, "neigh_w":1, "comm_w":1, "hs" : 0}
         random_walker_options={"walk_length":30, "num_walks": 200}
@@ -192,7 +193,7 @@ class Graph2sim:
                 if embedding == "deepwalk":
                     default_options["p"] = 1
                     default_options["q"] = 1 
-                g = pecanpy.DenseOTF.from_mat(adj_mat=adj_mat, node_ids=embedding_nodes,p=default_options["p"], q=default_options["q"], workers=default_options["workers"], random_state=123456, verbose= verbose)
+                g = pecanpy.DenseOTF.from_mat(adj_mat=adj_mat, node_ids=embedding_nodes,p=default_options["p"], q=default_options["q"], workers=default_options["workers"], random_state=default_options["random_seed"], verbose= verbose)
                 walks = g.simulate_walks(num_walks=default_options["num_walks"], walk_length=default_options["walk_length"])
             elif embedding == "comm_aware": # Based on CRARE paper and modified in HLC paper
                 # Following paper CRARE: params 

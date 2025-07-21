@@ -3,11 +3,11 @@
     def plot_embdedding(data, plotter_list):
         sns = plotter_list["sns"]
         ax = sns.scatterplot(data=data[data['group_seed'] == 'other'], x='coord1', y='coord2', 
-            color='lightgrey', legend=False, zorder=1, s=5, alpha=0.4, edgecolor="black", linewidth=0.6)
+            color='lightgrey', legend=False, zorder=1, s=5, marker='+', alpha=0.4, linewidth=0.6)
 
         if 'group' in data.columns:
             ax = sns.scatterplot(data=data[data['group'] != 'other'], x='coord1', y='coord2', hue='group', palette='Set2', 
-                color='lightgrey', legend=True, zorder=2, s=13, edgecolor="black", linewidth=0.6)
+                color='lightgrey', legend=True, zorder=2, s=10, edgecolor="black", linewidth=0.6)
 
         ax = sns.scatterplot(data=df[df['group_seed'] != 'other'], x='coord1', y='coord2',
          hue='group_seed', palette='pastel', color='white', legend=False, zorder=3, s=30, marker='D', edgecolor="black", linewidth=0.6)
@@ -46,7 +46,6 @@ for seed, net_lcc in plotter.hash_vars["seeds2lcc"].items():
     for net, lcc in net_lcc.items():
         table_lcc.append([seed, net, lcc])
 plotter.hash_vars["table_lcc"] = table_lcc
-print(table_lcc)
 %>
 ${plotter.barplot(id='table_lcc', responsive= False, header=True,
                          fields = [0,2],
@@ -95,8 +94,8 @@ ${plotter.barplot(id='table_lcc', responsive= False, header=True,
         df = df.assign(group_seed=[node2seed[node] if node2seed.get(node) else "other" for node in nodes]) 
 
         if plotter.hash_vars["groups2explore"]:
-            print(node2group)
-            df = df.assign(group=[node2group[node] if node2group.get(node) else "other" for node in nodes]) 
+            df = df.assign(group=[node2group[node] if node2group.get(node) else "other" for node in nodes])
+            df.sort_values(by='group', inplace=True) # Sort by group to assign always the same color to the same group 
 
         plotter.hash_vars["net_proj"] = df
         %>

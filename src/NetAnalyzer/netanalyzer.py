@@ -36,8 +36,8 @@ class NetAnalyzer:
          "kernels": {},            # {layers => {method_type => Mat, rowIds, colIds}}
          "associations": {},       # {layers => {method_type => Mat, rowIds, colIds}}
          "semantic_sims": {},      # {layers => {method_type => Mat, rowIds, colIds}}
+         "embedding_coords": {}    # {layers => {method_type => Mat, rowIds, None}}
          }
-        self.embedding_coords = {} 
         self.group_nodes = {} # Communities are lists {community_id : [Node1, Node2,...]}
         self.group_reference = {}
         self.reference_nodes = []
@@ -52,7 +52,6 @@ class NetAnalyzer:
             self.compute_autorelations == other.compute_autorelations and \
             self.compute_pairs == other.compute_pairs and \
             self.matrices == other.matrices and \
-            self.embedding_coords == other.embedding_coords and \
             self.group_nodes == other.group_nodes and \
             self.reference_nodes == other.reference_nodes and \
             self.loaded_obos == other.loaded_obos and \
@@ -64,7 +63,6 @@ class NetAnalyzer:
         network_clone.graph = copy.deepcopy(self.graph)
         network_clone.association_values = self.association_values.copy()
         network_clone.set_compute_pairs(self.compute_pairs, self.compute_autorelations)
-        network_clone.embedding_coords = self.embedding_coords.copy()
         network_clone.matrices = self.matrices.copy()
         network_clone.group_nodes = copy.deepcopy(self.group_nodes)
         network_clone.reference_nodes = self.reference_nodes.copy()
@@ -271,7 +269,8 @@ class NetAnalyzer:
 
     def connections(self, ids_connected_to_n1, ids_connected_to_n2):
         res = False
-        if ids_connected_to_n1 != None and ids_connected_to_n2 != None and len(ids_connected_to_n1 & ids_connected_to_n2) > 0 : # check that at least exists one node that connect to n1 and n2
+        if ids_connected_to_n1 != None and ids_connected_to_n2 != None and len(ids_connected_to_n1 & ids_connected_to_n2) > 0 : 
+            # check that at least exists one node that connect to n1 and n2
             res = True
         return res
     
@@ -316,7 +315,8 @@ class NetAnalyzer:
         for meth, values in self.association_values.items():
             self.association_values[meth] = [relation for relation in values if self.graph.nodes[relation[0]]["layer"] != self.graph.nodes[relation[1]]["layer"]]
 
-    def get_association_values(self, layers, base_layer, meth, output_filename=None, outFormat='pair', add_to_object= False, **options): #TODO: Talk with PSZ about **optinos or options= {}
+    def get_association_values(self, layers, base_layer, meth, output_filename=None,
+     outFormat='pair', add_to_object= False, **options): #TODO: Talk with PSZ about **optinos or options= {}
 
         default_options = {"n_neighbors": 15, "min_dist": 0.1, "n_components": 2, "metric": 'euclidean', 
         "corr_type": "pearson", "pvalue": 0.05, "pvalue_adj_method": None, "alternative": 'greater', "coords2sim_type":  'dotProduct' }
@@ -674,7 +674,17 @@ class NetAnalyzer:
     ## Graph representation embedding
     #------------------------------------
 
-    def get_embedding_coords(self, layers, method, input_type = "matrix", embedding_kwargs={}, output_filename=None):
+    def get_clusters_from_embedding(self, cluster_method, embedding_coords, embedding_nodes, nodes2cluster, cluster_kwargs={}):
+        # Select just those nodes which are in nodes2cluster for the clustering from embedding_nodes and embedding_:corrds( matrix)
+        coords_subset = embedding_coords
+        nodes_subset = embedding_nodes
+        if nodes2cluster:
+            node_mask = [node in nodes2cluster for node in embedding_nodes]
+            coords_subset = embedding_coords[node_mask, :]
+            nodes_subset = [n for n in embedding_nodes if n in nodes2cluster]
+        self.group_nodes = pxc.get_cluster_by_attributes(matrix=coords_subset, row_names=nodes_subset, cluster_method=cluster_method, cluster_kwargs=cluster_kwargs)
+
+    def get_embedding_coords(self, layers, method, input_type = "matrix", embedding_kwargs={}, output_filename=None, outFormat='matrix', add_to_object= False):
         from NetAnalyzer.graph2sim import Graph2sim # Here for optimization in loading times
         
         if method == "comm_aware":
@@ -692,12 +702,17 @@ class NetAnalyzer:
             graph = self.graph
             embedding_nodes = list(self.graph.nodes())
 
+
         emb_coords = Graph2sim.get_embedding(graph, embedding = method, embedding_nodes=embedding_nodes, clusters=clusters, embedding_kwargs= embedding_kwargs)
 
         self.control_output(values = emb_coords, output_filename=output_filename, inFormat="matrix", rowIds = embedding_nodes, colIds = None,
-         outFormat="matrix", add_to_object=False)
-        
+         outFormat="matrix", add_to_object=add_to_object, matrix_keys=("embedding_coords", layers, method))
         return emb_coords, embedding_nodes
+
+    def write_embedding_coords(self, layers, embedding_type, output_file):
+        emb_coords, rowIds, _ = self.matrices["embedding_coords"][layers][embedding_type]
+        np.save(output_file, emb_coords)
+        self.write_nodelist(rowIds, output_file + "_rowIds")
 
     ## Kernel and similarity methods
     #------------------------------------

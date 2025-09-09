@@ -223,11 +223,22 @@ def main_netanalyzer(options):
             layers2kernel = tuple(options.use_layers[0])
 
         if options.embedding_coords:
-            fullNet.get_embedding_coords(layers2kernel, options.kernel, input_type = "matrix", embedding_kwargs=embedding_kwargs, output_filename=options.kernel_file)
+            fullNet.get_embedding_coords(layers2kernel, options.kernel, input_type = "matrix", embedding_kwargs=embedding_kwargs, 
+                output_filename=options.kernel_file, add_to_object=True)
+            fullNet.write_embedding_coords(layers2kernel, options.kernel, options.kernel_file)
         else:
             fullNet.get_kernel(layers2kernel, options.kernel, options.normalize_kernel,
                                options.coords2sim_type, embedding_kwargs, add_to_object=True)
             fullNet.write_kernel(layers2kernel, options.kernel, options.kernel_file)
+
+    if options.cluster_embedding:
+        embedding_coords, embedding_nodes, _ = fullNet.matrices["embedding_coords"][layers2kernel][options.kernel]
+        cluster_kwargs = eval('{' +options.cluster_embedding_add_options +'}')
+        nodes_to_cluster = embedding_nodes
+        if options.reference_nodes:
+            nodes_to_cluster = options.reference_nodes
+        fullNet.get_clusters_from_embedding(cluster_method=options.cluster_embedding, nodes2cluster=nodes_to_cluster, embedding_coords= embedding_coords, embedding_nodes=embedding_nodes, cluster_kwargs=cluster_kwargs)
+        write_clusters(fullNet.group_nodes, output_file="groups_from_embedding", group_id=None, sep=None, type_write="w")
 
     if options.graph_file is not None:
         options.graph_options['output_file'] = options.graph_file
@@ -361,7 +372,7 @@ def main_randomize_clustering(options):
         all_nodes = [node for node, _ in node2clusters]
         random_clusters = random_sample(all_nodes, options['random_type'][3] == "r", all_sizes, options['seed']) 
 
-    write_clusters(random_clusters, options['output_file'], options['aggregate_sep'])
+    write_clusters(random_clusters, options['output_file'], group_id=None, sep=options['aggregate_sep'], type_write="w")
      
 
 def main_randomize_network(options):
@@ -588,13 +599,27 @@ def discover_and_write_cluster(net, cluster_alg, clust_kwargs, seed, output_buil
             output_build_clusters = cluster_alg + \
                 '_' + 'discovered_clusters.txt'
 
-        with open(output_build_clusters, type_write) as out_file:
-            for cl_id, nodes in net.group_nodes.items():
-                for node in nodes:
-                    if group_id:
-                        out_file.write(f"{group_id}\t{cl_id}\t{node}\n")
-                    else:
-                        out_file.write(f"{cl_id}\t{node}\n")
+        write_clusters(net.group_nodes, output_build_clusters, group_id=group_id, sep=None, type_write=type_write)
+
+def write_clusters(clusters, output_file, group_id=None, sep=None, type_write="w"):
+    with open(output_file, type_write) as out_file:
+        for cl_id, nodes in clusters.items():
+            if sep is not None:
+                nodes = [sep.join(nodes)]
+
+            for node in nodes:
+                if group_id:
+                    out_file.write(f"{group_id}\t{cl_id}\t{node}\n")
+                else:
+                    out_file.write(f"{cl_id}\t{node}\n")
+
+# def write_clusters(clusters, output_file, sep): #2expcalc
+#     with open(output_file, "w") as outfile:
+#         for cluster, nodes in clusters.items():
+#             if sep != None: nodes = [sep.join(nodes)]
+#             for node in nodes:
+#                 outfile.write(f"{cluster}\t{node}\n")
+
                
 # METHODS FOR RANDOMIZE CLUSTERING
 ###################################
@@ -632,13 +657,6 @@ def random_sample(nodes, replacement, all_sizes, seed):
             node_list = pxc.diff(node_list, random_nodes)
         random_clusters[f"{counter}_random"] = random_nodes
     return random_clusters
-
-def write_clusters(clusters, output_file, sep): #2expcalc
-    with open(output_file, "w") as outfile:
-        for cluster, nodes in clusters.items():
-            if sep != None: nodes = [sep.join(nodes)]
-            for node in nodes:
-                outfile.write(f"{cluster}\t{node}\n")
                         
 # METHODS FOR RANKER
 #####################

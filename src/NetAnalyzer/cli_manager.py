@@ -181,6 +181,8 @@ def netanalyzer(args=None):
     help="Kernel operation to perform with the adjacency matrix")
     parser.add_argument("--embedding_add_options", dest="embedding_add_options", default="",
     help="Additional options for embedding kernel methods. It must be defines as '\"opt_name1\" : value1, \"opt_name2\" : value2,...' ")
+    parser.add_argument("--cluster_embedding", dest="cluster_embedding", default="", help="Generate clustering from network embedding")
+    parser.add_argument("--cluster_embedding_add_options", dest="cluster_embedding_add_options", default="", help="Select specific parameters for the clustering")
     parser.add_argument("-z","--normalize_kernel_values", dest="normalize_kernel", default=False, action='store_true',
     help="Apply cosine normalization to the obtained kernel")
     parser.add_argument("--coords2sim_type", dest="coords2sim_type", default="dotProduct", help= "Select the type of transformation from coords to similarity: dotProduct, normalizedScaling, infinity and int or float numbers")

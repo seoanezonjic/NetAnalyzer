@@ -115,7 +115,7 @@ def get_neigh_set(net, nodes):
     return list(neigh)
 
 
-def main_integrate_kernels(options):
+def main_embedding_integrator(options):
     kernels = Kernels()
 
     if not options.kernel_ids:

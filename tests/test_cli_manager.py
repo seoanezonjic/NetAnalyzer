@@ -10,7 +10,7 @@ ROOT_PATH=os.path.dirname(__file__)
 DATA_PATH = os.path.join(ROOT_PATH, 'data')
 
 INPUT_PATH = os.path.join(DATA_PATH, 'input_scripts')
-INTEGRATE_KERNELS = os.path.join(INPUT_PATH, 'integrate_kernels')
+INTEGRATE_KERNELS = os.path.join(INPUT_PATH, 'embedding_integrator')
 RANDOMIZE_CLUSTERING = os.path.join(INPUT_PATH, 'randomize_clustering')
 RANDOMIZE_NETWORK = os.path.join(INPUT_PATH, 'randomize_network')
 NETANALYZER = os.path.join(INPUT_PATH, 'netanalyzer')
@@ -40,8 +40,8 @@ def text2binary_matrix(lsargs):
     return NetAnalyzer.text2binary_matrix(lsargs)
 
 @capture_stdout
-def integrate_kernels(lsargs):
-    return NetAnalyzer.integrate_kernels(lsargs)
+def embedding_integrator(lsargs):
+    return NetAnalyzer.embedding_integrator(lsargs)
 
 @capture_stdout
 def ranker(lsargs):
@@ -428,7 +428,7 @@ def test_integration(tmp_dir, ref_file, output_file, args):
     asym_kernel1 = os.path.join(INTEGRATE_KERNELS, "asym_kernel1")
     asym_kernel2 = os.path.join(INTEGRATE_KERNELS, "asym_kernel2")
     args = args.format(ref_file=ref_file, output_file=output_file,  kernel1=kernel1,  kernel2=kernel2, asym_kernel1= asym_kernel1, asym_kernel2 = asym_kernel2).split(" ")
-    _, printed = integrate_kernels(args)
+    _, printed = embedding_integrator(args)
     diff(ref_file + ".npy", output_file + ".npy", matrix=True)
     diff(ref_file + ".lst", output_file + ".lst")
 

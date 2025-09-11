@@ -131,7 +131,7 @@ def add_plotting_options(parser, default_opt={"graph_file": None}):
 
 ##############################################
 
-def integrate_kernels(args=None):
+def embedding_integrator(args=None):
     parser = argparse.ArgumentParser(description='Integrate kernels or embedding in matrix format')
     add_kernel_flags(parser, multiple = True)
     add_output_flags(parser, default_opt={"output_file": "general_matrix"})
@@ -149,7 +149,7 @@ def integrate_kernels(args=None):
     # Resources
     add_resources_flags(parser=parser, default_opt={"threads": 8})  
     opts = parser.parse_args(args)
-    main_integrate_kernels(opts)
+    main_embedding_integrator(opts)
 
 def netanalyzer(args=None):
     parser = argparse.ArgumentParser(description='Perform Network analysis from NetAnalyzer package')
@@ -349,7 +349,6 @@ def text2binary_matrix(args=None):
             help='Set to use non symmetric matrix. By default is symmetric')    
     parser.add_argument('--coords2kernel', dest="coords2kernel",help="passing coordinates to kernel",default=None)
     parser.add_argument('--umap', dest='umap', help="projects coords in umap",default=False, action="store_true")
-    parser.add_argument('--cosine_normalization', dest='cosine_normalization', help="activate cosine normalization", default=False, action="store_true")
     parser.add_argument('--sparse_type', dest="sparse_type", default=None, help="""The type of sparse matrix for the output, this option is useful when output type is 
          set to bin. The options are: bsr, coo, csc, csr, dia, dok, lil""")
     parser.add_argument("--round", dest="round", default=None, type=int, help="choose this to round in the i-th digit for all the values in the matrix or relations")

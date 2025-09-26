@@ -216,29 +216,45 @@ def main_netanalyzer(options):
     if options.kernel is not None:
         # This allows inject custom arguments for each embedding method
         embedding_kwargs = eval('{' +options.embedding_add_options +'}')
+        if options.seed: embedding_kwargs['random_seed'] = options.seed
         if len(options.use_layers) == 1:
             # we use only a layer to perform the kernel, so only one item it is selected.
             layers2kernel = (options.use_layers[0][0], options.use_layers[0][0])
         else:
             layers2kernel = tuple(options.use_layers[0])
 
-        if options.embedding_coords:
-            fullNet.get_embedding_coords(layers2kernel, options.kernel, input_type = "matrix", embedding_kwargs=embedding_kwargs, 
-                output_filename=options.kernel_file, add_to_object=True)
-            fullNet.write_embedding_coords(layers2kernel, options.kernel, options.kernel_file)
+        if options.external_embedding:
+
+            emb_format_type = "embedding_coords" 
+            if options.embedding_coords:
+                emb_format_type = "embedding_coords" 
+                options.external_embedding.append(None)
+            else:
+                emb_format_type = "kernel"
+            fullNet.load_external_embedding(matrix=options.external_embedding[0], 
+                rowIds=options.external_embedding[1], 
+                colIds=options.external_embedding[2], 
+                emb_format_type=emb_format_type,
+                layers2kernel=layers2kernel)
         else:
-            fullNet.get_kernel(layers2kernel, options.kernel, options.normalize_kernel,
-                               options.coords2sim_type, embedding_kwargs, add_to_object=True)
-            fullNet.write_kernel(layers2kernel, options.kernel, options.kernel_file)
+            if options.embedding_coords:
+                fullNet.get_embedding_coords(layers2kernel, options.kernel, input_type = "matrix", embedding_kwargs=embedding_kwargs, 
+                    output_filename=options.kernel_file, add_to_object=True)
+                fullNet.write_embedding_coords(layers2kernel, options.kernel, options.kernel_file)
+            else:
+                fullNet.get_kernel(layers2kernel, options.kernel, options.normalize_kernel,
+                                   options.coords2sim_type, embedding_kwargs, add_to_object=True)
+                fullNet.write_kernel(layers2kernel, options.kernel, options.kernel_file)
 
     if options.cluster_embedding:
-        embedding_coords, embedding_nodes, _ = fullNet.matrices["embedding_coords"][layers2kernel][options.kernel]
+        kernel_method = "external" if options.external_embedding else options.kernel
+        embedding_coords, embedding_nodes, _ = fullNet.matrices["embedding_coords"][layers2kernel][kernel_method]
         cluster_kwargs = eval('{' +options.cluster_embedding_add_options +'}')
         nodes_to_cluster = embedding_nodes
         if options.reference_nodes:
             nodes_to_cluster = options.reference_nodes
         fullNet.get_clusters_from_embedding(cluster_method=options.cluster_embedding, nodes2cluster=nodes_to_cluster, embedding_coords= embedding_coords, embedding_nodes=embedding_nodes, cluster_kwargs=cluster_kwargs)
-        write_clusters(fullNet.group_nodes, output_file="groups_from_embedding", group_id=None, sep=None, type_write="w")
+        write_clusters(fullNet.group_nodes, output_file=options.output_build_clusters, group_id=None, sep=None, type_write="w")
 
     if options.graph_file is not None:
         options.graph_options['output_file'] = options.graph_file

@@ -20,6 +20,7 @@ from NetAnalyzer.net_plotter import Net_plotter
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from scipy.stats import zscore
+from py_cmdtabs.cmdtabs import CmdTabs
 # https://stackoverflow.com/questions/60392940/multi-layer-graph-in-networkx
 # http://mkivela.com/pymnet
 
@@ -702,17 +703,27 @@ class NetAnalyzer:
             graph = self.graph
             embedding_nodes = list(self.graph.nodes())
 
-
-        emb_coords = Graph2sim.get_embedding(graph, embedding = method, embedding_nodes=embedding_nodes, clusters=clusters, embedding_kwargs= embedding_kwargs)
+        if method in Graph2sim.allowed_embeddings:
+            emb_coords = Graph2sim.get_embedding(graph, embedding = method, embedding_nodes=embedding_nodes, clusters=clusters, embedding_kwargs= embedding_kwargs)
+        elif method[0:2] in Graph2sim.allowed_kernels:
+            kernel = Graph2sim.get_kernel(graph, method)
+            emb_coords = Graph2sim.kernel2emb_coords(kernel, sim_type= sim_type)
 
         self.control_output(values = emb_coords, output_filename=output_filename, inFormat="matrix", rowIds = embedding_nodes, colIds = None,
          outFormat="matrix", add_to_object=add_to_object, matrix_keys=("embedding_coords", layers, method))
         return emb_coords, embedding_nodes
 
+    def load_external_embedding(self, matrix=None, rowIds=None, colIds=None, emb_format_type="kernel", layers2kernel=None):
+        emb = np.load(matrix)
+        if rowIds: rowIds = [row[0] for row in CmdTabs.load_input_data(rowIds, sep="\t")]
+        if colIds: colIds = [row[0] for row in CmdTabs.load_input_data(colIds, sep="\t")]
+        fullNet.control_output(values = emb, output_filename=None, inFormat="matrix", rowIds = rowIds, colIds = colIds,
+            outFormat="matrix", add_to_object=True, matrix_keys=(emb_format_type, layers2kernel, "external"))
+
     def write_embedding_coords(self, layers, embedding_type, output_file):
         emb_coords, rowIds, _ = self.matrices["embedding_coords"][layers][embedding_type]
         np.save(output_file, emb_coords)
-        self.write_nodelist(rowIds, output_file + "_rowIds")
+        self.write_nodelist(rowIds, output_file + "_rowIds.lst")
 
     ## Kernel and similarity methods
     #------------------------------------
@@ -748,8 +759,8 @@ class NetAnalyzer:
     def write_kernel(self, layers, kernel_type, output_file):
         kernel, rowIds, colIds = self.matrices["kernels"][layers][kernel_type]
         np.save(output_file, kernel)
-        self.write_nodelist(rowIds, output_file + "_rowIds")
-        self.write_nodelist(rowIds, output_file + "_colIds")
+        self.write_nodelist(rowIds, output_file + "_rowIds.lst")
+        self.write_nodelist(rowIds, output_file + "_colIds.lst")
 
     def get_similarity(self, layers, base_layer, sim_type='lin', options={}, output_filename=None, outFormat='pair', add_to_object= False):
         import py_semtools # For external_data
@@ -1385,10 +1396,10 @@ class NetAnalyzer:
         elif Format == 'matrix':
             np.save(output_filename, obj)
             if rowIds != None:
-                with open(output_filename + '_rowIds', 'w') as f:
+                with open(output_filename + '_rowIds.lst', 'w') as f:
                     for item in rowIds: f.write(item + "\n")
             if colIds != None:
-                with open(output_filename + '_colIds', 'w') as f:
+                with open(output_filename + '_colIds.lst', 'w') as f:
                     for item in colIds: f.write(item + "\n")  
         
 

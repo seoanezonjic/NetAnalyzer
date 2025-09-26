@@ -504,10 +504,10 @@ class BaseNetTestCase(unittest.TestCase):
 		output_filename = "subgraph"
 		self.monopartite_network_weights.write_subgraph(("main","main"), output_filename, outFormat)	
 		self.assertEqual(pxc.dig(self.monopartite_network_weights.matrices,*("adjacency_matrices",("main","main")))[0].tolist(), np.load("subgraph.npy").tolist())
-		self.assertTrue(os.path.exists(output_filename+"_colIds"))
-		self.assertTrue(os.path.exists(output_filename+"_rowIds"))
-		os.remove(output_filename+"_colIds")
-		os.remove(output_filename+"_rowIds")
+		self.assertTrue(os.path.exists(output_filename+"_colIds.lst"))
+		self.assertTrue(os.path.exists(output_filename+"_rowIds.lst"))
+		os.remove(output_filename+"_colIds.lst")
+		os.remove(output_filename+"_rowIds.lst")
 		os.remove(output_filename+".npy")
 
 	def test_get_direct_conns(self):

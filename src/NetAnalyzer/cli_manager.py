@@ -34,6 +34,18 @@ def group_nodes_parse(string):
 	
 	return group_nodes
 
+def reference_nodes_parse(string):
+    references_nodes = []
+    if os.path.isfile(string):
+        with open(string) as file:
+            for line in file:
+                node = line.strip()
+                references_nodes.append(node)
+    else:
+        references_nodes = single_split(string, sep=",")
+    return references_nodes
+
+
 def external_cluster_metadata(string):
 	metadata = loading_dic(string)
 	if metadata.get("sim"): 
@@ -189,11 +201,13 @@ def netanalyzer(args=None):
     parser.add_argument("--embedding_coords", dest= "embedding_coords", default=False, action="store_true", help="Use this flag in case of obtaining the coordinates of the system")
     parser.add_argument("-K","--kernel_file", dest="kernel_file", default='kernel_file',
     help="Output file name for kernel values")
+    parser.add_argument("--external_embedding", dest="external_embedding", default=None, type = lambda x: single_split(x, sep=","),
+        help="Use this flag when an external embedding is needed for posterior analysis. Format: matrix_path,row_path,col_path. col_path just for kernel format")
     # Plotting
     add_plotting_options(parser)
     # Nodes states
-    parser.add_argument("-r","--reference_nodes", dest="reference_nodes", default=[], type= lambda x: single_split(x, sep=","),
-    help="Node ids comma separared")
+    parser.add_argument("-r","--reference_nodes", dest="reference_nodes", default=[], type= lambda x: reference_nodes_parse(x),
+    help="Files to a column of nodes or node ids comma separared format in terminal")
     parser.add_argument("--split_groups", dest="split_groups", default=False, action= "store_true",  
         help="Split groups in subgroups based on clustering methods")
     parser.add_argument("-d","--delete", dest="delete_nodes", default=[], type= lambda x: single_split(x, sep=";"),

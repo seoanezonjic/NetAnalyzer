@@ -260,6 +260,13 @@ class Graph2sim:
         kernel = pxc.coords2sim(emb_coords, sim = sim_type)
         if normalization: kernel = pxc.cosine_normalization(kernel)
         return kernel
+
+    def kernel2emb_coords(kernel):
+        # https://ieeexplore.ieee.org/abstract/document/8869809
+        U, S, _ = np.linalg.svd(kernel, full_matrices=False)
+        Q = U * np.sqrt(S)[None, :]  # equivalente a U @ np.diag(np.sqrt(S))
+        # TODO: Check to implement approximation by eigenvalues
+        return Q
     
     def kernel2emb_coords(kernel):
         U, S, _ = np.linalg.svd(kernel)

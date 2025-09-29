@@ -717,7 +717,7 @@ class NetAnalyzer:
         emb = np.load(matrix)
         if rowIds: rowIds = [row[0] for row in CmdTabs.load_input_data(rowIds, sep="\t")]
         if colIds: colIds = [row[0] for row in CmdTabs.load_input_data(colIds, sep="\t")]
-        fullNet.control_output(values = emb, output_filename=None, inFormat="matrix", rowIds = rowIds, colIds = colIds,
+        self.control_output(values = emb, output_filename=None, inFormat="matrix", rowIds = rowIds, colIds = colIds,
             outFormat="matrix", add_to_object=True, matrix_keys=(emb_format_type, layers2kernel, "external"))
 
     def write_embedding_coords(self, layers, embedding_type, output_file):

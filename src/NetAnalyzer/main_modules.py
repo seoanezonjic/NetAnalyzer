@@ -146,7 +146,7 @@ def main_netanalyzer(options):
     print("Loading network data")
     opts = vars(options)
     # FRED: Remove this part of vars and modify the loads methods (Tlk wth PSZ)
-    fullNet = Net_parser.load(opts)
+    fullNet = NetAnalyzer(["layer"]) if options.input_file == "NULL" else Net_parser.load(opts)
     fullNet.set_compute_pairs(options.use_pairs, not options.no_autorelations)
     fullNet.threads = options.threads
 
@@ -213,10 +213,11 @@ def main_netanalyzer(options):
                     item.append(options['meth'])
                     f.write("\t".join(item) + "\n")
 
-    if options.kernel is not None:
+    if options.kernel or options.external_embedding:
         # This allows inject custom arguments for each embedding method
         embedding_kwargs = eval('{' +options.embedding_add_options +'}')
         if options.seed: embedding_kwargs['random_seed'] = options.seed
+        layers2kernel = ["layer", "layer"]
         if len(options.use_layers) == 1:
             # we use only a layer to perform the kernel, so only one item it is selected.
             layers2kernel = (options.use_layers[0][0], options.use_layers[0][0])
@@ -246,15 +247,15 @@ def main_netanalyzer(options):
                                    options.coords2sim_type, embedding_kwargs, add_to_object=True)
                 fullNet.write_kernel(layers2kernel, options.kernel, options.kernel_file)
 
-    if options.cluster_embedding:
-        kernel_method = "external" if options.external_embedding else options.kernel
-        embedding_coords, embedding_nodes, _ = fullNet.matrices["embedding_coords"][layers2kernel][kernel_method]
-        cluster_kwargs = eval('{' +options.cluster_embedding_add_options +'}')
-        nodes_to_cluster = embedding_nodes
-        if options.reference_nodes:
-            nodes_to_cluster = options.reference_nodes
-        fullNet.get_clusters_from_embedding(cluster_method=options.cluster_embedding, nodes2cluster=nodes_to_cluster, embedding_coords= embedding_coords, embedding_nodes=embedding_nodes, cluster_kwargs=cluster_kwargs)
-        write_clusters(fullNet.group_nodes, output_file=options.output_build_clusters, group_id=None, sep=None, type_write="w")
+        if options.cluster_embedding:
+            kernel_method = "external" if options.external_embedding else options.kernel
+            embedding_coords, embedding_nodes, _ = fullNet.matrices["embedding_coords"][layers2kernel][kernel_method]
+            cluster_kwargs = eval('{' +options.cluster_embedding_add_options +'}')
+            nodes_to_cluster = embedding_nodes
+            if options.reference_nodes:
+                nodes_to_cluster = options.reference_nodes
+            fullNet.get_clusters_from_embedding(cluster_method=options.cluster_embedding, nodes2cluster=nodes_to_cluster, embedding_coords= embedding_coords, embedding_nodes=embedding_nodes, cluster_kwargs=cluster_kwargs)
+            write_clusters(fullNet.group_nodes, output_file=options.output_build_clusters, group_id=None, sep=None, type_write="w")
 
     if options.graph_file is not None:
         options.graph_options['output_file'] = options.graph_file

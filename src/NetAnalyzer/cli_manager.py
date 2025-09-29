@@ -99,7 +99,7 @@ def add_output_flags(parser, default_opt={"output_file": "output_file"}):
 def add_input_graph_flags(parser, multinet = False):
     if multinet:
         parser.add_argument("-i", "--input_file", dest="input_file", default= None, type = lambda string: loading_dic(string, sep1=";", sep2=","), 
-                    help="Input file to create networks for further analysis")
+                    help="Input file to create networks for further analysis, specify NULL if no network needed")
         parser.add_argument("-n","--node_names_file", dest="node_files", default=None, type = lambda string: loading_dic(string, sep1=";", sep2=","),
                     help="Files with node names corresponding to the input matrix, only use when -i is set to bin or matrix, could be two paths, indicating rows and cols, respectively. If just one path added, it is assumed to be for rows and cols")
         # parser.add_argument("-l","--layers", dest="layers", default=[['layer', '-']], type= lambda x: double_split(x, sep1=";",sep2=","),

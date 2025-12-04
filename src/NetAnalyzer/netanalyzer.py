@@ -388,6 +388,7 @@ class NetAnalyzer:
                             fmt='edgelist',
                             validation_method=pvalue_adj_method)
         relations = [[rowIds[relation[0]], rowIds[relation[1]], 1] for relation in relations] # TODO: Check 0-based numeration.
+        self.association_values['bicm'] = relations
         return relations
 
 

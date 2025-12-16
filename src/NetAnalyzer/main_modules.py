@@ -20,7 +20,9 @@ import networkx as nx
 def main_net_explorer(options, test = False):
     # loading gene seeds.
     options = vars(options)
-    if options["seed_nodes"]: seeds2explore, _ = SeedParser.load_nodes_by_group(options["seed_nodes"], sep=options["seed_sep"])
+    seeds2explore = {}
+    if options["seed_nodes"]: 
+        seeds2explore, _ = SeedParser.load_nodes_by_group(options["seed_nodes"], sep=options["seed_sep"])
     if options["group_nodes"]: 
         groups2explore = load_clusters(options)
     else:

@@ -26,8 +26,9 @@
     
     node2seed = {}
     for seed, nodes in plotter.hash_vars["seeds2explore"].items():
-        for node in nodes:
-            if not node2seed.get(node): node2seed[node] = seed
+        if nodes:
+            for node in nodes:
+                if not node2seed.get(node): node2seed[node] = seed
 
     node2group = {}
     if plotter.hash_vars["groups2explore"]:

@@ -20,7 +20,7 @@ import networkx as nx
 def main_net_explorer(options, test = False):
     # loading gene seeds.
     options = vars(options)
-    seeds2explore = {}
+    seeds2explore = {"seed": []}
     if options["seed_nodes"]: 
         seeds2explore, _ = SeedParser.load_nodes_by_group(options["seed_nodes"], sep=options["seed_sep"])
     if options["group_nodes"]: 
@@ -47,23 +47,23 @@ def main_net_explorer(options, test = False):
             multinet[net_id].adjMat2netObj('layer','layer')
 
     # extract a subgraph for each
-    if options["seed_nodes"]:
-        seeds2subgraph = {}
-        seeds2lcc = {}
-        for seed, nodes in seeds2explore.items():
-            seeds2subgraph[seed] = {}
-            seeds2lcc[seed] = {}
-            for net_id, net in multinet.items():
-                # get neighbor from node
-                nodes_with_neigh = set(nodes)
-                if options["neigh_level"].get(net_id):
-                    neigh_level = int(options["neigh_level"].get(net_id))
-                    for i in range(0, neigh_level): nodes_with_neigh = get_neigh_set(net, nodes_with_neigh)
-                    seeds2subgraph[seed][net_id] = net.graph.subgraph(nodes_with_neigh)
-                else:
-                    seeds2subgraph[seed][net_id] = net.graph
-                largest_cc = len(max(nx.connected_components(seeds2subgraph[seed][net_id]), key=len))
-                seeds2lcc[seed][net_id] = largest_cc
+    seeds2lcc = {}
+    seeds2subgraph = {}
+    for seed, nodes in seeds2explore.items():
+        seeds2subgraph[seed] = {}
+        seeds2lcc[seed] = {}
+        for net_id, net in multinet.items():
+            # get neighbor from node
+            nodes_with_neigh = set(nodes) if nodes else set()
+            if options["neigh_level"].get(net_id):
+                neigh_level = int(options["neigh_level"].get(net_id))
+                for i in range(0, neigh_level): nodes_with_neigh = get_neigh_set(net, nodes_with_neigh)
+                seeds2subgraph[seed][net_id] = net.graph.subgraph(nodes_with_neigh)
+            else:
+                seeds2subgraph[seed][net_id] = net.graph
+            largest_cc = len(max(nx.connected_components(seeds2subgraph[seed][net_id]), key=len))
+            seeds2lcc[seed][net_id] = largest_cc
+
 
     # # If mention, add node2vec coordinates with a tnse proyection.
     net2embedding_proj = None

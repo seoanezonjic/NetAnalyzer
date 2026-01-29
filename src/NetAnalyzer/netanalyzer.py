@@ -1,17 +1,10 @@
-import random
-import sys 
-import re
-import copy
+import random, sys , re, copy, math, itertools, warnings, logging
 import networkx as nx
-import math
 import numpy as np
-import scipy.stats as stats
 import pandas as pd
+import scipy.stats as stats
 import statsmodels.api as sm
-import itertools
-import warnings
-import logging
-from cdlib import algorithms, viz, evaluation
+from cdlib import algorithms, evaluation
 from cdlib import NodeClustering
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 import py_exp_calc.exp_calc as pxc

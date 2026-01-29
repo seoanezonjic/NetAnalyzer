@@ -1,12 +1,6 @@
-import sys 
-import unittest
-import os
-import math
+import unittest, os, math, random
 import numpy as np
-import networkx as nx
-import random
 import py_exp_calc.exp_calc as pxc
-from NetAnalyzer import NetAnalyzer
 from NetAnalyzer import Net_parser
 from statsmodels.stats.multitest import multipletests
 ROOT_PATH=os.path.dirname(__file__)

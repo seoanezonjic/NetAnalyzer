@@ -1,6 +1,4 @@
-import unittest
-import os
-import timeit
+import unittest, os, timeit
 from NetAnalyzer import Kernels
 import numpy as np
 ROOT_PATH=os.path.dirname(__file__)

@@ -1,4 +1,4 @@
-import sys 
+import sys, random 
 import numpy as np
 from scipy import linalg
 from warnings import warn
@@ -9,14 +9,12 @@ import numba #To control pecanpy threading
 from numba import njit, set_num_threads
 from gensim.models import Word2Vec
 import nodevectors
-import random # for the random walker
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import networkx as nx
-import os
 
 
 class LINE(nn.Module):

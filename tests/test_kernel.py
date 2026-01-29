@@ -1,6 +1,4 @@
-import unittest
-import os
-from NetAnalyzer import NetAnalyzer
+import unittest, os
 from NetAnalyzer import Net_parser
 import numpy as np
 ROOT_PATH=os.path.dirname(__file__)

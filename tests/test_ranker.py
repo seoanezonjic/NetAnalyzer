@@ -1,9 +1,5 @@
-import unittest
-import os
-import math
+import unittest, os
 import numpy as np
-from NetAnalyzer import NetAnalyzer
-from NetAnalyzer import Net_parser
 from NetAnalyzer import Ranker
 #from NetAnalyzer import ranker
 ROOT_PATH=os.path.dirname(__file__)

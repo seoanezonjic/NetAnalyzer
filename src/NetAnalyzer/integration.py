@@ -1,10 +1,6 @@
-import sys
-import os
-import glob
-import numpy as np
+import itertools, logging
 import concurrent.futures
-import itertools
-import logging
+import numpy as np
 
 class Kernels:
 

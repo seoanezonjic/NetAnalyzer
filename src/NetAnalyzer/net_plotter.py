@@ -1,15 +1,8 @@
-import os
-import re
-import sys
-import graphviz
-import json
-import base64
+import os, re, graphviz, json, pickle, random
 import igraph as ig
 from igraph.layout import Layout
 import matplotlib as mpl
-import random
 import numpy as np
-import pickle
 from py_report_html.py_report_html import Py_report_html
 import networkx as nx
 

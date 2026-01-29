@@ -1,6 +1,5 @@
 import numpy as np
 import os, re
-from itertools import combinations
 from sklearn.model_selection import KFold, LeaveOneOut
 from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 from NetAnalyzer.seed_parser import SeedParser
@@ -9,7 +8,6 @@ import py_exp_calc.exp_calc as pxc
 import networkx as nx
 import random 
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
 
 class Ranker:
 

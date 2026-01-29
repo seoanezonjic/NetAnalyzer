@@ -180,7 +180,7 @@ class NetAnalyzer:
 
     def link_ontology(self, ontology_file_path, layer_name):
         import py_semtools # For external_data
-        from py_semtools import Ontology
+        from py_semtools.ontology import Ontology
         if ontology_file_path not in self.loaded_obos: #Load new ontology
             ontology = Ontology(file = ontology_file_path, load_file = True)
             ontology.precompute()
@@ -765,7 +765,7 @@ class NetAnalyzer:
 
     def get_similarity(self, layers, base_layer, sim_type='lin', options={}, output_filename=None, outFormat='pair', add_to_object= False):
         import py_semtools # For external_data
-        from py_semtools import Ontology
+        from py_semtools.ontology import Ontology
         # options--> options['term_filter'] = GO:00001
         ontology = self.layer_ontologies[base_layer]
         relations = self.get_layers_as_dict(layers, base_layer)

@@ -10,7 +10,7 @@ import matplotlib as mpl
 import random
 import numpy as np
 import pickle
-from py_report_html import Py_report_html
+from py_report_html.py_report_html import Py_report_html
 import networkx as nx
 
 class Net_plotter:

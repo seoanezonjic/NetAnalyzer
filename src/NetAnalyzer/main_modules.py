@@ -7,7 +7,7 @@ from NetAnalyzer import Ranker
 #from NetAnalyzer import Graph2sim
 
 def main_net_explorer(options, test = False):
-    from py_report_html import Py_report_html
+    from py_report_html.py_report_html import Py_report_html
     # loading gene seeds.
     options = vars(options)
     seeds2explore = {"seed": []}

@@ -1,11 +1,8 @@
-import pytest
-import sys
-import os 
+import pytest, sys, os, shutil
 from io import StringIO
-import shutil
 import NetAnalyzer
 import numpy as np
-from py_cmdtabs import CmdTabs
+from py_cmdtabs.cmdtabs import CmdTabs
 ROOT_PATH=os.path.dirname(__file__)
 DATA_PATH = os.path.join(ROOT_PATH, 'data')
 

@@ -1,12 +1,12 @@
-import argparse
-import os
-from py_cmdtabs.cmdtabs import CmdTabs
+import argparse, os
 from NetAnalyzer.main_modules import *
 
 ## TYPES 
 def based_0(string): return int(string) - 1
 
-def list_based_0(string): return CmdTabs.parse_column_indices(",", string)
+def list_based_0(string): 
+    from py_cmdtabs.cmdtabs import CmdTabs
+    return CmdTabs.parse_column_indices(",", string)
 
 def single_split(string, sep = ","):
     return string.strip().split(sep)

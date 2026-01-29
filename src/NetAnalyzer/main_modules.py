@@ -1,27 +1,18 @@
-import sys
-import os
-import warnings
+import sys, os, random, copy
 import numpy as np
-import random
-import copy
-from multiprocessing import Process, Manager, Lock
-from py_cmdtabs.cmdtabs import CmdTabs
+import networkx as nx
 import py_exp_calc.exp_calc as pxc
-from py_report_html import Py_report_html
-from NetAnalyzer import Net_parser, NetAnalyzer
-from NetAnalyzer import Kernels
+from NetAnalyzer import Net_parser
 from NetAnalyzer import Ranker
 #from NetAnalyzer import Graph2sim
-from NetAnalyzer import Adv_mat_calc
-from NetAnalyzer.performancer import Performancer
-from NetAnalyzer.seed_parser import SeedParser
-import networkx as nx
 
 def main_net_explorer(options, test = False):
+    from py_report_html import Py_report_html
     # loading gene seeds.
     options = vars(options)
     seeds2explore = {"seed": []}
-    if options["seed_nodes"]: 
+    if options["seed_nodes"]:
+        from NetAnalyzer.seed_parser import SeedParser 
         seeds2explore, _ = SeedParser.load_nodes_by_group(options["seed_nodes"], sep=options["seed_sep"])
     if options["group_nodes"]: 
         groups2explore = load_clusters(options)
@@ -118,6 +109,7 @@ def get_neigh_set(net, nodes):
 
 
 def main_embedding_integrator(options):
+    from NetAnalyzer import Kernels
     kernels = Kernels()
 
     if not options.kernel_ids:
@@ -145,6 +137,7 @@ def main_embedding_integrator(options):
                 f.write(name + "\n")  
 
 def main_netanalyzer(options):
+    from NetAnalyzer import NetAnalyzer
     print("Loading network data")
     opts = vars(options)
     # FRED: Remove this part of vars and modify the loads methods (Tlk wth PSZ)
@@ -159,6 +152,7 @@ def main_netanalyzer(options):
         fullNet.ontologies
 
     if options.delete_nodes:
+        from py_cmdtabs.cmdtabs import CmdTabs
         node_list = CmdTabs.load_input_data(options.delete_nodes[0])
         node_list = [item for sublist in node_list for item in sublist]
         mode = options.delete_nodes[1] if len(options.delete_nodes) > 1 else 'd'
@@ -204,6 +198,7 @@ def main_netanalyzer(options):
         print(f"End of analysis: {options.meth}")
 
         if options.control_file != None:
+            from NetAnalyzer.performancer import Performancer
             with open(options.control_file, "r") as f:
                 control = [control.append(line.rstrip().split("\t")) for line in f]
             Performancer.load_control(control)
@@ -438,7 +433,7 @@ def load_kernel(ranker, opts):
         ranker.filter_matrix(opts["whitelist"])
         ranker.clean_seeds()
 
-def sort_records_by_load(records):
+def sort_records_by_load(records, chunk_size):
     recs = []
     slices = int(chunk_size/2)
     r = chunk_size % 2
@@ -448,6 +443,7 @@ def sort_records_by_load(records):
     return recs
 
 def main_ranker(options):
+    from multiprocessing import Process, Manager, Lock
     # LOAD RANKER
     ranker = Ranker()
     if options.seed_presence == "remove": # TODO: Probably, this is not necessary right here but on worker_ranker
@@ -489,7 +485,7 @@ def main_ranker(options):
         if options.threads > 1:
             worker_threads = options.threads - 1
             seeds.sort(reverse=True, key=lambda x: len(x[1]))
-            seeds = sort_records_by_load(seeds)
+            seeds = sort_records_by_load(seeds, chunk_size)
         else:
             worker_threads = options.threads 
         for i in range(worker_threads):

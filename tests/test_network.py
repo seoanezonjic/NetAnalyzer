@@ -1,7 +1,7 @@
 import unittest, os, math, random
 import numpy as np
 import py_exp_calc.exp_calc as pxc
-from NetAnalyzer import Net_parser
+from NetAnalyzer.net_parser import Net_parser
 from statsmodels.stats.multitest import multipletests
 ROOT_PATH=os.path.dirname(__file__)
 DATA_TEST_PATH = os.path.join(ROOT_PATH, 'data')

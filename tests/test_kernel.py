@@ -1,5 +1,5 @@
 import unittest, os
-from NetAnalyzer import Net_parser
+from NetAnalyzer.net_parser import Net_parser
 import numpy as np
 ROOT_PATH=os.path.dirname(__file__)
 DATA_TEST_PATH = os.path.join(ROOT_PATH, 'data/data_kernel')

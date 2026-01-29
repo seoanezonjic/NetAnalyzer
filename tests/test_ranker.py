@@ -1,7 +1,6 @@
 import unittest, os
 import numpy as np
-from NetAnalyzer import Ranker
-#from NetAnalyzer import ranker
+from NetAnalyzer.ranker import Ranker
 ROOT_PATH=os.path.dirname(__file__)
 DATA_TEST_PATH = os.path.join(ROOT_PATH, 'data', 'data_ranker')
 

@@ -1,11 +1,16 @@
-from NetAnalyzer.netanalyzer import NetAnalyzer
-from NetAnalyzer.net_parser import Net_parser
-from NetAnalyzer.adv_mat_calc import Adv_mat_calc
-#from NetAnalyzer.graph2sim import Graph2sim
-from NetAnalyzer.net_plotter import Net_plotter
-from NetAnalyzer.ranker import Ranker
-from NetAnalyzer.performancer import Performancer
-from NetAnalyzer.integration import Kernels
-from NetAnalyzer.main_modules import *
-from NetAnalyzer.cli_manager import *
-from NetAnalyzer.seed_parser import SeedParser
+import sys
+
+if sys.version_info[:2] >= (3, 8):
+    # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
+    from importlib.metadata import PackageNotFoundError, version  # pragma: no cover
+else:
+    from importlib_metadata import PackageNotFoundError, version  # pragma: no cover
+
+try:
+    # Change here if project is renamed and does not equal the package name
+    dist_name = __name__
+    __version__ = version(dist_name)
+except PackageNotFoundError:  # pragma: no cover
+    __version__ = "unknown"
+finally:
+    del version, PackageNotFoundError

@@ -2,8 +2,8 @@ import sys, os, random, copy
 import numpy as np
 import networkx as nx
 import py_exp_calc.exp_calc as pxc
-from NetAnalyzer import Net_parser
-from NetAnalyzer import Ranker
+from NetAnalyzer.net_parser import Net_parser
+from NetAnalyzer.ranker import Ranker
 #from NetAnalyzer import Graph2sim
 
 def main_net_explorer(options, test = False):
@@ -109,7 +109,7 @@ def get_neigh_set(net, nodes):
 
 
 def main_embedding_integrator(options):
-    from NetAnalyzer import Kernels
+    from NetAnalyzer.integration import Kernels
     kernels = Kernels()
 
     if not options.kernel_ids:
@@ -137,7 +137,7 @@ def main_embedding_integrator(options):
                 f.write(name + "\n")  
 
 def main_netanalyzer(options):
-    from NetAnalyzer import NetAnalyzer
+    from NetAnalyzer.netanalyzer import NetAnalyzer
     print("Loading network data")
     opts = vars(options)
     # FRED: Remove this part of vars and modify the loads methods (Tlk wth PSZ)

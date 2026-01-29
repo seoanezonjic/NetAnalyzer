@@ -1,6 +1,6 @@
 import pytest, sys, os, shutil
 from io import StringIO
-import NetAnalyzer
+import NetAnalyzer.cli_manager as NetAnalyzerCLI
 import numpy as np
 from py_cmdtabs.cmdtabs import CmdTabs
 ROOT_PATH=os.path.dirname(__file__)
@@ -34,36 +34,36 @@ def capture_stdout(func):
 
 @capture_stdout
 def text2binary_matrix(lsargs):
-    return NetAnalyzer.text2binary_matrix(lsargs)
+    return NetAnalyzerCLI.text2binary_matrix(lsargs)
 
 @capture_stdout
 def embedding_integrator(lsargs):
-    return NetAnalyzer.embedding_integrator(lsargs)
+    return NetAnalyzerCLI.embedding_integrator(lsargs)
 
 @capture_stdout
 def ranker(lsargs):
-    return NetAnalyzer.ranker(lsargs)
+    return NetAnalyzerCLI.ranker(lsargs)
 
 @capture_stdout
 def randomize_clustering(lsargs):
-    return NetAnalyzer.randomize_clustering(lsargs)
+    return NetAnalyzerCLI.randomize_clustering(lsargs)
 
 @capture_stdout
 def randomize_network(lsargs):
-    return NetAnalyzer.randomize_network(lsargs)
+    return NetAnalyzerCLI.randomize_network(lsargs)
 
 @capture_stdout
 def net_explorer(lsargs):
-    return NetAnalyzer.net_explorer(lsargs, True)
+    return NetAnalyzerCLI.net_explorer(lsargs, True)
 
 @capture_stdout
 def netanalyzer(lsargs):
-    return NetAnalyzer.netanalyzer(lsargs)
+    return NetAnalyzerCLI.netanalyzer(lsargs)
 
 @capture_stdout
 def netanalyzer_dsl(lsargs):
     with pytest.raises(SystemExit):
-        return NetAnalyzer.netanalyzer(lsargs)
+        return NetAnalyzerCLI.netanalyzer(lsargs)
 
 def diff(file1, file2, matrix=False, roundTo=3, sort = None):
     if matrix:

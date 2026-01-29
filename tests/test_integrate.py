@@ -1,5 +1,5 @@
 import unittest, os, timeit
-from NetAnalyzer import Kernels
+from NetAnalyzer.integration import Kernels
 import numpy as np
 ROOT_PATH=os.path.dirname(__file__)
 DATA_TEST_PATH = os.path.join(ROOT_PATH, 'data/data_integrate')

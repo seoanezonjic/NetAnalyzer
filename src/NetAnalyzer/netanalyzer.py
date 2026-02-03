@@ -3,17 +3,15 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-import statsmodels.api as sm
-from cdlib import algorithms, evaluation
-from cdlib import NodeClustering
-from NetAnalyzer.adv_mat_calc import Adv_mat_calc
+from scipy.stats import zscore
+from cdlib import evaluation, NodeClustering
+
 import py_exp_calc.exp_calc as pxc
+from py_cmdtabs.cmdtabs import CmdTabs
+
+from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 from NetAnalyzer.net_plotter import Net_plotter
 #from NetAnalyzer.graph2sim import Graph2sim
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-from scipy.stats import zscore
-from py_cmdtabs.cmdtabs import CmdTabs
 # https://stackoverflow.com/questions/60392940/multi-layer-graph-in-networkx
 # http://mkivela.com/pymnet
 
@@ -415,6 +413,8 @@ class NetAnalyzer:
         return relations
 
     def get_pca_associations(self, layers, base_layer, n_components = 2, coords2sim_type = "dotProduct"):
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.decomposition import PCA
         # TODO: Try to select the correct number of n_componentes (automatically)
         biadj_matrix = pxc.dig(self.matrices,"adjacency_matrices",tuple(layers),base_layer)
         if biadj_matrix is None:
@@ -567,6 +567,7 @@ class NetAnalyzer:
         return relations
 
     def adjust_pval_association(self, associations, method): # TODO TEST
+        import statsmodels.api as sm
         pvals = np.array([val[2] for val in associations])
         adj_pvals =  sm.stats.multipletests(pvals, method=method, is_sorted=False, returnsorted=False)[1] #2expcalc?
         for idx, adj_pval in enumerate(adj_pvals):
@@ -1000,6 +1001,7 @@ class NetAnalyzer:
         return comm_nodes
 
     def get_clusters_by_algorithm(self, cluster_method, clust_kwargs={}):
+        from cdlib import algorithms
         if(cluster_method == 'leiden'):
             communities = algorithms.leiden(self.graph, weights='weight', **clust_kwargs)
         elif(cluster_method == 'louvain'):

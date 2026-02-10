@@ -182,12 +182,8 @@ def netanalyzer(args=None):
     help="select association method to perform the projections: counts, jaccard, simpson, geometric, cosine, pcc, hypergeometric, hypergeometric_bf, hypergeometric_bh, csi, transference, correlation, umap, pca, bicm")
     parser.add_argument("-a","--assoc_file", dest="assoc_file", default='assoc_values.txt',
     help="Output file name for association values")
-    parser.add_argument("-p","--performance_file", dest="performance_file", default='perf_values.txt',
-    help="Output file name for performance values")
     parser.add_argument("-u","--use_layers", dest="use_layers", default=[['layer']], type= lambda x: double_split(x, sep1=";",sep2=","),
     help="Set which layers must be used on association methods: layer1,layer2;layerA,layerB")
-    parser.add_argument("-c","--control_file", dest="control_file", default=None,
-    help="Control file name")
     # Kernel 
     parser.add_argument("-k","--kernel_method", dest="kernel", default=None,
     help="Kernel operation to perform with the adjacency matrix")

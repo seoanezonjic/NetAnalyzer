@@ -197,19 +197,6 @@ def main_netanalyzer(options):
                 "\t".join(map(str, fullNet.association_values[options.meth][-1])))
         print(f"End of analysis: {options.meth}")
 
-        if options.control_file != None:
-            from NetAnalyzer.performancer import Performancer
-            with open(options.control_file, "r") as f:
-                control = [control.append(line.rstrip().split("\t")) for line in f]
-            Performancer.load_control(control)
-            predictions = fullNet.association_values[options.meth]
-            performance = Performancer.get_pred_rec(predictions)
-            with open(options.performance_file, 'r') as f:
-                f.write("\t".join(['cut', 'prec', 'rec', 'meth']) + "\n")
-                for item in performance:
-                    item.append(options['meth'])
-                    f.write("\t".join(item) + "\n")
-
     if options.kernel or options.external_embedding:
         # This allows inject custom arguments for each embedding method
         embedding_kwargs = eval('{' +options.embedding_add_options +'}')

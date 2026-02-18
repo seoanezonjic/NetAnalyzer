@@ -528,7 +528,7 @@ def main_text2binary_matrix(options):
         x_axis_file=x_axis_file, y_axis_file=y_axis_file, 
         x_idx_file=options.rowids_index, y_idx_file=options.colids_index,
         format_type=options.input_type, symm=options.symmetric,
-        init_matrix_type = options.init_matrix_type, output_matrix_type=options.output_matrix_type)
+        init_matrix_format = options.loading_matrix_format, output_matrix_format=options.output_matrix_format)
 
     # bsr, coo, csc, csr, dia, dok, lil
 
@@ -566,7 +566,7 @@ def main_text2binary_matrix(options):
     pxc.save(matrix, options.output_file, 
         x_axis_names=rowIds, x_axis_file=options.output_file+"_rowIds.lst", 
         y_axis_names=colIds, y_axis_file=options.output_file+"_colIds.lst", 
-        format_type=options.output_type, symm = options.symmetric, output_matrix_type=options.output_matrix_type)
+        format_type=options.output_matrix_format, symm = options.symmetric, output_matrix_format=options.write_matrix_format)
 
 # METHODS FOR NETANALYZER
 #########################

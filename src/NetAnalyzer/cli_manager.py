@@ -369,10 +369,15 @@ def text2binary_matrix(args=None):
             help='File with ROW names to use as index to build the matrix. Order is take into account')
     parser.add_argument('--matrix_col_index', dest="colids_index", default=None,
             help='File with COLUMN names to use as index to build the matrix. Order is take into account')
-    parser.add_argument('--init_matrix_type', dest="init_matrix_type", default="dense",
-            help='Select this to specify which is the matrix type during the intitialization of the matrix. Possible values: dense or an sparse type of scipy (bsr, coo, csc, csr, dia, dok, lil).')
-    parser.add_argument('--output_matrix_type', dest="output_matrix_type", default="dense",
-            help='Select this to specify which is the matrix type during the intitialization of the matrix. Possible values: dense or an sparse type of scipy (bsr, coo, csc, csr, dia, dok, lil).')
+    parser.add_argument('--loading_matrix_format', dest="loading_matrix_format", default="dense",
+            help="""Select this to specify which is the matrix type during the INITIALIZATION of the matrix.
+              Possible values: dense or an sparse type of scipy (bsr, coo, csc, csr, dia, dok, lil).""")
+    parser.add_argument('--output_matrix_format', dest="output_matrix_format", default="dense",
+            help='Select this to specify which is the matrix type during the MANIPULATION of the matrix.' \
+            ' Possible values: dense or an sparse type of scipy (bsr, coo, csc, csr, dia, dok, lil).')
+    parser.add_argument('--write_matrix_format', dest="write_matrix_format", default="dense",
+            help="""Select this to specify which is the matrix type during the WRITING of the matrix.
+              Possible values: dense or an sparse type of scipy (bsr, coo, csc, csr, dia, dok, lil).""")
     opts = parser.parse_args(args)
     main_text2binary_matrix(opts)
 

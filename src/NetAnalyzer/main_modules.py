@@ -563,10 +563,20 @@ def main_text2binary_matrix(options):
             for row in stats:
                 f.write("\t".join([str(item) for item in row]) + "\n")
 
-    pxc.save(matrix, options.output_file, 
-        x_axis_names=rowIds, x_axis_file=options.output_file+"_rowIds.lst", 
-        y_axis_names=colIds, y_axis_file=options.output_file+"_colIds.lst", 
-        format_type=options.output_matrix_format, symm = options.symmetric, output_matrix_format=options.write_matrix_format)
+    if options.output_type != "pair":
+        pxc.save(matrix, options.output_file, 
+            x_axis_names=rowIds, x_axis_file=options.output_file+"_rowIds.lst", 
+            y_axis_names=colIds, y_axis_file=options.output_file+"_colIds.lst", 
+            format_type=options.output_type, symm = options.symmetric, 
+            input_matrix_type=options.output_matrix_format,
+            output_matrix_format=options.write_matrix_format)
+    else:
+        pxc.save(matrix, options.output_file, 
+            x_axis_names=rowIds, x_axis_file=options.output_file+"_rowIds.lst", 
+            y_axis_names=colIds, y_axis_file=options.output_file+"_colIds.lst", 
+            format_type=options.output_type, symm = options.symmetric, 
+            input_matrix_type=options.output_matrix_format,
+            output_matrix_format="dense")
 
 # METHODS FOR NETANALYZER
 #########################

@@ -529,8 +529,14 @@ def main_text2binary_matrix(options):
         x_idx_file=options.rowids_index, y_idx_file=options.colids_index,
         format_type=options.input_type, symm=options.symmetric,
         init_matrix_format = options.loading_matrix_format, output_matrix_format=options.output_matrix_format)
-
-    # bsr, coo, csc, csr, dia, dok, lil
+    
+    if options.filter_by_nodes:
+        nodes_to_filter = []
+        with open(options.filter_by_nodes, "r") as f:
+            for line in f:
+                node = line.strip()
+                nodes_to_filter.append(node)
+        matrix, rowIds, colIds = pxc.filter_matrix_by_nodes(matrix, rowIds, colIds, nodes_to_filter)
 
     if options.umap:
         matrix = pxc.data2umap(matrix, n_neighbors = 30, min_dist = 0.1, n_components = 2, 

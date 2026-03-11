@@ -362,6 +362,8 @@ def text2binary_matrix(args=None):
     parser.add_argument('--sparse_type', dest="sparse_type", default=None, help="""The type of sparse matrix for the output, this option is useful when output type is 
          set to bin. The options are: bsr, coo, csc, csr, dia, dok, lil""")
     parser.add_argument("--round", dest="round", default=None, type=int, help="choose this to round in the i-th digit for all the values in the matrix or relations")
+    parser.add_argument("--filter_by_nodes", dest="filter_by_nodes", default=None, 
+                        help= "File with the list of nodes to take into account in the output matrix, if not set all nodes are included")
     # normalize matrix
     parser.add_argument("--normalize_by", dest="normalize_by", default=None, type=str, help="Type of normalization for matrix: cosine, rows_cols, min_max")
     # order

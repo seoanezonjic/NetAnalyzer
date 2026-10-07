@@ -47,3 +47,5 @@ This package is designed to perform various steps in network analysis and proces
 * Net plotting: Provides several tools for graphing networks from different net plotter packages (igraph, cytoscape, graphviz).
 
 Please, cite this library as: Rojano E., Seoane-Zonjic P., Bueno-Amorós A., Perkins JR., and Ranea JAG. Revealing the Relationship Between Human Genome Regions and Pathological Phenotypes Through Network Analysis. Lecture Notes in Computer Science, DOI: 10.1007/978-3-319-56148-6_17.
+
+See https://github.com/seoanezonjic/NetAnalyzer

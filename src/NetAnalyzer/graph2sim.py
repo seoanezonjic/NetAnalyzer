@@ -4,7 +4,8 @@ from scipy import linalg
 from warnings import warn
 #from NetAnalyzer.adv_mat_calc import Adv_mat_calc
 import py_exp_calc.exp_calc as pxc
-from pecanpy import pecanpy
+#from pecanpy import pecanpy
+from NetAnalyzer.utils_from_ai.dense_otf_walks import DenseOTFWalker
 import numba #To control pecanpy threading
 from numba import njit, set_num_threads
 from gensim.models import Word2Vec
@@ -191,8 +192,11 @@ class Graph2sim:
                 if embedding == "deepwalk":
                     default_options["p"] = 1
                     default_options["q"] = 1 
-                g = pecanpy.DenseOTF.from_mat(adj_mat=adj_mat, node_ids=embedding_nodes,p=default_options["p"], q=default_options["q"], workers=default_options["workers"], random_state=default_options["random_seed"], verbose= verbose)
+                #g = pecanpy.DenseOTF.from_mat(adj_mat=adj_mat, node_ids=embedding_nodes,p=default_options["p"], q=default_options["q"], workers=default_options["workers"], random_state=default_options["random_seed"], verbose= verbose)
+                g = DenseOTFWalker.from_mat(adj_mat, embedding_nodes, p=default_options["p"], q=default_options["q"],
+                                workers=default_options["workers"], random_state=default_options["random_seed"], verbose= verbose)
                 walks = g.simulate_walks(num_walks=default_options["num_walks"], walk_length=default_options["walk_length"])
+
             elif embedding == "comm_aware": # Based on CRARE paper and modified in HLC paper
                 # Following paper CRARE: params 
                 # --window_size 10

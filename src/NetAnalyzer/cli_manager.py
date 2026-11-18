@@ -274,6 +274,8 @@ def randomize_clustering(args=None):
     'not_fixed' (just a sampling with replacement). 
     Secondly, the custom size can be used with the format 'custom:n:s:r|nr' for generate 'n' clusters of 's' nodes and
      r|nr for replacement or not, respectively. Default = 'hard_fixed'""")
+    parser.add_argument("--safe_sample", dest="safe_sample", default=False, action = "store_true",
+                        help="Activate a safe version with sampling (avoid crashing when the required sample is bigger than universe, set universe to the sample size in that case and warns the user about this unusual condition)")
     add_random_seed(parser,  default_seed=123)
     opts = parser.parse_args(args)
     main_randomize_clustering(opts)

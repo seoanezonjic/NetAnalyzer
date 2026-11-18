@@ -1,4 +1,4 @@
-import sys, os, random, copy
+import sys, os, random, copy, warnings
 import numpy as np
 import networkx as nx
 import py_exp_calc.exp_calc as pxc
@@ -349,7 +349,7 @@ def main_randomize_clustering(options):
                 k = len(pxc.intersection(clusters,cluster_universe))
                 p = k/u_size
                 number_clust = random.binomial(u_size, p) 
-            sampled_clusters = random.sample(cluster_universe, number_clust)
+            sampled_clusters = get_clusters_sample(cluster_universe, number_clust, safe=options["safe_sample"])
             for clust in sampled_clusters:
                 if random_clusters.get(clust):
                     random_clusters[clust].append(node)
@@ -694,3 +694,17 @@ def load_tags(file):
             line = line.strip().split("\t")
             pxc.add_nested_value(tags, (line[0],line[1]), line[2])
     return tags
+
+# UTILS
+##########################
+
+def get_clusters_sample(cluster_universe, number_clust, safe=False):
+    if not safe: 
+        sampled_clusters = random.sample(cluster_universe, number_clust)
+    else:
+        try:
+            sampled_clusters = random.sample(cluster_universe, number_clust)
+        except ValueError as e:
+            warnings.warn(f"Number of clusters to sample {number_clust} is higher than the universe of clusters {len(cluster_universe)}. Setting number of clusters to sample to universe size. But it is advisable to check the reason.")
+            sampled_clusters = random.sample(cluster_universe, len(cluster_universe))
+    return sampled_clusters
